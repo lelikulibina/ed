@@ -157,15 +157,15 @@ fn retry_delay(
 ) -> Option<Duration> {
     let base_seconds = match status {
         StatusCode::TOO_MANY_REQUESTS => 2,
-        StatusCode::BAD_GATEWAY | StatusCode::SERVICE_UNAVAILABLE | StatusCode::GATEWAY_TIMEOUT => 1,
+        StatusCode::BAD_GATEWAY | StatusCode::SERVICE_UNAVAILABLE | StatusCode::GATEWAY_TIMEOUT => {
+            1
+        },
         _ => return None,
     };
 
     let delay_seconds = retry_after
         .and_then(|value| value.trim().parse::<u64>().ok())
-        .unwrap_or_else(|| {
-            base_seconds.saturating_mul(1_u64.checked_shl(attempt).unwrap_or(60))
-        })
+        .unwrap_or_else(|| base_seconds.saturating_mul(1_u64.checked_shl(attempt).unwrap_or(60)))
         .min(60);
 
     Some(Duration::from_secs(delay_seconds))
@@ -225,10 +225,7 @@ mod tests {
             retry_delay(StatusCode::SERVICE_UNAVAILABLE, Some("7"), 0),
             Some(Duration::from_secs(7))
         );
-        assert_eq!(
-            retry_delay(StatusCode::BAD_REQUEST, Some("7"), 0),
-            None
-        );
+        assert_eq!(retry_delay(StatusCode::BAD_REQUEST, Some("7"), 0), None);
     }
 
     #[test]
