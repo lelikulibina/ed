@@ -24,7 +24,7 @@ jobs:
 
       - name: Smoke test EDSM JSON API
         run: |
-          systems="$(curl --fail --silent --show-error --get \
+          systems="$(curl --fail --silent --show-error --retry 5 --retry-all-errors --retry-delay 2 --retry-max-time 60 --get \
             --data-urlencode "systemName=Sol" \
             --data-urlencode "radius=1" \
             --data-urlencode "showId=1" \
@@ -32,7 +32,7 @@ jobs:
             "https://www.edsm.net/api-v1/sphere-systems")"
           system_name="$(printf '%s' "$systems" | jq -er '.[0].name')"
           system_id="$(printf '%s' "$systems" | jq -er '.[0].id')"
-          curl --fail --silent --show-error --get \
+          curl --fail --silent --show-error --retry 5 --retry-all-errors --retry-delay 2 --retry-max-time 60 --get \
             --data-urlencode "systemName=$system_name" \
             --data-urlencode "systemId=$system_id" \
             -H "User-Agent: ed-planet-search-ci/0.1.0" \
