@@ -1,4 +1,4 @@
-use crate::parser::{core::ParserCore, planet::parse_api_planet, planet::PlanetInfo};
+use crate::parser::{core::ParserCore, planet::PlanetInfo, planet::parse_api_planet};
 use anyhow::{Context, Result, bail};
 use futures::stream::{self, StreamExt};
 use serde_json::Value;
@@ -146,7 +146,9 @@ impl PlanetSearch {
                 continue;
             };
             let Some(id) = entry.get("id").and_then(Value::as_u64) else {
-                bail!("EDSM не вернул ID для системы {name}; невозможно однозначно запросить её тела");
+                bail!(
+                    "EDSM не вернул ID для системы {name}; невозможно однозначно запросить её тела"
+                );
             };
             systems.push(SystemRef {
                 name: name.to_string(),
@@ -192,12 +194,7 @@ impl PlanetSearch {
 
         let mut planets = Vec::new();
         for body in bodies {
-            if !matches_body_filters(
-                body,
-                params.planet_type,
-                params.atmosphere,
-                params.gravity,
-            ) {
+            if !matches_body_filters(body, params.planet_type, params.atmosphere, params.gravity) {
                 continue;
             }
 
@@ -302,7 +299,7 @@ fn matches_body_filters(
         PlanetType::RockyIceWorld => subtype.contains("rocky ice"),
         PlanetType::HighMetalContentWorld => {
             subtype.contains("high metal content") || subtype.contains("metal rich")
-        },
+        }
     };
     if !matches_planet_type {
         return false;
@@ -320,9 +317,7 @@ fn matches_body_filters(
         AtmosphereType::Any => true,
         AtmosphereType::Ammonia => has("ammonia"),
         AtmosphereType::Water => has("water") && !has("water rich"),
-        AtmosphereType::CarbonDioxide => {
-            has("carbon dioxide") && !has("carbon dioxide rich")
-        }
+        AtmosphereType::CarbonDioxide => has("carbon dioxide") && !has("carbon dioxide rich"),
         AtmosphereType::SulphurDioxide => has("sulphur dioxide") || has("sulfur dioxide"),
         AtmosphereType::Nitrogen => has("nitrogen"),
         AtmosphereType::WaterRich => has("water rich"),
@@ -354,7 +349,7 @@ fn matches_body_filters(
 
 #[cfg(test)]
 mod api_filter_tests {
-    use super::{matches_body_filters, AtmosphereType, GravityRange, PlanetType};
+    use super::{AtmosphereType, GravityRange, PlanetType, matches_body_filters};
     use serde_json::json;
 
     #[test]
@@ -393,7 +388,6 @@ mod api_filter_tests {
         ));
     }
 }
-
 
 #[cfg(test)]
 mod limit_tests {
