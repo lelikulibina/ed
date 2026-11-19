@@ -91,18 +91,53 @@ pub async fn parse_planet(core: &ParserCore, url: &str, name: &str) -> Result<Pl
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_float, parse_int};
+    use super::parse_api_planet;
+    use serde_json::json;
 
     #[test]
-    fn parses_numbers_with_units_and_decimal_commas() {
-        assert_eq!(parse_float("0,87 G"), Some(0.87));
-        assert_eq!(parse_float("1.25 atm"), Some(1.25));
-        assert_eq!(parse_int("245 K"), Some(245));
+    fn converts_edsm_api_units_to_cli_units() {
+        let body = json!({
+            "type": "Planet",
+            "name": "Example A 1",
+            "subType": "Rocky body",
+            "isLandable": true,
+            "gravity": 9.80665,
+            "surfaceTemperature": 245,
+            "surfacePressure": 101325,
+            "atmosphereType": "Thin ammonia atmosphere"
+        });
+
+        let planet = parse_api_planet(&body).unwrap().unwrap();
+
+        assert_eq!(planet.name, "Example A 1");
+        assert!((planet.gravity.unwrap() - 1.0).abs() < 0.0001);
+        assert_eq!(planet.surface_temp, Some(245));
+        assert!((planet.pressure.unwrap() - 1.0).abs() < 0.0001);
+        assert_eq!(planet.is_mapped, None);
     }
 
     #[test]
-    fn rejects_invalid_numeric_values() {
-        assert_eq!(parse_float("unknown"), None);
-        assert_eq!(parse_int("N/A"), None);
+    fn ignores_non_landable_bodies_and_stars() {
+        let star = json!({"type": "Star", "name": "Example"});
+        let non_landable = json!({
+            "type": "Planet",
+            "name": "Example 1",
+            "isLandable": false
+        });
+
+        assert!(parse_api_planet(&star).unwrap().is_none());
+        assert!(parse_api_planet(&non_landable).unwrap().is_none());
+    }
+
+    #[test]
+    fn preserves_mapping_flag_when_api_supplies_it() {
+        let body = json!({
+            "type": "Planet",
+            "name": "Example 1",
+            "isLandable": true,
+            "isMapped": true
+        });
+
+        assert_eq!(parse_api_planet(&body).unwrap().unwrap().is_mapped, Some(true));
     }
 }
