@@ -156,9 +156,7 @@ impl ParserCore {
             && !content_type.contains("text/html")
             && !content_type.contains("application/xhtml+xml")
         {
-            bail!(
-                "Ожидалась HTML-страница от {final_url}, получен Content-Type: {content_type}"
-            );
+            bail!("Ожидалась HTML-страница от {final_url}, получен Content-Type: {content_type}");
         }
 
         if body.trim().is_empty() {
