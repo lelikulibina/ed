@@ -24,11 +24,11 @@ jobs:
 
       - name: Smoke test EDData API
         run: |
-          nearby="$(curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
+          nearby="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
             -H "User-Agent: ed-planet-search-ci/0.1.0" \
             "https://api.eddata.dev/v2/system/name/Sol/nearby?maxDistance=100")"
           printf '%s' "$nearby" | jq -e 'type == "array" and length > 0'
-          bodies="$(curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
+          bodies="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
             -H "User-Agent: ed-planet-search-ci/0.1.0" \
             "https://api.eddata.dev/v2/system/name/Sol/bodies")"
           printf '%s' "$bodies" | jq -e 'type == "array" and length > 0'
