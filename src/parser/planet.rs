@@ -116,6 +116,9 @@ mod tests {
             "isMapped": true
         });
 
-        assert_eq!(parse_api_planet(&body).unwrap().unwrap().is_mapped, Some(true));
+        assert_eq!(
+            parse_api_planet(&body).unwrap().unwrap().is_mapped,
+            Some(true)
+        );
     }
 }
