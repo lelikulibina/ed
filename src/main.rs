@@ -144,12 +144,13 @@ async fn main() -> Result<()> {
 
     while let Some(planets) = search.next_page().await? {
         pb.set_message(format!(
-            "Проверяю системы через EDSM API... Найдено соответствий по заданным фильтрам: {}",
+            "Ищу планеты через Spansh API... Найдено соответствий по заданным фильтрам: {}",
             results.len()
         ));
 
         for planet in planets {
-            if !seen.insert(planet.name.clone()) {
+            let planet_key = format!("{}::{}", planet.system_name, planet.name);
+            if !seen.insert(planet_key) {
                 continue;
             }
 
@@ -182,8 +183,8 @@ async fn main() -> Result<()> {
     }
     pb.finish_and_clear();
 
-    if results.len() < args.count && search.reached_system_limit() {
-        eprintln!("⚠️ Достигнут лимит проверки 1000 систем. Результаты могут быть неполными.");
+    if results.len() < args.count && search.reached_search_limit() {
+        eprintln!("⚠️ Достигнут лимит в 100 страниц Spansh (до 10 000 тел). Результаты могут быть неполными.");
     }
 
     if results.is_empty() {
@@ -192,7 +193,8 @@ async fn main() -> Result<()> {
         println!("\nСписок найденных планет:\n");
         for p in results {
             println!(
-                "• {}\n  Атмосфера: {}\n  Температура: {:.1?}\n  Давление: {:.3?}\n  Гравитация: {:.3?}\n",
+                "• {} — {}\n  Атмосфера: {}\n  Температура: {:.1?}\n  Давление: {:.3?}\n  Гравитация: {:.3?}\n",
+                p.system_name,
                 p.name,
                 p.atmosphere.as_deref().unwrap_or("не указана"),
                 p.surface_temp.unwrap_or_default(),
