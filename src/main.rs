@@ -182,7 +182,7 @@ async fn main() -> Result<()> {
     }
     pb.finish_and_clear();
 
-    if search.reached_system_limit() {
+    if results.len() < args.count && search.reached_system_limit() {
         eprintln!(
             "⚠️ Достигнут лимит проверки 1000 систем. Результаты могут быть неполными."
         );
