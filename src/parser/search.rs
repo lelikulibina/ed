@@ -161,9 +161,8 @@ impl PlanetSearch {
             "https://www.edsm.net/api-v1/system?systemName={encoded_name}&showId=1&showCoordinates=1"
         );
         let center_response = self.core.fetch_json(&center_url).await?;
-        let center = coordinates_from_json(&center_response).context(
-            "EDSM не вернул координаты опорной системы; поиск по радиусу невозможен",
-        )?;
+        let center = coordinates_from_json(&center_response)
+            .context("EDSM не вернул координаты опорной системы; поиск по радиусу невозможен")?;
 
         // sphere-systems intermittently returns HTTP 503 under load. The
         // cube endpoint is lighter; a 200 ly cube fully contains our 100 ly
@@ -446,24 +445,43 @@ mod limit_tests {
     }
 }
 
-
 #[cfg(test)]
 mod coordinate_tests {
     use super::Coordinates;
 
     #[test]
     fn computes_distance_in_light_years() {
-        let center = Coordinates { x: 0.0, y: 0.0, z: 0.0 };
-        let point = Coordinates { x: 3.0, y: 4.0, z: 0.0 };
+        let center = Coordinates {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
+        let point = Coordinates {
+            x: 3.0,
+            y: 4.0,
+            z: 0.0,
+        };
 
         assert!((point.distance_to(center) - 5.0).abs() < 0.0001);
     }
 
     #[test]
     fn keeps_only_systems_inside_search_radius() {
-        let center = Coordinates { x: 0.0, y: 0.0, z: 0.0 };
-        let inside = Coordinates { x: 60.0, y: 60.0, z: 0.0 };
-        let outside = Coordinates { x: 80.0, y: 80.0, z: 0.0 };
+        let center = Coordinates {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
+        let inside = Coordinates {
+            x: 60.0,
+            y: 60.0,
+            z: 0.0,
+        };
+        let outside = Coordinates {
+            x: 80.0,
+            y: 80.0,
+            z: 0.0,
+        };
 
         assert!(inside.distance_to(center) <= 100.0);
         assert!(outside.distance_to(center) > 100.0);
