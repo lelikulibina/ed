@@ -72,13 +72,13 @@ impl ParserCore {
                 .and_then(|value| value.to_str().ok())
                 .map(str::to_string);
 
-            if attempt < MAX_RETRIES {
-                if let Some(delay) = retry_delay(status, retry_after.as_deref(), attempt) {
-                    drop(response);
-                    sleep(delay).await;
-                    attempt += 1;
-                    continue;
-                }
+            if attempt < MAX_RETRIES
+                && let Some(delay) = retry_delay(status, retry_after.as_deref(), attempt)
+            {
+                drop(response);
+                sleep(delay).await;
+                attempt += 1;
+                continue;
             }
 
             let final_url = response.url().to_string();
@@ -103,10 +103,11 @@ impl ParserCore {
                 bail!("API вернул HTTP {status} для {final_url} после {attempt} повторов");
             }
 
-            if let Some(content_type) = content_type {
-                if !content_type.contains("application/json") && !content_type.contains("+json") {
-                    bail!("Ожидался JSON от {final_url}, получен Content-Type: {content_type}");
-                }
+            if let Some(content_type) = content_type
+                && !content_type.contains("application/json")
+                && !content_type.contains("+json")
+            {
+                bail!("Ожидался JSON от {final_url}, получен Content-Type: {content_type}");
             }
 
             return serde_json::from_str(&body)
@@ -151,14 +152,13 @@ impl ParserCore {
             bail!("EDSM вернул HTTP {status} для {final_url}");
         }
 
-        if let Some(content_type) = content_type {
-            if !content_type.contains("text/html")
-                && !content_type.contains("application/xhtml+xml")
-            {
-                bail!(
-                    "Ожидалась HTML-страница от {final_url}, получен Content-Type: {content_type}"
-                );
-            }
+        if let Some(content_type) = content_type
+            && !content_type.contains("text/html")
+            && !content_type.contains("application/xhtml+xml")
+        {
+            bail!(
+                "Ожидалась HTML-страница от {final_url}, получен Content-Type: {content_type}"
+            );
         }
 
         if body.trim().is_empty() {
