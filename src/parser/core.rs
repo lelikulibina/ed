@@ -29,19 +29,38 @@ impl ParserCore {
         Ok(Self { client })
     }
 
-    /// Загружает JSON-ответ EDSM API с проверкой статуса и формата.
-    ///
-    /// Повторяет только временные ошибки (429, 502, 503, 504), учитывая
-    /// Retry-After в секундах и используя ограниченный экспоненциальный backoff.
+    /// Загружает JSON-ответ GET-запросом с проверкой статуса и формата.
     pub async fn fetch_json(&self, url: &str) -> Result<serde_json::Value> {
+        self.request_json(url, |client| {
+            client.get(url).header(header::ACCEPT, "application/json")
+        })
+        .await
+    }
+
+    /// Загружает JSON-ответ POST-запросом с теми же проверками и политикой повторов.
+    pub async fn post_json(
+        &self,
+        url: &str,
+        payload: &serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        self.request_json(url, |client| {
+            client
+                .post(url)
+                .header(header::ACCEPT, "application/json")
+                .json(payload)
+        })
+        .await
+    }
+
+    async fn request_json<F>(&self, url: &str, make_request: F) -> Result<serde_json::Value>
+    where
+        F: Fn(&Client) -> reqwest::RequestBuilder,
+    {
         const MAX_RETRIES: u32 = 3;
         let mut attempt = 0;
 
         loop {
-            let response = self
-                .client
-                .get(url)
-                .header(header::ACCEPT, "application/json")
+            let response = make_request(&self.client)
                 .send()
                 .await
                 .with_context(|| format!("Ошибка API-запроса к {url}"))?;
@@ -76,12 +95,12 @@ impl ParserCore {
 
             if looks_like_cloudflare_challenge(&body) {
                 bail!(
-                    "EDSM API вернул проверку Cloudflare вместо JSON ({final_url}, HTTP {status}). Автоматический доступ ограничен."
+                    "API вернул проверку Cloudflare вместо JSON ({final_url}, HTTP {status}). Автоматический доступ ограничен."
                 );
             }
 
             if !status.is_success() {
-                bail!("EDSM API вернул HTTP {status} для {final_url} после {attempt} повторов");
+                bail!("API вернул HTTP {status} для {final_url} после {attempt} повторов");
             }
 
             if let Some(content_type) = content_type {
@@ -91,7 +110,7 @@ impl ParserCore {
             }
 
             return serde_json::from_str(&body)
-                .with_context(|| format!("EDSM API вернул некорректный JSON для {final_url}"));
+                .with_context(|| format!("API вернул некорректный JSON для {final_url}"));
         }
     }
 
