@@ -309,6 +309,11 @@ impl PlanetSearch {
 
         let mut planets = Vec::new();
         for system_summary in systems {
+            // The reference system is only the search origin, never a result.
+            if is_reference_system(system_summary, &self.params.commander_position) {
+                continue;
+            }
+
             let distance = system_summary
                 .get("distance")
                 .and_then(Value::as_f64)
@@ -392,6 +397,14 @@ impl PlanetSearch {
     pub fn reached_search_limit(&self) -> bool {
         self.current_page >= self.params.max_pages && !self.finished
     }
+}
+
+fn is_reference_system(system: &Value, reference_name: &str) -> bool {
+    system
+        .get("name")
+        .or_else(|| system.get("system_name"))
+        .and_then(Value::as_str)
+        .is_some_and(|name| name.eq_ignore_ascii_case(reference_name))
 }
 
 fn matches_body_filters(
@@ -535,6 +548,14 @@ mod api_filter_tests {
             coordinates_from_edsm_response(&response, "Boeft QP-R c7-41"),
             None
         );
+    }
+
+    #[test]
+    fn excludes_the_reference_system_from_neighbor_results() {
+        let reference = json!({"name": "Sol"});
+        let neighbor = json!({"name": "Alpha Centauri"});
+        assert!(super::is_reference_system(&reference, "sol"));
+        assert!(!super::is_reference_system(&neighbor, "Sol"));
     }
 
     #[test]
