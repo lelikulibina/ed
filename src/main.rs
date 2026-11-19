@@ -22,7 +22,7 @@ struct Args {
     #[arg(
         short = 'S',
         long,
-        help = "Название опорной звёздной системы, например: \"Col 285 Sector BQ-Y d40\". Поиск выполняется в радиусе 100 св. лет."
+        help = "Название опорной звёздной системы, например: \"Col 285 Sector BQ-Y d40\". Поиск выполняется в радиусе 2500 св. лет."
     )]
     system: String,
 
@@ -68,7 +68,7 @@ struct Args {
     #[arg(
         short = 'g',
         long,
-        default_value = "0.1-1.0",
+        default_value = "0.0-100.0",
         help = "Диапазон гравитации на планете (float). Формат: min-max"
     )]
     gravity: String,
