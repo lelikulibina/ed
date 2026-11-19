@@ -32,8 +32,9 @@
 - [x] Нестабильные EDSM spatial endpoints заменены прямым Spansh body search.
 - [x] Ошибки HTTP и Cloudflare не преобразуются в пустую выдачу.
 - [x] `cargo fmt --all -- --check` — успешно.
-- [x] `cargo test --all-targets` — 8 тестов пройдены.
+- [x] `cargo test --all-targets` — 9 тестов пройдены.
 - [ ] Выполнить `cargo clippy`.
+- [x] Выполнен live smoke test EDSM System API + Spansh Body Search API в GitHub Actions.
 - [ ] Сравнить реальную выборку Spansh с прежним HTML-поиском на нескольких опорных системах.
 
 ## Ссылки на документацию
