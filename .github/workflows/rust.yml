@@ -22,14 +22,17 @@ jobs:
       - name: Run tests
         run: cargo test --all-targets
 
-      - name: Smoke test EDData API
+      - name: Smoke test EDSM system and body APIs
         run: |
-          nearby="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
+          system="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
             -H "User-Agent: ed-planet-search-ci/0.1.0" \
-            "https://api.eddata.dev/v2/system/name/Sol/nearby?maxDistance=100")"
-          printf '%s' "$nearby" | jq -e 'type == "array" and length > 0'
+            "https://www.edsm.net/api-v1/system?systemName=Sol&showId=1&showCoordinates=1")"
+          printf '%s' "$system" | jq -e '.coords.x and .coords.y and .coords.z'
+          cube="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
+            -H "User-Agent: ed-planet-search-ci/0.1.0" \
+            "https://www.edsm.net/api-v1/cube-systems?systemName=Sol&size=200&showId=1&showCoordinates=1")"
+          printf '%s' "$cube" | jq -e 'type == "array" and length > 0 and .[0].coords.x'
           bodies="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
             -H "User-Agent: ed-planet-search-ci/0.1.0" \
-            "https://api.eddata.dev/v2/system/name/Sol/bodies")"
-          printf '%s' "$bodies" | jq -e 'type == "array" and length > 0'
-          printf '%s' "$bodies" | jq '.[0] | keys'
+            "https://www.edsm.net/api-system-v1/bodies?systemName=Sol")"
+          printf '%s' "$bodies" | jq -e '.bodies | type == "array" and length > 0'
