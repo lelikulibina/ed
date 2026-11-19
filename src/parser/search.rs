@@ -186,7 +186,10 @@ impl PlanetSearch {
         let mut system_lookup_response = Value::Null;
         if let Ok(response) = self
             .core
-            .post_json("https://spansh.co.uk/api/systems/search", &system_lookup_payload)
+            .post_json(
+                "https://spansh.co.uk/api/systems/search",
+                &system_lookup_payload,
+            )
             .await
         {
             system_lookup_response = response.clone();
