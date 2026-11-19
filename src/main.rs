@@ -2,13 +2,11 @@ mod parser;
 
 use parser::{
     core::ParserCore,
-    planet::parse_planet,
     search::{AtmosphereType, GravityRange, PlanetSearch, PlanetSearchParams, PlanetType},
 };
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
-use futures::stream::{self, StreamExt};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashSet;
 use std::time::Duration;
@@ -138,7 +136,7 @@ async fn main() -> Result<()> {
     let mut search = PlanetSearch::new(core.clone(), params);
     let mut seen = HashSet::new();
     let mut results = Vec::new();
-    let mut parse_failures = 0usize;
+    let mut mapping_status_unknown = false;
 
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}")?.tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏ "));
@@ -146,38 +144,21 @@ async fn main() -> Result<()> {
 
     while let Some(planets) = search.next_page().await? {
         pb.set_message(format!(
-            "Собираю данные о близлежащих системах... Найдено соответствий по заданным фильтрам: {}",
+            "Проверяю системы через EDSM API... Найдено соответствий по заданным фильтрам: {}",
             results.len()
         ));
 
-        let unique: Vec<_> = planets
-            .into_iter()
-            .filter(|p| seen.insert(p.name.clone()))
-            .collect();
+        for planet in planets {
+            if !seen.insert(planet.name.clone()) {
+                continue;
+            }
 
-        let parsed = stream::iter(unique)
-            .map(|p| {
-                let core = core.clone();
-                async move {
-                    let name = p.name;
-                    parse_planet(&core, &p.url, &name)
-                        .await
-                        .map_err(|error| (name, error))
-                }
-            })
-            .buffer_unordered(10)
-            .collect::<Vec<_>>()
-            .await;
-
-        for parsed_planet in parsed {
-            let planet = match parsed_planet {
-                Ok(planet) => planet,
-                Err((name, error)) => {
-                    parse_failures += 1;
-                    eprintln!("⚠️ Не удалось загрузить планету {name}: {error:#}");
-                    continue;
-                }
-            };
+            if planet.is_mapped == Some(true) {
+                continue;
+            }
+            if planet.is_mapped.is_none() {
+                mapping_status_unknown = true;
+            }
 
             let fits_f32 =
                 |opt: Option<f32>, min: f32, max: f32| opt.is_some_and(|v| v >= min && v <= max);
@@ -187,7 +168,6 @@ async fn main() -> Result<()> {
             if fits_f32(planet.gravity, gmin, gmax)
                 && fits_f32(planet.pressure, pmin, pmax)
                 && fits_i32(planet.surface_temp, tmin, tmax)
-                && !planet.is_mapped
             {
                 results.push(planet);
                 if results.len() >= args.count {
@@ -200,7 +180,6 @@ async fn main() -> Result<()> {
             break;
         }
     }
-
     pb.finish_and_clear();
 
     if results.is_empty() {
@@ -222,9 +201,9 @@ async fn main() -> Result<()> {
         }
     }
 
-    if parse_failures > 0 {
+    if mapping_status_unknown {
         eprintln!(
-            "⚠️ Не удалось загрузить карточки планет: {parse_failures}. Часть результатов могла быть пропущена; подробности приведены выше."
+            "⚠️ EDSM API не предоставляет подтверждённый статус картографирования планет. Планеты с неизвестным статусом включены в результаты; проверьте их в игре перед посещением."
         );
     }
 
