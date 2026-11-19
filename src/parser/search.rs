@@ -341,7 +341,7 @@ impl PlanetSearch {
             let bodies = system
                 .get("bodies")
                 .and_then(Value::as_array)
-                .context("Spansh system API вернул систему без массива bodies")?;
+                .with_context(|| format!("Spansh system API вернул систему без массива bodies: {system}"))?;
 
             for body in bodies {
                 if !matches_body_filters(
