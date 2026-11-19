@@ -22,7 +22,7 @@ jobs:
       - name: Run tests
         run: cargo test --all-targets
 
-      - name: Smoke test smaller EDSM cube and body APIs
+      - name: Smoke test Spansh body search
         run: |
           system="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
             -H "User-Agent: ed-planet-search-ci/0.1.0" \
@@ -30,12 +30,12 @@ jobs:
           x="$(printf '%s' "$system" | jq -er '.coords.x')"
           y="$(printf '%s' "$system" | jq -er '.coords.y')"
           z="$(printf '%s' "$system" | jq -er '.coords.z')"
-          cube="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
+          payload="$(jq -n --argjson x "$x" --argjson y "$y" --argjson z "$z" \
+            '{filters:{},sort:[{distance:{direction:"asc"}}],size:5,page:0,reference_coords:{x:$x,y:$y,z:$z}}')"
+          bodies="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 20 --retry 2 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
             -H "User-Agent: ed-planet-search-ci/0.1.0" \
-            --request POST --data-urlencode "x=$x" --data-urlencode "y=$y" --data-urlencode "z=$z" --data-urlencode "size=100" --data-urlencode "showId=1" --data-urlencode "showCoordinates=1" \
-            "https://www.edsm.net/api-v1/cube-systems")"
-          printf '%s' "$cube" | jq -e 'type == "array" and length > 0 and .[0].coords.x'
-          bodies="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
-            -H "User-Agent: ed-planet-search-ci/0.1.0" \
-            "https://www.edsm.net/api-system-v1/bodies?systemName=Sol")"
-          printf '%s' "$bodies" | jq -e '.bodies | type == "array" and length > 0'
+            -H "Content-Type: application/json" \
+            --data "$payload" \
+            "https://spansh.co.uk/api/bodies/search")"
+          printf '%s' "$bodies" | jq -e '.results | type == "array" and length > 0'
+          printf '%s' "$bodies" | jq '.results[0] | keys'
