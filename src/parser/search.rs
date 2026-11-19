@@ -185,7 +185,9 @@ impl PlanetSearch {
             .get("results")
             .or_else(|| search_response.get("systems"))
             .and_then(Value::as_array)
-            .with_context(|| format!("Spansh system autocomplete вернул неожиданный ответ: {search_response}"))?;
+            .with_context(|| {
+                format!("Spansh system autocomplete вернул неожиданный ответ: {search_response}")
+            })?;
 
         for candidate in candidates {
             let candidate_name = candidate
