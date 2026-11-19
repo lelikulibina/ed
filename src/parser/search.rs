@@ -108,7 +108,8 @@ struct Coordinates {
 }
 
 fn coordinates_from_json(value: &Value) -> Option<Coordinates> {
-    let coords = value.get("coords")?;
+    let record = value.get("record").unwrap_or(value);
+    let coords = record.get("coords").unwrap_or(record);
     Some(Coordinates {
         x: coords.get("x")?.as_f64()?,
         y: coords.get("y")?.as_f64()?,
@@ -480,6 +481,26 @@ mod api_filter_tests {
         });
         assert_eq!(
             coordinates_from_edsm_response(&response, "Sol"),
+            Some(Coordinates {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0
+            })
+        );
+    }
+
+    #[test]
+    fn reads_coordinates_from_spansh_system_record() {
+        let response = json!({
+            "record": {
+                "name": "Sol",
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        });
+        assert_eq!(
+            coordinates_from_json(&response),
             Some(Coordinates {
                 x: 0.0,
                 y: 0.0,
