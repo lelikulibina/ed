@@ -135,7 +135,7 @@ impl PlanetSearch {
             "https://www.edsm.net/api-v1/sphere-systems?systemName={}&radius=100&showId=1",
             urlencoding::encode(&self.params.commander_position)
         );
-        let response = core.fetch_json(&url).await?;
+        let response = self.core.fetch_json(&url).await?;
         let entries = response
             .as_array()
             .context("EDSM sphere-systems API вернул ответ не в виде массива")?;
