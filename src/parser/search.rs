@@ -102,6 +102,31 @@ pub struct PlanetSearchParams {
     pub max_pages: usize,
 }
 
+#[derive(Debug, Clone, Copy)]
+struct Coordinates {
+    x: f64,
+    y: f64,
+    z: f64,
+}
+
+impl Coordinates {
+    fn distance_to(self, other: Self) -> f64 {
+        let dx = self.x - other.x;
+        let dy = self.y - other.y;
+        let dz = self.z - other.z;
+        (dx * dx + dy * dy + dz * dz).sqrt()
+    }
+}
+
+fn coordinates_from_json(value: &Value) -> Option<Coordinates> {
+    let coords = value.get("coords")?;
+    Some(Coordinates {
+        x: coords.get("x")?.as_f64()?,
+        y: coords.get("y")?.as_f64()?,
+        z: coords.get("z")?.as_f64()?,
+    })
+}
+
 #[derive(Debug, Clone)]
 struct SystemRef {
     name: String,
@@ -131,14 +156,25 @@ impl PlanetSearch {
     }
 
     async fn load_systems(&self) -> Result<Vec<SystemRef>> {
-        let url = format!(
-            "https://www.edsm.net/api-v1/sphere-systems?systemName={}&radius=100&showId=1",
-            urlencoding::encode(&self.params.commander_position)
+        let encoded_name = urlencoding::encode(&self.params.commander_position);
+        let center_url = format!(
+            "https://www.edsm.net/api-v1/system?systemName={encoded_name}&showId=1&showCoordinates=1"
         );
-        let response = self.core.fetch_json(&url).await?;
+        let center_response = self.core.fetch_json(&center_url).await?;
+        let center = coordinates_from_json(&center_response).context(
+            "EDSM не вернул координаты опорной системы; поиск по радиусу невозможен",
+        )?;
+
+        // sphere-systems intermittently returns HTTP 503 under load. The
+        // cube endpoint is lighter; a 200 ly cube fully contains our 100 ly
+        // sphere, so we calculate exact distances locally.
+        let cube_url = format!(
+            "https://www.edsm.net/api-v1/cube-systems?systemName={encoded_name}&size=200&showId=1&showCoordinates=1"
+        );
+        let response = self.core.fetch_json(&cube_url).await?;
         let entries = response
             .as_array()
-            .context("EDSM sphere-systems API вернул ответ не в виде массива")?;
+            .context("EDSM cube-systems API вернул ответ не в виде массива")?;
 
         let mut systems = Vec::with_capacity(entries.len());
         for entry in entries {
@@ -146,17 +182,20 @@ impl PlanetSearch {
                 continue;
             };
             let Some(id) = entry.get("id").and_then(Value::as_u64) else {
-                bail!(
-                    "EDSM не вернул ID для системы {name}; невозможно однозначно запросить её тела"
-                );
+                continue;
             };
+            let Some(coords) = coordinates_from_json(entry) else {
+                continue;
+            };
+            let distance = coords.distance_to(center);
+            if distance > 100.0 {
+                continue;
+            }
+
             systems.push(SystemRef {
                 name: name.to_string(),
                 id,
-                distance: entry
-                    .get("distance")
-                    .and_then(Value::as_f64)
-                    .unwrap_or(f64::MAX),
+                distance,
             });
         }
 
