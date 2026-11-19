@@ -138,13 +138,17 @@ async fn main() -> Result<()> {
     let mut search = PlanetSearch::new(core.clone(), params);
     let mut seen = HashSet::new();
     let mut results = Vec::new();
+    let mut parse_failures = 0usize;
 
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}")?.tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏ "));
     pb.enable_steady_tick(Duration::from_millis(125));
 
     while let Some(planets) = search.next_page().await? {
-        pb.set_message(format!("Собираю данные о близлежащих системах... Найдено соответствий по заданным фильтрам: {}", results.len()));
+        pb.set_message(format!(
+            "Собираю данные о близлежащих системах... Найдено соответствий по заданным фильтрам: {}",
+            results.len()
+        ));
 
         let unique: Vec<_> = planets
             .into_iter()
@@ -154,24 +158,38 @@ async fn main() -> Result<()> {
         let parsed = stream::iter(unique)
             .map(|p| {
                 let core = core.clone();
-                async move { parse_planet(&core, &p.url, &p.name).await.ok() }
+                async move {
+                    let name = p.name;
+                    parse_planet(&core, &p.url, &name)
+                        .await
+                        .map_err(|error| (name, error))
+                }
             })
             .buffer_unordered(10)
             .collect::<Vec<_>>()
             .await;
 
-        for planet in parsed.into_iter().flatten() {
+        for parsed_planet in parsed {
+            let planet = match parsed_planet {
+                Ok(planet) => planet,
+                Err((name, error)) => {
+                    parse_failures += 1;
+                    eprintln!("⚠️ Не удалось загрузить планету {name}: {error:#}");
+                    continue;
+                }
+            };
+
             let fits_f32 =
-                |opt: Option<f32>, min: f32, max: f32| opt.map_or(false, |v| v >= min && v <= max);
+                |opt: Option<f32>, min: f32, max: f32| opt.is_some_and(|v| v >= min && v <= max);
             let fits_i32 =
-                |opt: Option<i32>, min: i32, max: i32| opt.map_or(false, |v| v >= min && v <= max);
+                |opt: Option<i32>, min: i32, max: i32| opt.is_some_and(|v| v >= min && v <= max);
 
             if fits_f32(planet.gravity, gmin, gmax)
                 && fits_f32(planet.pressure, pmin, pmax)
                 && fits_i32(planet.surface_temp, tmin, tmax)
                 && !planet.is_mapped
             {
-                results.push(planet.clone());
+                results.push(planet);
                 if results.len() >= args.count {
                     break;
                 }
@@ -198,6 +216,12 @@ async fn main() -> Result<()> {
                 p.gravity.unwrap_or_default()
             );
         }
+    }
+
+    if parse_failures > 0 {
+        eprintln!(
+            "⚠️ Не удалось загрузить карточки планет: {parse_failures}.              Часть результатов могла быть пропущена; подробности приведены выше."
+        );
     }
 
     Ok(())
