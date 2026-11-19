@@ -182,6 +182,12 @@ async fn main() -> Result<()> {
     }
     pb.finish_and_clear();
 
+    if search.reached_system_limit() {
+        eprintln!(
+            "⚠️ Достигнут лимит проверки 1000 систем. Результаты могут быть неполными."
+        );
+    }
+
     if results.is_empty() {
         println!("❌ Не найдено подходящих планет в проверенных системах.");
     } else {
