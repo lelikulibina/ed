@@ -130,7 +130,7 @@ async fn main() -> Result<()> {
             min: gmin,
             max: gmax,
         },
-        max_pages: 100,
+        max_pages: usize::MAX,
     };
 
     let mut search = PlanetSearch::new(core.clone(), params);
