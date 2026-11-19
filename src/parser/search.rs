@@ -135,7 +135,7 @@ impl PlanetSearch {
             "https://www.edsm.net/api-v1/sphere-systems?systemName={}&radius=100&showId=1",
             urlencoding::encode(&self.params.commander_position)
         );
-        let response = self.core.fetch_json(&url).await?;
+        let response = core.fetch_json(&url).await?;
         let entries = response
             .as_array()
             .context("EDSM sphere-systems API вернул ответ не в виде массива")?;
@@ -174,7 +174,11 @@ impl PlanetSearch {
         Ok(systems)
     }
 
-    async fn load_system_bodies(&self, system: SystemRef) -> Result<Vec<PlanetInfo>> {
+    async fn load_system_bodies(
+        core: &ParserCore,
+        params: &PlanetSearchParams,
+        system: SystemRef,
+    ) -> Result<Vec<PlanetInfo>> {
         let url = format!(
             "https://www.edsm.net/api-system-v1/bodies?systemName={}&systemId={}",
             urlencoding::encode(&system.name),
@@ -190,9 +194,9 @@ impl PlanetSearch {
         for body in bodies {
             if !matches_body_filters(
                 body,
-                self.params.planet_type,
-                self.params.atmosphere,
-                self.params.gravity,
+                params.planet_type,
+                params.atmosphere,
+                params.gravity,
             ) {
                 continue;
             }
@@ -230,8 +234,14 @@ impl PlanetSearch {
         self.current_system = end;
         self.current_page += 1;
 
+        let core = self.core.clone();
+        let params = self.params.clone();
         let results = stream::iter(batch)
-            .map(|system| async move { self.load_system_bodies(system).await })
+            .map(move |system| {
+                let core = core.clone();
+                let params = params.clone();
+                async move { Self::load_system_bodies(&core, &params, system).await }
+            })
             .buffer_unordered(4)
             .collect::<Vec<_>>()
             .await;
