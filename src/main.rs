@@ -204,7 +204,11 @@ async fn main() -> Result<()> {
     pb.finish_and_clear();
 
     if results.is_empty() {
-        println!("❌ Не найдено подходящих планет.");
+        if parse_failures > 0 {
+            println!("⚠️ Не удалось проверить достаточное количество планет из-за ошибок загрузки; результат поиска неполный.");
+        } else {
+            println!("❌ Не найдено подходящих планет.");
+        }
     } else {
         println!("\nСписок найденных планет:\n");
         for p in results {
