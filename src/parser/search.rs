@@ -175,9 +175,7 @@ impl PlanetSearch {
 
         // Spansh quick search is an independent source when EDSM has no
         // coordinates for a valid system name.
-        let spansh_search_url = format!(
-            "https://spansh.co.uk/api/search?q={encoded_name}"
-        );
+        let spansh_search_url = format!("https://spansh.co.uk/api/search?q={encoded_name}");
         let search_response = self
             .core
             .fetch_json(&spansh_search_url)
