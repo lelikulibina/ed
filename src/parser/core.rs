@@ -28,6 +28,53 @@ impl ParserCore {
         Ok(Self { client })
     }
 
+    /// Загружает JSON-ответ EDSM API с проверкой статуса и формата.
+    pub async fn fetch_json(&self, url: &str) -> Result<serde_json::Value> {
+        let response = self
+            .client
+            .get(url)
+            .header(header::ACCEPT, "application/json")
+            .send()
+            .await
+            .with_context(|| format!("Ошибка API-запроса к {url}"))?;
+
+        let status = response.status();
+        let final_url = response.url().to_string();
+        let content_type = response
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_ascii_lowercase);
+
+        let body = response
+            .text()
+            .await
+            .with_context(|| format!("Не удалось прочитать API-ответ от {final_url}"))?;
+
+        if looks_like_cloudflare_challenge(&body) {
+            bail!(
+                "EDSM API вернул проверку Cloudflare вместо JSON ({final_url}, HTTP {status}). Автоматический доступ ограничен."
+            );
+        }
+
+        if !status.is_success() {
+            bail!("EDSM API вернул HTTP {status} для {final_url}");
+        }
+
+        if let Some(content_type) = content_type {
+            if !content_type.contains("application/json")
+                && !content_type.contains("+json")
+            {
+                bail!(
+                    "Ожидался JSON от {final_url}, получен Content-Type: {content_type}"
+                );
+            }
+        }
+
+        serde_json::from_str(&body)
+            .with_context(|| format!("EDSM API вернул некорректный JSON для {final_url}"))
+    }
+
     /// Загружает только успешную HTML-страницу EDSM.
     ///
     /// Cloudflare challenge может возвращаться с HTTP 200, поэтому проверка
