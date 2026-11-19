@@ -155,7 +155,7 @@ fn retry_delay(
     retry_after: Option<&str>,
     attempt: u32,
 ) -> Option<Duration> {
-    let base_seconds = match status {
+    let base_seconds: u64 = match status {
         StatusCode::TOO_MANY_REQUESTS => 2,
         StatusCode::BAD_GATEWAY | StatusCode::SERVICE_UNAVAILABLE | StatusCode::GATEWAY_TIMEOUT => {
             1
