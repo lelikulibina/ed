@@ -185,7 +185,7 @@ async fn main() -> Result<()> {
 
     if results.len() < args.count && search.reached_search_limit() {
         eprintln!(
-            "⚠️ Достигнут лимит в 100 страниц Spansh (до 10 000 тел). Результаты могут быть неполными."
+            "⚠️ Достигнут технический предел пагинации Spansh. Результаты могут быть неполными."
         );
     }
 
