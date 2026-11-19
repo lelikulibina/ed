@@ -184,7 +184,7 @@ impl PlanetSearch {
             urlencoding::encode(&system.name),
             system.id
         );
-        let response = self.core.fetch_json(&url).await?;
+        let response = core.fetch_json(&url).await?;
         let bodies = response
             .get("bodies")
             .and_then(Value::as_array)
