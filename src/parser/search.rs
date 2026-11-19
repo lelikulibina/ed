@@ -193,16 +193,20 @@ impl PlanetSearch {
                 .get("name")
                 .or_else(|| candidate.get("system_name"))
                 .and_then(Value::as_str);
-            if !candidate_name.is_some_and(|name| {
-                name.eq_ignore_ascii_case(&self.params.commander_position)
-            }) {
+            if !candidate_name
+                .is_some_and(|name| name.eq_ignore_ascii_case(&self.params.commander_position))
+            {
                 continue;
             }
 
             let id64 = candidate
                 .get("id64")
-                .and_then(|value| value.as_u64().map(|id| id.to_string())
-                    .or_else(|| value.as_str().map(str::to_string)))
+                .and_then(|value| {
+                    value
+                        .as_u64()
+                        .map(|id| id.to_string())
+                        .or_else(|| value.as_str().map(str::to_string))
+                })
                 .context("Spansh нашёл систему, но не вернул её id64")?;
             let system = self
                 .core
@@ -315,9 +319,8 @@ impl PlanetSearch {
         let total_systems = response.get("count").and_then(Value::as_u64);
         if systems.is_empty()
             || systems.len() < SYSTEMS_PER_PAGE
-            || total_systems.is_some_and(|count| {
-                self.current_page * SYSTEMS_PER_PAGE >= count as usize
-            })
+            || total_systems
+                .is_some_and(|count| self.current_page * SYSTEMS_PER_PAGE >= count as usize)
         {
             self.finished = true;
         }
