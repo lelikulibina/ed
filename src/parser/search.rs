@@ -469,7 +469,7 @@ fn matches_body_filters(
 mod api_filter_tests {
     use super::{
         AtmosphereType, Coordinates, GravityRange, PlanetType, coordinates_from_edsm_response,
-        matches_body_filters,
+        coordinates_from_json, matches_body_filters,
     };
     use serde_json::json;
 
