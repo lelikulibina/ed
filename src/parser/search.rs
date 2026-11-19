@@ -372,3 +372,16 @@ mod api_filter_tests {
         ));
     }
 }
+
+
+#[cfg(test)]
+mod limit_tests {
+    use super::search_was_truncated;
+
+    #[test]
+    fn reports_truncation_only_when_unchecked_systems_remain() {
+        assert!(search_was_truncated(100, 100, 1000, 1200));
+        assert!(!search_was_truncated(100, 100, 1200, 1200));
+        assert!(!search_was_truncated(40, 100, 400, 1200));
+    }
+}
