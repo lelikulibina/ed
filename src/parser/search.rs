@@ -149,7 +149,7 @@ impl PlanetSearch {
 
     pub async fn next_page(&mut self) -> Result<Option<Vec<PlanetInfo>>> {
         const PAGE_SIZE: usize = 100;
-        const SEARCH_RADIUS_LY: f64 = 100.0;
+        const SEARCH_RADIUS_LY: f64 = 2500.0;
 
         if self.finished || self.current_page >= self.params.max_pages {
             return Ok(None);
