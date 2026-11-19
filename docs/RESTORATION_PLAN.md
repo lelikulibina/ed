@@ -30,7 +30,9 @@
 - [x] Добавлены тесты парсинга API-тел и фильтрации.
 - [x] HTML-поиск заменён JSON API-поиском.
 - [x] Ошибки HTTP и Cloudflare не преобразуются в пустую выдачу.
-- [ ] Выполнить `cargo fmt --check`, `cargo test`, `cargo clippy` в среде с доступом к crates.io/GitHub.
+- [x] `cargo fmt --all -- --check` — успешно.
+- [x] `cargo test --all-targets` — 8 тестов пройдены.
+- [ ] Выполнить `cargo clippy`.
 - [ ] Проверить реальный запрос к EDSM API и сравнить выборку с прежним HTML-поиском.
 
 ## Ссылки на документацию
