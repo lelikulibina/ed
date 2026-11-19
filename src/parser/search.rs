@@ -206,9 +206,9 @@ impl PlanetSearch {
             }
         }
 
-        // EDSM documents a limit of roughly 700 system-body requests per
-        // minute. This delay, combined with bounded concurrency below,
-        // keeps this client comfortably below that rate.
+        // Community clients report throttling around 700 system-body
+        // requests per minute. This delay and bounded concurrency keep
+        // this client comfortably below that reported rate.
         sleep(Duration::from_millis(500)).await;
         Ok(planets)
     }
@@ -253,6 +253,27 @@ impl PlanetSearch {
 
         Ok(Some(planets))
     }
+
+    /// Returns true when the configured batch limit stopped the scan while
+    /// more systems from the 100 ly sphere were still waiting.
+    pub fn reached_system_limit(&self) -> bool {
+        let total_systems = self.systems.as_ref().map_or(0, Vec::len);
+        search_was_truncated(
+            self.current_page,
+            self.params.max_pages,
+            self.current_system,
+            total_systems,
+        )
+    }
+}
+
+fn search_was_truncated(
+    current_page: usize,
+    max_pages: usize,
+    current_system: usize,
+    total_systems: usize,
+) -> bool {
+    current_page >= max_pages && current_system < total_systems
 }
 
 fn matches_body_filters(
