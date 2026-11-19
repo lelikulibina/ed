@@ -259,95 +259,43 @@ impl PlanetSearch {
             let system = self
                 .core
                 .fetch_json(&format!("https://spansh.co.uk/api/system/{id64}"))
-                .await
-                .context("Не удалось загрузить данные опорной системы из Spansh")?;
-            if let Some(coords) = coordinates_from_json(&system) {
-                return Ok(coords);
-            }
-        }
-
-        anyhow::bail!(
-            "Не удалось получить координаты опорной системы {} ни через EDSM, ни через Spansh. Ответ Spansh systems/search: {}; ответ autocomplete: {}",
-            self.params.commander_position,
-            system_lookup_response,
-            search_response
-        )
-    }
-
-    pub async fn next_page(&mut self) -> Result<Option<Vec<PlanetInfo>>> {
-        const SYSTEMS_PER_PAGE: usize = 10;
-        const SEARCH_RADIUS_LY: f64 = 2500.0;
-
-        if self.finished || self.current_page >= self.params.max_pages {
-            return Ok(None);
-        }
-
-        if self.reference_coords.is_none() {
-            self.reference_coords = Some(self.load_reference_coords().await?);
-        }
-
-        if self.current_page > 0 {
-            sleep(Duration::from_secs(1)).await;
-        }
-
-        let coords = self.reference_coords.expect("reference coordinates loaded");
-        let payload = json!({
-            "filters": {},
-            "sort": [{ "distance": { "direction": "asc" } }],
-            "size": SYSTEMS_PER_PAGE,
-            "page": self.current_page,
-            "reference_coords": {
-                "x": coords.x,
-                "y": coords.y,
-                "z": coords.z
-            }
-        });
-
-        let response = self
-            .core
-            .post_json("https://spansh.co.uk/api/systems/search", &payload)
-            .await?;
-        let systems = response
-            .get("results")
-            .and_then(Value::as_array)
-            .context("Spansh systems API вернул ответ без массива results")?;
-
-        let mut planets = Vec::new();
-        for system_summary in systems {
-            let distance = system_summary
-                .get("distance")
-                .and_then(Value::as_f64)
-                .context("Spansh systems API не вернул расстояние до системы")?;
-
-            if distance > SEARCH_RADIUS_LY {
-                self.finished = true;
-                break;
-            }
-
-            let id64 = system_summary
-                .get("id64")
-                .and_then(Value::as_u64)
-                .context("Spansh systems API вернул систему без id64")?;
-            let system = self
-                .core
-                .fetch_json(&format!("https://spansh.co.uk/api/system/{id64}"))
                 .await?;
-            let system_name = system
+            let system_record = system.get("record").unwrap_or(&system);
+            let system_name = system_record
                 .get("name")
                 .or_else(|| system_summary.get("name"))
                 .and_then(Value::as_str)
                 .context("Spansh system API вернул систему без имени")?
                 .to_string();
-            let bodies = system
+            let bodies = system_record
                 .get("bodies")
                 .and_then(Value::as_array)
                 .with_context(|| {
                     format!("Spansh system API вернул систему без массива bodies: {system}")
                 })?;
 
-            for body in bodies {
+            for body_summary in bodies {
+                if body_summary.get("type").and_then(Value::as_str) != Some("Planet") {
+                    continue;
+                }
+                let body_id64 = body_summary
+                    .get("id64")
+                    .and_then(Value::as_u64)
+                    .context("Spansh system API вернул планету без id64")?;
+                let body_response = self
+                    .core
+                    .fetch_json(&format!("https://spansh.co.uk/api/body/{body_id64}"))
+                    .await?;
+                let body_record = body_response.get("record").unwrap_or(&body_response);
+
+                let mut body_with_system = body_record.clone();
+                if let Some(object) = body_with_system.as_object_mut() {
+                    object
+                        .entry("system_name")
+                        .or_insert_with(|| Value::String(system_name.clone()));
+                }
                 if !matches_body_filters(
-                    body,
+                    &body_with_system,
                     self.params.planet_type,
                     self.params.atmosphere,
                     self.params.gravity,
@@ -355,12 +303,6 @@ impl PlanetSearch {
                     continue;
                 }
 
-                let mut body_with_system = body.clone();
-                if let Some(object) = body_with_system.as_object_mut() {
-                    object
-                        .entry("system_name")
-                        .or_insert_with(|| Value::String(system_name.clone()));
-                }
                 if let Some(planet) = parse_spansh_planet(&body_with_system)? {
                     planets.push(planet);
                 }
