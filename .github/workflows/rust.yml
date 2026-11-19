@@ -42,7 +42,7 @@ jobs:
           printf '%s' "$bodies" | jq -e '.results | map(select(.type == "Planet")) | length > 0'
           printf '%s' "$bodies" | jq '.results | map(select(.type == "Planet")) | .[0] | {name, type, subtype, is_landable, gravity, surface_temperature, surface_pressure, atmosphere}'
 
-      - name: Scenario test: scan nearby systems around Sol (first 3 landable planets)
+      - name: Scenario test nearby systems around Sol (first 3 landable planets)
         run: |
           timeout 20m cargo run --release -- \
             --temperature 0-5000 \
