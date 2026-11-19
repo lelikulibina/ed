@@ -1,4 +1,4 @@
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use serde_json::Value;
 
 #[derive(Debug, Clone)]
@@ -54,10 +54,6 @@ pub fn parse_api_planet(body: &Value) -> Result<Option<PlanetInfo>> {
     // The documented EDSM bodies API exposes discovery metadata, but does
     // not document a mapped flag. Preserve it only if the API supplies one.
     let is_mapped = body.get("isMapped").and_then(Value::as_bool);
-
-    if gravity.is_none() || surface_temp.is_none() {
-        bail!("EDSM API returned incomplete physical data for planet {name}");
-    }
 
     Ok(Some(PlanetInfo {
         name,
