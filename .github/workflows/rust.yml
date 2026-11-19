@@ -21,3 +21,20 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Run tests
         run: cargo test --all-targets
+
+      - name: Smoke test EDSM JSON API
+        run: |
+          systems="$(curl --fail --silent --show-error --get \
+            --data-urlencode "systemName=Sol" \
+            --data-urlencode "radius=1" \
+            --data-urlencode "showId=1" \
+            -H "User-Agent: ed-planet-search-ci/0.1.0" \
+            "https://www.edsm.net/api-v1/sphere-systems")"
+          system_name="$(printf '%s' "$systems" | jq -er '.[0].name')"
+          system_id="$(printf '%s' "$systems" | jq -er '.[0].id')"
+          curl --fail --silent --show-error --get \
+            --data-urlencode "systemName=$system_name" \
+            --data-urlencode "systemId=$system_id" \
+            -H "User-Agent: ed-planet-search-ci/0.1.0" \
+            "https://www.edsm.net/api-system-v1/bodies" \
+            | jq -e '.bodies | type == "array"'
