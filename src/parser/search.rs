@@ -183,8 +183,9 @@ impl PlanetSearch {
             .context("Не удалось найти опорную систему через EDSM и Spansh")?;
         let candidates = search_response
             .get("results")
+            .or_else(|| search_response.get("systems"))
             .and_then(Value::as_array)
-            .context("Spansh system autocomplete вернул ответ без results")?;
+            .with_context(|| format!("Spansh system autocomplete вернул неожиданный ответ: {search_response}"))?;
 
         for candidate in candidates {
             let candidate_name = candidate
@@ -217,8 +218,9 @@ impl PlanetSearch {
         }
 
         anyhow::bail!(
-            "Не удалось получить координаты опорной системы {} ни через EDSM, ни через Spansh",
-            self.params.commander_position
+            "Не удалось получить координаты опорной системы {} ни через EDSM, ни через Spansh. Ответ Spansh search: {}",
+            self.params.commander_position,
+            search_response
         )
     }
 
