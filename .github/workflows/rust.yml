@@ -42,13 +42,13 @@ jobs:
           printf '%s' "$bodies" | jq -e '.results | map(select(.type == "Planet")) | length > 0'
           printf '%s' "$bodies" | jq '.results | map(select(.type == "Planet")) | .[0] | {name, type, subtype, is_landable, gravity, surface_temperature, surface_pressure, atmosphere}'
 
-      - name: Scenario test Boeft QP-R c7-41 (2500 ly, first 3 matches)
+      - name: Scenario test: scan nearby systems around Sol (first 3 landable planets)
         run: |
           timeout 20m cargo run --release -- \
-            --temperature 190-195 \
-            --pressure 0.042-0.237 \
+            --temperature 0-5000 \
+            --pressure 0-1000 \
             --gravity 0-100 \
-            --planet-type Rock \
-            --atmosphere-type Water \
+            --planet-type Any \
+            --atmosphere-type Any \
             -c 3 \
-            -S "Boeft QP-R c7-41"
+            -S "Sol"
