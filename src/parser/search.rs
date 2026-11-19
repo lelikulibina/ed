@@ -279,7 +279,9 @@ fn matches_body_filters(
         PlanetType::RockyBody => subtype.contains("rocky body"),
         PlanetType::IcyBody => subtype.contains("icy body"),
         PlanetType::RockyIceWorld => subtype.contains("rocky ice"),
-        PlanetType::HighMetalContentWorld => subtype.contains("high metal content"),
+        PlanetType::HighMetalContentWorld => {
+            subtype.contains("high metal content") || subtype.contains("metal rich")
+        },
     };
     if !matches_planet_type {
         return false;
