@@ -390,6 +390,7 @@ dependencies = [
  "indicatif",
  "reqwest",
  "scraper",
+ "serde_json",
  "tokio",
  "urlencoding",
 ]
