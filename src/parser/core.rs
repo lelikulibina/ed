@@ -144,7 +144,9 @@ fn looks_like_cloudflare_challenge(body: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::looks_like_cloudflare_challenge;
+    use super::{looks_like_cloudflare_challenge, retry_delay};
+    use reqwest::StatusCode;
+    use std::time::Duration;
 
     #[test]
     fn detects_common_cloudflare_challenge_markers() {
@@ -154,6 +156,34 @@ mod tests {
         assert!(looks_like_cloudflare_challenge(
             "<div id='cf-browser-verification'>Checking your browser</div>"
         ));
+    }
+
+    #[test]
+    fn retries_transient_edsm_statuses_with_backoff() {
+        assert_eq!(
+            retry_delay(StatusCode::SERVICE_UNAVAILABLE, None, 0),
+            Some(Duration::from_secs(1))
+        );
+        assert_eq!(
+            retry_delay(StatusCode::SERVICE_UNAVAILABLE, None, 2),
+            Some(Duration::from_secs(4))
+        );
+        assert_eq!(
+            retry_delay(StatusCode::TOO_MANY_REQUESTS, None, 0),
+            Some(Duration::from_secs(2))
+        );
+    }
+
+    #[test]
+    fn respects_retry_after_seconds_and_ignores_permanent_errors() {
+        assert_eq!(
+            retry_delay(StatusCode::SERVICE_UNAVAILABLE, Some("7"), 0),
+            Some(Duration::from_secs(7))
+        );
+        assert_eq!(
+            retry_delay(StatusCode::BAD_REQUEST, Some("7"), 0),
+            None
+        );
     }
 
     #[test]
