@@ -183,9 +183,7 @@ async fn main() -> Result<()> {
     pb.finish_and_clear();
 
     if results.len() < args.count && search.reached_system_limit() {
-        eprintln!(
-            "⚠️ Достигнут лимит проверки 1000 систем. Результаты могут быть неполными."
-        );
+        eprintln!("⚠️ Достигнут лимит проверки 1000 систем. Результаты могут быть неполными.");
     }
 
     if results.is_empty() {
