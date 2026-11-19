@@ -1,92 +1,72 @@
-use crate::parser::core::ParserCore;
-use anyhow::{Result, bail};
-use scraper::Selector;
+use anyhow::{Context, Result, bail};
+use serde_json::Value;
 
 #[derive(Debug, Clone)]
 pub struct PlanetInfo {
     pub name: String,
-    pub is_mapped: bool,
+    /// None means the API does not provide a mapping status for this body.
+    pub is_mapped: Option<bool>,
     pub surface_temp: Option<i32>,
+    /// Gravity in Earth gravities (g).
     pub gravity: Option<f32>,
     pub atmosphere: Option<String>,
+    /// Surface pressure in atmospheres.
     pub pressure: Option<f32>,
 }
 
-fn parse_float(value: &str) -> Option<f32> {
-    value
-        .split_whitespace()
-        .next()?
-        .replace(',', ".")
-        .parse::<f32>()
-        .ok()
-}
-
-fn parse_int(value: &str) -> Option<i32> {
-    value
-        .split_whitespace()
-        .next()?
-        .replace(',', ".")
-        .parse::<i32>()
-        .ok()
-}
-
-pub async fn parse_planet(core: &ParserCore, url: &str, name: &str) -> Result<PlanetInfo> {
-    let doc = core.fetch_html(url).await?;
-    let row_sel = Selector::parse(".row").expect("valid static selector");
-    let col4_sel = Selector::parse(".col-lg-4").expect("valid static selector");
-    let col8_sel = Selector::parse(".col-lg-8").expect("valid static selector");
-
-    let mut info = PlanetInfo {
-        name: name.to_string(),
-        is_mapped: false,
-        surface_temp: None,
-        gravity: None,
-        atmosphere: None,
-        pressure: None,
-    };
-    let mut recognized_fields = 0usize;
-
-    for row in doc.select(&row_sel) {
-        let label = row.select(&col4_sel).next();
-        let value = row.select(&col8_sel).next();
-
-        if let (Some(label), Some(value)) = (label, value) {
-            let key = label.text().collect::<String>().trim().to_string();
-            let val = value.text().collect::<String>().trim().to_string();
-
-            match key.as_str() {
-                "First mapped for EDSM by:" => {
-                    info.is_mapped = true;
-                    recognized_fields += 1;
-                }
-                "Surface temperature:" => {
-                    info.surface_temp = parse_int(&val);
-                    recognized_fields += 1;
-                }
-                "Surface pressure:" => {
-                    info.pressure = parse_float(&val);
-                    recognized_fields += 1;
-                }
-                "Gravity:" => {
-                    info.gravity = parse_float(&val);
-                    recognized_fields += 1;
-                }
-                "Atmosphere:" => {
-                    info.atmosphere = Some(val);
-                    recognized_fields += 1;
-                }
-                _ => {}
-            }
-        }
+/// Converts one EDSM API body into the values used by the CLI.
+///
+/// EDSM reports gravity in m/s² and pressure in pascals. The CLI has
+/// historically accepted/displayed Earth gravities and atmospheres.
+pub fn parse_api_planet(body: &Value) -> Result<Option<PlanetInfo>> {
+    if body.get("type").and_then(Value::as_str) != Some("Planet")
+        || body.get("isLandable").and_then(Value::as_bool) != Some(true)
+    {
+        return Ok(None);
     }
 
-    if recognized_fields == 0 {
-        bail!(
-            "Страница планеты {name} не содержит ожидаемых полей EDSM; возможно, изменилась HTML-разметка или язык страницы ({url})"
-        );
+    let name = body
+        .get("name")
+        .and_then(Value::as_str)
+        .context("EDSM API returned a landable planet without a name")?
+        .to_string();
+
+    let gravity = body
+        .get("gravity")
+        .and_then(Value::as_f64)
+        .map(|value| (value / 9.80665) as f32);
+
+    let pressure = body
+        .get("surfacePressure")
+        .and_then(Value::as_f64)
+        .map(|value| (value / 101_325.0) as f32);
+
+    let surface_temp = body
+        .get("surfaceTemperature")
+        .and_then(Value::as_f64)
+        .map(|value| value as i32);
+
+    let atmosphere = body
+        .get("atmosphereType")
+        .and_then(Value::as_str)
+        .map(str::to_string);
+
+    // The documented EDSM bodies API exposes discovery metadata, but does
+    // not document a mapped flag. Preserve it only if the API supplies one.
+    let is_mapped = body.get("isMapped").and_then(Value::as_bool);
+
+    if gravity.is_none() || surface_temp.is_none() {
+        bail!("EDSM API returned incomplete physical data for planet {name}");
     }
 
-    Ok(info)
+    Ok(Some(PlanetInfo {
+        name,
+        is_mapped,
+        surface_temp,
+        gravity,
+        atmosphere,
+        pressure,
+    }))
 }
 
 #[cfg(test)]
@@ -135,6 +115,8 @@ mod tests {
             "type": "Planet",
             "name": "Example 1",
             "isLandable": true,
+            "gravity": 9.80665,
+            "surfaceTemperature": 250,
             "isMapped": true
         });
 
