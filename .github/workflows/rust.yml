@@ -1,0 +1,54 @@
+name: Rust checks
+
+on:
+  push:
+    branches:
+      - main
+      - "fix/**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run tests
+        run: cargo test --all-targets
+      - name: Run Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Smoke test Spansh body search
+        run: |
+          system="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
+            -H "User-Agent: ed-planet-search-ci/0.1.0" \
+            "https://www.edsm.net/api-v1/system?systemName=Sol&showCoordinates=1")"
+          x="$(printf '%s' "$system" | jq -er '.coords.x')"
+          y="$(printf '%s' "$system" | jq -er '.coords.y')"
+          z="$(printf '%s' "$system" | jq -er '.coords.z')"
+          payload="$(jq -n --argjson x "$x" --argjson y "$y" --argjson z "$z" \
+            '{filters:{},sort:[{distance:{direction:"asc"}}],size:100,page:0,reference_coords:{x:$x,y:$y,z:$z}}')"
+          bodies="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 20 --retry 2 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
+            -H "User-Agent: ed-planet-search-ci/0.1.0" \
+            -H "Content-Type: application/json" \
+            --data "$payload" \
+            "https://spansh.co.uk/api/bodies/search")"
+          printf '%s' "$bodies" | jq -e '.results | map(select(.type == "Planet")) | length > 0'
+          printf '%s' "$bodies" | jq '.results | map(select(.type == "Planet")) | .[0] | {name, type, subtype, is_landable, gravity, surface_temperature, surface_pressure, atmosphere}'
+
+      - name: Scenario test Boeft QP-R c7-41 (2500 ly, first 3 matches)
+        run: |
+          timeout 20m cargo run --release -- \
+            --temperature 190-195 \
+            --pressure 0.042-0.237 \
+            --gravity 0-100 \
+            --planet-type Rock \
+            --atmosphere-type Water \
+            -c 3 \
+            -S "Boeft QP-R c7-41"

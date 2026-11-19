@@ -386,10 +386,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "futures",
  "indicatif",
  "reqwest",
  "scraper",
+ "serde_json",
  "tokio",
  "urlencoding",
 ]

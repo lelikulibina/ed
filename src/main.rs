@@ -2,13 +2,11 @@ mod parser;
 
 use parser::{
     core::ParserCore,
-    planet::parse_planet,
     search::{AtmosphereType, GravityRange, PlanetSearch, PlanetSearchParams, PlanetType},
 };
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
-use futures::stream::{self, StreamExt};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashSet;
 use std::time::Duration;
@@ -24,7 +22,7 @@ struct Args {
     #[arg(
         short = 'S',
         long,
-        help = "Название сектора в котором будет производится поиск. Например: \"Col 285 Sector BQ-Y d40\""
+        help = "Название опорной звёздной системы, например: \"Col 285 Sector BQ-Y d40\". Поиск выполняется в радиусе 2500 св. лет."
     )]
     system: String,
 
@@ -70,7 +68,7 @@ struct Args {
     #[arg(
         short = 'g',
         long,
-        default_value = "0.1-1.0",
+        default_value = "0.0-100.0",
         help = "Диапазон гравитации на планете (float). Формат: min-max"
     )]
     gravity: String,
@@ -138,40 +136,41 @@ async fn main() -> Result<()> {
     let mut search = PlanetSearch::new(core.clone(), params);
     let mut seen = HashSet::new();
     let mut results = Vec::new();
+    let mut mapping_status_unknown = false;
 
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::with_template("{spinner:.green} {msg}")?.tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏ "));
     pb.enable_steady_tick(Duration::from_millis(125));
 
     while let Some(planets) = search.next_page().await? {
-        pb.set_message(format!("Собираю данные о близлежащих системах... Найдено соответствий по заданным фильтрам: {}", results.len()));
+        pb.set_message(format!(
+            "Ищу планеты через Spansh API... Найдено соответствий по заданным фильтрам: {}",
+            results.len()
+        ));
 
-        let unique: Vec<_> = planets
-            .into_iter()
-            .filter(|p| seen.insert(p.name.clone()))
-            .collect();
+        for planet in planets {
+            let planet_key = format!("{}::{}", planet.system_name, planet.name);
+            if !seen.insert(planet_key) {
+                continue;
+            }
 
-        let parsed = stream::iter(unique)
-            .map(|p| {
-                let core = core.clone();
-                async move { parse_planet(&core, &p.url, &p.name).await.ok() }
-            })
-            .buffer_unordered(10)
-            .collect::<Vec<_>>()
-            .await;
+            if planet.is_mapped == Some(true) {
+                continue;
+            }
+            if planet.is_mapped.is_none() {
+                mapping_status_unknown = true;
+            }
 
-        for planet in parsed.into_iter().flatten() {
             let fits_f32 =
-                |opt: Option<f32>, min: f32, max: f32| opt.map_or(false, |v| v >= min && v <= max);
+                |opt: Option<f32>, min: f32, max: f32| opt.is_some_and(|v| v >= min && v <= max);
             let fits_i32 =
-                |opt: Option<i32>, min: i32, max: i32| opt.map_or(false, |v| v >= min && v <= max);
+                |opt: Option<i32>, min: i32, max: i32| opt.is_some_and(|v| v >= min && v <= max);
 
             if fits_f32(planet.gravity, gmin, gmax)
                 && fits_f32(planet.pressure, pmin, pmax)
                 && fits_i32(planet.surface_temp, tmin, tmax)
-                && !planet.is_mapped
             {
-                results.push(planet.clone());
+                results.push(planet);
                 if results.len() >= args.count {
                     break;
                 }
@@ -182,22 +181,35 @@ async fn main() -> Result<()> {
             break;
         }
     }
-
     pb.finish_and_clear();
 
+    if results.len() < args.count && search.reached_search_limit() {
+        eprintln!(
+            "⚠️ Достигнут лимит в 100 страниц Spansh (до 10 000 тел). Результаты могут быть неполными."
+        );
+    }
+
     if results.is_empty() {
-        println!("❌ Не найдено подходящих планет.");
+        println!("❌ Не найдено подходящих планет в проверенных системах.");
     } else {
         println!("\nСписок найденных планет:\n");
         for p in results {
             println!(
-                "• {}\n  Температура: {:.1?}\n  Давление: {:.3?}\n  Гравитация: {:.3?}\n",
+                "• {} — {}\n  Атмосфера: {}\n  Температура: {:.1?}\n  Давление: {:.3?}\n  Гравитация: {:.3?}\n",
+                p.system_name,
                 p.name,
+                p.atmosphere.as_deref().unwrap_or("не указана"),
                 p.surface_temp.unwrap_or_default(),
                 p.pressure.unwrap_or_default(),
                 p.gravity.unwrap_or_default()
             );
         }
+    }
+
+    if mapping_status_unknown {
+        eprintln!(
+            "⚠️ EDSM API не предоставляет подтверждённый статус картографирования планет. Планеты с неизвестным статусом включены в результаты; проверьте их в игре перед посещением."
+        );
     }
 
     Ok(())
