@@ -62,12 +62,8 @@ impl ParserCore {
         }
 
         if let Some(content_type) = content_type {
-            if !content_type.contains("application/json")
-                && !content_type.contains("+json")
-            {
-                bail!(
-                    "Ожидался JSON от {final_url}, получен Content-Type: {content_type}"
-                );
+            if !content_type.contains("application/json") && !content_type.contains("+json") {
+                bail!("Ожидался JSON от {final_url}, получен Content-Type: {content_type}");
             }
         }
 
