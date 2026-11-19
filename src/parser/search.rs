@@ -96,11 +96,11 @@ pub struct PlanetSearchParams {
     pub planet_type: PlanetType,
     pub atmosphere: AtmosphereType,
     pub gravity: GravityRange,
-    /// Number of Spansh result pages to inspect (100 bodies per page).
+    /// Maximum number of Spansh result pages to inspect.
     pub max_pages: usize,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 struct Coordinates {
     x: f64,
     y: f64,
@@ -113,6 +113,20 @@ fn coordinates_from_json(value: &Value) -> Option<Coordinates> {
         x: coords.get("x")?.as_f64()?,
         y: coords.get("y")?.as_f64()?,
         z: coords.get("z")?.as_f64()?,
+    })
+}
+
+fn coordinates_from_edsm_response(value: &Value, system_name: &str) -> Option<Coordinates> {
+    if let Some(coords) = coordinates_from_json(value) {
+        return Some(coords);
+    }
+
+    value.as_array()?.iter().find_map(|system| {
+        let name = system.get("name").and_then(Value::as_str)?;
+        if !name.eq_ignore_ascii_case(system_name) {
+            return None;
+        }
+        coordinates_from_json(system)
     })
 }
 
@@ -136,15 +150,34 @@ impl PlanetSearch {
     }
 
     async fn load_reference_coords(&self) -> Result<Coordinates> {
-        let url = format!(
-            "https://www.edsm.net/api-v1/system?systemName={}&showCoordinates=1",
-            urlencoding::encode(&self.params.commander_position)
+        let encoded_name = urlencoding::encode(&self.params.commander_position);
+        let singular_url = format!(
+            "https://www.edsm.net/api-v1/system?systemName={encoded_name}&showCoordinates=1"
         );
-        let response = self.core.fetch_json(&url).await?;
-        coordinates_from_json(&response).context(format!(
-            "EDSM не вернул координаты опорной системы {}",
+
+        if let Ok(response) = self.core.fetch_json(&singular_url).await
+            && let Some(coords) =
+                coordinates_from_edsm_response(&response, &self.params.commander_position)
+        {
+            return Ok(coords);
+        }
+
+        // The plural endpoint can return an array of systems; use it as a
+        // fallback when the singular endpoint has no coordinates for a name.
+        let plural_url = format!(
+            "https://www.edsm.net/api-v1/systems?systemName={encoded_name}&showCoordinates=1"
+        );
+        if let Ok(response) = self.core.fetch_json(&plural_url).await
+            && let Some(coords) =
+                coordinates_from_edsm_response(&response, &self.params.commander_position)
+        {
+            return Ok(coords);
+        }
+
+        anyhow::bail!(
+            "Не удалось получить координаты опорной системы {} ни через EDSM system, ни через EDSM systems API",
             self.params.commander_position
-        ))
+        )
     }
 
     pub async fn next_page(&mut self) -> Result<Option<Vec<PlanetInfo>>> {
@@ -193,8 +226,8 @@ impl PlanetSearch {
                 .and_then(Value::as_f64)
                 .context("Spansh API не вернул расстояние до тела")?;
 
-            // Results are sorted by distance, so no later page can be inside
-            // the requested radius once this boundary has been crossed.
+            // Results are sorted by distance. Once the radius is crossed,
+            // every following page is outside the search area.
             if distance > SEARCH_RADIUS_LY {
                 self.finished = true;
                 break;
@@ -304,8 +337,44 @@ fn matches_body_filters(
 
 #[cfg(test)]
 mod api_filter_tests {
-    use super::{AtmosphereType, GravityRange, PlanetType, matches_body_filters};
+    use super::{
+        AtmosphereType, Coordinates, GravityRange, PlanetType, coordinates_from_edsm_response,
+        matches_body_filters,
+    };
     use serde_json::json;
+
+    #[test]
+    fn reads_coordinates_from_singular_edsm_system_response() {
+        let response = json!({
+            "name": "Sol",
+            "coords": {"x": 0.0, "y": 0.0, "z": 0.0}
+        });
+        assert_eq!(
+            coordinates_from_edsm_response(&response, "Sol"),
+            Some(Coordinates { x: 0.0, y: 0.0, z: 0.0 })
+        );
+    }
+
+    #[test]
+    fn reads_exact_named_system_from_plural_edsm_response() {
+        let response = json!([
+            {"name": "Boeft QP-R c7-41", "coords": {"x": 12.5, "y": -3.0, "z": 8.25}},
+            {"name": "Boeft QP-R c7-410", "coords": {"x": 99.0, "y": 99.0, "z": 99.0}}
+        ]);
+        assert_eq!(
+            coordinates_from_edsm_response(&response, "Boeft QP-R c7-41"),
+            Some(Coordinates { x: 12.5, y: -3.0, z: 8.25 })
+        );
+    }
+
+    #[test]
+    fn ignores_non_matching_systems_and_missing_coordinates() {
+        let response = json!([
+            {"name": "Other system", "coords": {"x": 1.0, "y": 2.0, "z": 3.0}},
+            {"name": "Boeft QP-R c7-41"}
+        ]);
+        assert_eq!(coordinates_from_edsm_response(&response, "Boeft QP-R c7-41"), None);
+    }
 
     #[test]
     fn matches_spansh_subtype_atmosphere_and_earth_gravity() {
