@@ -240,3 +240,46 @@ impl PlanetSearch {
         }
     }
 }
+
+
+#[cfg(test)]
+mod api_filter_tests {
+    use super::{matches_body_filters, AtmosphereType, GravityRange, PlanetType};
+    use serde_json::json;
+
+    #[test]
+    fn matches_edsm_subtype_atmosphere_and_earth_gravity() {
+        let body = json!({
+            "type": "Planet",
+            "isLandable": true,
+            "subType": "Rocky body",
+            "atmosphereType": "Thin ammonia atmosphere",
+            "gravity": 9.80665
+        });
+
+        assert!(matches_body_filters(
+            &body,
+            PlanetType::RockyBody,
+            AtmosphereType::Ammonia,
+            GravityRange { min: 0.9, max: 1.1 }
+        ));
+    }
+
+    #[test]
+    fn rejects_wrong_atmosphere_and_gravity() {
+        let body = json!({
+            "type": "Planet",
+            "isLandable": true,
+            "subType": "Rocky body",
+            "atmosphereType": "Thin ammonia atmosphere",
+            "gravity": 19.6133
+        });
+
+        assert!(!matches_body_filters(
+            &body,
+            PlanetType::RockyBody,
+            AtmosphereType::Water,
+            GravityRange { min: 0.9, max: 1.1 }
+        ));
+    }
+}
