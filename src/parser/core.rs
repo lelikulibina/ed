@@ -159,7 +159,7 @@ fn retry_delay(
         StatusCode::TOO_MANY_REQUESTS => 2,
         StatusCode::BAD_GATEWAY | StatusCode::SERVICE_UNAVAILABLE | StatusCode::GATEWAY_TIMEOUT => {
             1
-        },
+        }
         _ => return None,
     };
 
