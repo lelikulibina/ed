@@ -11,16 +11,15 @@ pub struct ParserCore {
 
 impl ParserCore {
     pub fn new() -> Result<Self> {
+        let mut headers = header::HeaderMap::new();
+        headers.insert(
+            header::ACCEPT,
+            header::HeaderValue::from_static("text/html,application/xhtml+xml"),
+        );
+
         let client = Client::builder()
             .user_agent(concat!("ed-planet-search/", env!("CARGO_PKG_VERSION")))
-            .default_headers({
-                let mut headers = header::HeaderMap::new();
-                headers.insert(
-                    header::ACCEPT,
-                    header::HeaderValue::from_static("text/html,application/xhtml+xml"),
-                );
-                headers
-            })
+            .default_headers(headers)
             .connect_timeout(Duration::from_secs(10))
             .timeout(Duration::from_secs(30))
             .build()
@@ -56,7 +55,7 @@ impl ParserCore {
 
         if looks_like_cloudflare_challenge(&body) {
             bail!(
-                "EDSM вернул страницу проверки Cloudflare вместо данных ({final_url}, HTTP {status}).                  Автоматический доступ временно ограничен; повторите попытку позже."
+                "EDSM вернул страницу проверки Cloudflare вместо данных ({final_url}, HTTP {status}). Автоматический доступ ограничен; повторите попытку позже."
             );
         }
 
