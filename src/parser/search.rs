@@ -351,7 +351,11 @@ mod api_filter_tests {
         });
         assert_eq!(
             coordinates_from_edsm_response(&response, "Sol"),
-            Some(Coordinates {\n                x: 0.0,\n                y: 0.0,\n                z: 0.0\n            })
+            Some(Coordinates {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0
+            })
         );
     }
 
@@ -363,7 +367,11 @@ mod api_filter_tests {
         ]);
         assert_eq!(
             coordinates_from_edsm_response(&response, "Boeft QP-R c7-41"),
-            Some(Coordinates {\n                x: 12.5,\n                y: -3.0,\n                z: 8.25\n            })
+            Some(Coordinates {
+                x: 12.5,
+                y: -3.0,
+                z: 8.25
+            })
         );
     }
 
@@ -373,7 +381,10 @@ mod api_filter_tests {
             {"name": "Other system", "coords": {"x": 1.0, "y": 2.0, "z": 3.0}},
             {"name": "Boeft QP-R c7-41"}
         ]);
-        assert_eq!(\n            coordinates_from_edsm_response(&response, "Boeft QP-R c7-41"),\n            None\n        );
+        assert_eq!(
+            coordinates_from_edsm_response(&response, "Boeft QP-R c7-41"),
+            None
+        );
     }
 
     #[test]
