@@ -384,6 +384,12 @@ mod api_filter_tests {
             &body,
             PlanetType::RockyBody,
             AtmosphereType::Water,
+            GravityRange { min: 0.9, max: 2.1 }
+        ));
+        assert!(!matches_body_filters(
+            &body,
+            PlanetType::RockyBody,
+            AtmosphereType::Ammonia,
             GravityRange { min: 0.9, max: 1.1 }
         ));
     }
