@@ -26,7 +26,8 @@ jobs:
         run: |
           cube="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
             -H "User-Agent: ed-planet-search-ci/0.1.0" \
-            "https://www.edsm.net/api-v1/cube-systems?systemName=Sol&size=100&showId=1&showCoordinates=1")"
+            --request POST --data-urlencode "systemName=Sol" --data-urlencode "size=100" --data-urlencode "showId=1" --data-urlencode "showCoordinates=1" \
+            "https://www.edsm.net/api-v1/cube-systems")"
           printf '%s' "$cube" | jq -e 'type == "array" and length > 0 and .[0].coords.x'
           bodies="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 --retry 3 --retry-all-errors --retry-delay 2 --retry-max-time 30 \
             -H "User-Agent: ed-planet-search-ci/0.1.0" \
