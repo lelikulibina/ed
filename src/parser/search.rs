@@ -264,8 +264,9 @@ impl PlanetSearch {
         }
 
         anyhow::bail!(
-            "Не удалось получить координаты опорной системы {} ни через EDSM, ни через Spansh. Ответ Spansh search: {}",
+            "Не удалось получить координаты опорной системы {} ни через EDSM, ни через Spansh. Ответ Spansh systems/search: {}; ответ autocomplete: {}",
             self.params.commander_position,
+            system_lookup_response,
             search_response
         )
     }
