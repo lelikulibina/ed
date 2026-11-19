@@ -1,33 +1,20 @@
-use crate::parser::core::ParserCore;
-use anyhow::Result;
-use scraper::Selector;
-
-#[derive(Debug)]
-pub struct BodyLink {
-    pub name: String,
-    pub url: String,
-}
+use crate::parser::{core::ParserCore, planet::parse_api_planet, planet::PlanetInfo};
+use anyhow::{Context, Result, bail};
+use futures::stream::{self, StreamExt};
+use serde_json::Value;
+use std::time::Duration;
+use tokio::time::sleep;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PlanetType {
     Any,
-    RockyBody,             // 11
-    IcyBody,               // 21
-    RockyIceWorld,         // 12
-    HighMetalContentWorld, // 2
+    RockyBody,
+    IcyBody,
+    RockyIceWorld,
+    HighMetalContentWorld,
 }
 
 impl PlanetType {
-    pub fn to_code(&self) -> u16 {
-        match self {
-            PlanetType::Any => 255,
-            PlanetType::RockyBody => 11,
-            PlanetType::IcyBody => 21,
-            PlanetType::RockyIceWorld => 12,
-            PlanetType::HighMetalContentWorld => 2,
-        }
-    }
-
     pub fn from_str(s: &str) -> Option<Self> {
         let norm = s.trim().to_lowercase();
         if norm.is_empty() || norm == "any" {
@@ -49,47 +36,25 @@ impl PlanetType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AtmosphereType {
     Any,
-    Ammonia,           // 3
-    Water,             // 4
-    CarbonDioxide,     // 5
-    SulphurDioxide,    // 6
-    Nitrogen,          // 7
-    WaterRich,         // 8
-    MethaneRich,       // 9
-    CarbonDioxideRich, // 11
-    Methane,           // 12
-    Helium,            // 13
-    SilicateVapour,    // 14
-    NeonRich,          // 16
-    ArgonRich,         // 17
-    Neon,              // 18
-    Argon,             // 19
-    Oxygen,            // 20
+    Ammonia,
+    Water,
+    CarbonDioxide,
+    SulphurDioxide,
+    Nitrogen,
+    WaterRich,
+    MethaneRich,
+    CarbonDioxideRich,
+    Methane,
+    Helium,
+    SilicateVapour,
+    NeonRich,
+    ArgonRich,
+    Neon,
+    Argon,
+    Oxygen,
 }
 
 impl AtmosphereType {
-    pub fn to_code(&self) -> u8 {
-        match self {
-            AtmosphereType::Any => 255, // использовать как "без фильтра"
-            AtmosphereType::Ammonia => 3,
-            AtmosphereType::Water => 4,
-            AtmosphereType::CarbonDioxide => 5,
-            AtmosphereType::SulphurDioxide => 6,
-            AtmosphereType::Nitrogen => 7,
-            AtmosphereType::WaterRich => 8,
-            AtmosphereType::MethaneRich => 9,
-            AtmosphereType::CarbonDioxideRich => 11,
-            AtmosphereType::Methane => 12,
-            AtmosphereType::Helium => 13,
-            AtmosphereType::SilicateVapour => 14,
-            AtmosphereType::NeonRich => 16,
-            AtmosphereType::ArgonRich => 17,
-            AtmosphereType::Neon => 18,
-            AtmosphereType::Argon => 19,
-            AtmosphereType::Oxygen => 20,
-        }
-    }
-
     pub fn from_str(s: &str) -> Option<Self> {
         let norm = s.trim().to_lowercase();
         if norm.is_empty() || norm == "any" {
@@ -132,115 +97,227 @@ pub struct PlanetSearchParams {
     pub planet_type: PlanetType,
     pub atmosphere: AtmosphereType,
     pub gravity: GravityRange,
+    /// Number of batches of nearby systems to inspect. Each batch contains
+    /// up to ten systems, ordered by distance from the reference system.
     pub max_pages: usize,
 }
 
-impl PlanetSearchParams {
-    fn base_url(&self) -> String {
-        let sector = self
-            .commander_position
-            .split_whitespace()
-            .next()
-            .unwrap_or(&self.commander_position);
-
-        format!(
-            "https://www.edsm.net/search/bodies/index/\
-             atmosphere/{}/cmdrPosition/{}/filterBy/onlyScanned/\
-             gravity/{:.1}%2C{:.1}/group/2/isLandable/1/name/{}/\
-             solidComposition/2/solidComposition/3/\
-             sortBy/distanceToArrivalASC/type/{}",
-            self.atmosphere.to_code(),
-            urlencoding::encode(&self.commander_position),
-            self.gravity.min,
-            self.gravity.max,
-            urlencoding::encode(sector),
-            self.planet_type.to_code()
-        )
-    }
-
-    #[allow(dead_code)]
-    fn extract_sector(full: &str) -> &str {
-        let mut pos = 0;
-        let mut iter = full.split_whitespace().peekable();
-
-        while let Some(word) = iter.next() {
-            if Self::looks_like_code(word) {
-                return &full[..pos.max(1) - 1];
-            }
-
-            pos += word.len() + 1;
-        }
-
-        full
-    }
-
-    fn looks_like_code(w: &str) -> bool {
-        let mut parts = w.split('-');
-
-        let left = parts.next().unwrap_or("");
-        let right = parts.next().unwrap_or("");
-
-        // формат: <буквы>-<буквы/цифры>
-        !right.is_empty()
-            && left.chars().all(|c| c.is_ascii_alphabetic())
-            && right.chars().all(|c| c.is_ascii_alphanumeric())
-    }
-}
-
-async fn parse_table_page(core: &ParserCore, url: &str, page: usize) -> Result<Vec<BodyLink>> {
-    let document = core.fetch_html(&format!("{}/p/{}", url, page)).await?;
-    let selector = Selector::parse("td a strong").unwrap();
-
-    Ok(document
-        .select(&selector)
-        .filter_map(|el| {
-            let parent = el.parent()?.value().as_element()?;
-            let href = parent.attr("href")?;
-            (href.contains("/system/bodies/")).then(|| BodyLink {
-                name: el.text().collect::<Vec<_>>().join(" ").trim().to_string(),
-                url: format!("https://www.edsm.net{}", href),
-            })
-        })
-        .collect())
+#[derive(Debug, Clone)]
+struct SystemRef {
+    name: String,
+    id: u64,
+    distance: f64,
 }
 
 pub struct PlanetSearch {
     core: ParserCore,
-    base_url: String,
+    params: PlanetSearchParams,
+    systems: Option<Vec<SystemRef>>,
+    current_system: usize,
     current_page: usize,
     finished: bool,
-    max_pages: usize,
 }
 
 impl PlanetSearch {
     pub fn new(core: ParserCore, params: PlanetSearchParams) -> Self {
         Self {
-            base_url: params.base_url(),
             core,
+            params,
+            systems: None,
+            current_system: 0,
             current_page: 0,
             finished: false,
-            max_pages: params.max_pages,
         }
     }
 
-    pub async fn next_page(&mut self) -> Result<Option<Vec<BodyLink>>> {
-        if self.finished || self.current_page >= self.max_pages {
+    async fn load_systems(&self) -> Result<Vec<SystemRef>> {
+        let url = format!(
+            "https://www.edsm.net/api-v1/sphere-systems?systemName={}&radius=100&showId=1",
+            urlencoding::encode(&self.params.commander_position)
+        );
+        let response = self.core.fetch_json(&url).await?;
+        let entries = response
+            .as_array()
+            .context("EDSM sphere-systems API вернул ответ не в виде массива")?;
+
+        let mut systems = Vec::with_capacity(entries.len());
+        for entry in entries {
+            let Some(name) = entry.get("name").and_then(Value::as_str) else {
+                continue;
+            };
+            let Some(id) = entry.get("id").and_then(Value::as_u64) else {
+                bail!("EDSM не вернул ID для системы {name}; невозможно однозначно запросить её тела");
+            };
+            systems.push(SystemRef {
+                name: name.to_string(),
+                id,
+                distance: entry
+                    .get("distance")
+                    .and_then(Value::as_f64)
+                    .unwrap_or(f64::MAX),
+            });
+        }
+
+        systems.sort_by(|left, right| {
+            left.distance
+                .partial_cmp(&right.distance)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        if systems.is_empty() {
+            bail!(
+                "EDSM API не нашёл систем в радиусе 100 св. лет от {}",
+                self.params.commander_position
+            );
+        }
+
+        Ok(systems)
+    }
+
+    async fn load_system_bodies(&self, system: SystemRef) -> Result<Vec<PlanetInfo>> {
+        let url = format!(
+            "https://www.edsm.net/api-system-v1/bodies?systemName={}&systemId={}",
+            urlencoding::encode(&system.name),
+            system.id
+        );
+        let response = self.core.fetch_json(&url).await?;
+        let bodies = response
+            .get("bodies")
+            .and_then(Value::as_array)
+            .with_context(|| format!("EDSM API не вернул список тел системы {}", system.name))?;
+
+        let mut planets = Vec::new();
+        for body in bodies {
+            if !matches_body_filters(
+                body,
+                self.params.planet_type,
+                self.params.atmosphere,
+                self.params.gravity,
+            ) {
+                continue;
+            }
+
+            if let Some(planet) = parse_api_planet(body)? {
+                planets.push(planet);
+            }
+        }
+
+        // EDSM documents a limit of roughly 700 system-body requests per
+        // minute. This delay, combined with bounded concurrency below,
+        // keeps this client comfortably below that rate.
+        sleep(Duration::from_millis(500)).await;
+        Ok(planets)
+    }
+
+    pub async fn next_page(&mut self) -> Result<Option<Vec<PlanetInfo>>> {
+        if self.finished || self.current_page >= self.params.max_pages {
             self.finished = true;
             return Ok(None);
         }
 
-        self.current_page += 1;
-        let links = parse_table_page(&self.core, &self.base_url, self.current_page).await?;
-
-        if links.is_empty() {
-            self.finished = true;
-            Ok(None)
-        } else {
-            Ok(Some(links))
+        if self.systems.is_none() {
+            self.systems = Some(self.load_systems().await?);
         }
+
+        let systems = self.systems.as_ref().expect("systems loaded");
+        if self.current_system >= systems.len() {
+            self.finished = true;
+            return Ok(None);
+        }
+
+        let end = (self.current_system + 10).min(systems.len());
+        let batch = systems[self.current_system..end].to_vec();
+        self.current_system = end;
+        self.current_page += 1;
+
+        let results = stream::iter(batch)
+            .map(|system| async move { self.load_system_bodies(system).await })
+            .buffer_unordered(4)
+            .collect::<Vec<_>>()
+            .await;
+
+        let mut planets = Vec::new();
+        for result in results {
+            planets.extend(result?);
+        }
+
+        Ok(Some(planets))
     }
 }
 
+fn matches_body_filters(
+    body: &Value,
+    planet_type: PlanetType,
+    atmosphere_type: AtmosphereType,
+    gravity: GravityRange,
+) -> bool {
+    if body.get("type").and_then(Value::as_str) != Some("Planet")
+        || body.get("isLandable").and_then(Value::as_bool) != Some(true)
+    {
+        return false;
+    }
+
+    let subtype = body
+        .get("subType")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_ascii_lowercase()
+        .replace('-', " ");
+
+    let matches_planet_type = match planet_type {
+        PlanetType::Any => true,
+        PlanetType::RockyBody => subtype.contains("rocky body"),
+        PlanetType::IcyBody => subtype.contains("icy body"),
+        PlanetType::RockyIceWorld => subtype.contains("rocky ice"),
+        PlanetType::HighMetalContentWorld => subtype.contains("high metal content"),
+    };
+    if !matches_planet_type {
+        return false;
+    }
+
+    let atmosphere = body
+        .get("atmosphereType")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_ascii_lowercase()
+        .replace('-', " ");
+
+    let has = |phrase: &str| atmosphere.contains(phrase);
+    let matches_atmosphere = match atmosphere_type {
+        AtmosphereType::Any => true,
+        AtmosphereType::Ammonia => has("ammonia"),
+        AtmosphereType::Water => has("water") && !has("water rich"),
+        AtmosphereType::CarbonDioxide => {
+            has("carbon dioxide") && !has("carbon dioxide rich")
+        }
+        AtmosphereType::SulphurDioxide => has("sulphur dioxide") || has("sulfur dioxide"),
+        AtmosphereType::Nitrogen => has("nitrogen"),
+        AtmosphereType::WaterRich => has("water rich"),
+        AtmosphereType::MethaneRich => has("methane rich"),
+        AtmosphereType::CarbonDioxideRich => has("carbon dioxide rich"),
+        AtmosphereType::Methane => has("methane") && !has("methane rich"),
+        AtmosphereType::Helium => has("helium"),
+        AtmosphereType::SilicateVapour => has("silicate vapour") || has("silicate vapor"),
+        AtmosphereType::NeonRich => has("neon rich"),
+        AtmosphereType::ArgonRich => has("argon rich"),
+        AtmosphereType::Neon => has("neon") && !has("neon rich"),
+        AtmosphereType::Argon => has("argon") && !has("argon rich"),
+        AtmosphereType::Oxygen => has("oxygen"),
+    };
+    if !matches_atmosphere {
+        return false;
+    }
+
+    let Some(gravity_g) = body
+        .get("gravity")
+        .and_then(Value::as_f64)
+        .map(|value| value / 9.80665)
+    else {
+        return false;
+    };
+
+    gravity_g >= gravity.min as f64 && gravity_g <= gravity.max as f64
+}
 
 #[cfg(test)]
 mod api_filter_tests {
