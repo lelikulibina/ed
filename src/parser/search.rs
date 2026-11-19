@@ -293,12 +293,10 @@ impl PlanetSearch {
                 .and_then(Value::as_str)
                 .context("Spansh system API вернул систему без имени")?
                 .to_string();
-            let bodies = system_record
-                .get("bodies")
-                .and_then(Value::as_array)
-                .with_context(|| {
-                    format!("Spansh system API вернул систему без массива bodies: {system}")
-                })?;
+            let Some(bodies) = system_record.get("bodies").and_then(Value::as_array) else {
+                // Some indexed systems have stations but no known body records.
+                continue;
+            };
 
             for body_summary in bodies {
                 if body_summary.get("type").and_then(Value::as_str) != Some("Planet") {
