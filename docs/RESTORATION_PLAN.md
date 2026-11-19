@@ -33,7 +33,7 @@
 - [x] Ошибки HTTP и Cloudflare не преобразуются в пустую выдачу.
 - [x] `cargo fmt --all -- --check` — успешно.
 - [x] `cargo test --all-targets` — 9 тестов пройдены.
-- [ ] Выполнить `cargo clippy`.
+- [x] `cargo clippy --all-targets -- -D warnings` — успешно.
 - [x] Выполнен live smoke test EDSM System API + Spansh Body Search API в GitHub Actions.
 - [ ] Сравнить реальную выборку Spansh с прежним HTML-поиском на нескольких опорных системах.
 
