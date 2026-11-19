@@ -1,5 +1,5 @@
 use crate::parser::{core::ParserCore, planet::PlanetInfo, planet::parse_spansh_planet};
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use serde_json::{Value, json};
 use std::time::Duration;
 use tokio::time::sleep;
