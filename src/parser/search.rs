@@ -1,7 +1,6 @@
-use crate::parser::{core::ParserCore, planet::PlanetInfo, planet::parse_api_planet};
+use crate::parser::{core::ParserCore, planet::PlanetInfo, planet::parse_spansh_planet};
 use anyhow::{Context, Result, bail};
-use futures::stream::{self, StreamExt};
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -97,8 +96,7 @@ pub struct PlanetSearchParams {
     pub planet_type: PlanetType,
     pub atmosphere: AtmosphereType,
     pub gravity: GravityRange,
-    /// Number of batches of nearby systems to inspect. Each batch contains
-    /// up to ten systems, ordered by distance from the reference system.
+    /// Number of Spansh result pages to inspect (100 bodies per page).
     pub max_pages: usize,
 }
 
@@ -107,15 +105,6 @@ struct Coordinates {
     x: f64,
     y: f64,
     z: f64,
-}
-
-impl Coordinates {
-    fn distance_to(self, other: Self) -> f64 {
-        let dx = self.x - other.x;
-        let dy = self.y - other.y;
-        let dz = self.z - other.z;
-        (dx * dx + dy * dy + dz * dz).sqrt()
-    }
 }
 
 fn coordinates_from_json(value: &Value) -> Option<Coordinates> {
@@ -127,18 +116,10 @@ fn coordinates_from_json(value: &Value) -> Option<Coordinates> {
     })
 }
 
-#[derive(Debug, Clone)]
-struct SystemRef {
-    name: String,
-    id: u64,
-    distance: f64,
-}
-
 pub struct PlanetSearch {
     core: ParserCore,
     params: PlanetSearchParams,
-    systems: Option<Vec<SystemRef>>,
-    current_system: usize,
+    reference_coords: Option<Coordinates>,
     current_page: usize,
     finished: bool,
 }
@@ -148,167 +129,106 @@ impl PlanetSearch {
         Self {
             core,
             params,
-            systems: None,
-            current_system: 0,
+            reference_coords: None,
             current_page: 0,
             finished: false,
         }
     }
 
-    async fn load_systems(&self) -> Result<Vec<SystemRef>> {
-        let encoded_name = urlencoding::encode(&self.params.commander_position);
-        let center_url = format!(
-            "https://www.edsm.net/api-v1/system?systemName={encoded_name}&showId=1&showCoordinates=1"
+    async fn load_reference_coords(&self) -> Result<Coordinates> {
+        let url = format!(
+            "https://www.edsm.net/api-v1/system?systemName={}&showCoordinates=1",
+            urlencoding::encode(&self.params.commander_position)
         );
-        let center_response = self.core.fetch_json(&center_url).await?;
-        let center = coordinates_from_json(&center_response)
-            .context("EDSM не вернул координаты опорной системы; поиск по радиусу невозможен")?;
-
-        // sphere-systems intermittently returns HTTP 503 under load. The
-        // cube endpoint is lighter; a 200 ly cube fully contains our 100 ly
-        // sphere, so we calculate exact distances locally.
-        let cube_url = format!(
-            "https://www.edsm.net/api-v1/cube-systems?systemName={encoded_name}&size=200&showId=1&showCoordinates=1"
-        );
-        let response = self.core.fetch_json(&cube_url).await?;
-        let entries = response
-            .as_array()
-            .context("EDSM cube-systems API вернул ответ не в виде массива")?;
-
-        let mut systems = Vec::with_capacity(entries.len());
-        for entry in entries {
-            let Some(name) = entry.get("name").and_then(Value::as_str) else {
-                continue;
-            };
-            let Some(id) = entry.get("id").and_then(Value::as_u64) else {
-                continue;
-            };
-            let Some(coords) = coordinates_from_json(entry) else {
-                continue;
-            };
-            let distance = coords.distance_to(center);
-            if distance > 100.0 {
-                continue;
-            }
-
-            systems.push(SystemRef {
-                name: name.to_string(),
-                id,
-                distance,
-            });
-        }
-
-        systems.sort_by(|left, right| {
-            left.distance
-                .partial_cmp(&right.distance)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-
-        if systems.is_empty() {
-            bail!(
-                "EDSM API не нашёл систем в радиусе 100 св. лет от {}",
-                self.params.commander_position
-            );
-        }
-
-        Ok(systems)
+        let response = self.core.fetch_json(&url).await?;
+        coordinates_from_json(&response).context(format!(
+            "EDSM не вернул координаты опорной системы {}",
+            self.params.commander_position
+        ))
     }
 
-    async fn load_system_bodies(
-        core: &ParserCore,
-        params: &PlanetSearchParams,
-        system: SystemRef,
-    ) -> Result<Vec<PlanetInfo>> {
-        let url = format!(
-            "https://www.edsm.net/api-system-v1/bodies?systemName={}&systemId={}",
-            urlencoding::encode(&system.name),
-            system.id
-        );
-        let response = core.fetch_json(&url).await?;
+    pub async fn next_page(&mut self) -> Result<Option<Vec<PlanetInfo>>> {
+        const PAGE_SIZE: usize = 100;
+        const SEARCH_RADIUS_LY: f64 = 100.0;
+
+        if self.finished || self.current_page >= self.params.max_pages {
+            return Ok(None);
+        }
+
+        if self.reference_coords.is_none() {
+            self.reference_coords = Some(self.load_reference_coords().await?);
+        }
+
+        // Be polite to the public search API when pagination is required.
+        if self.current_page > 0 {
+            sleep(Duration::from_secs(1)).await;
+        }
+
+        let coords = self.reference_coords.expect("reference coordinates loaded");
+        let payload = json!({
+            "filters": {},
+            "sort": [{ "distance": { "direction": "asc" } }],
+            "size": PAGE_SIZE,
+            "page": self.current_page,
+            "reference_coords": {
+                "x": coords.x,
+                "y": coords.y,
+                "z": coords.z
+            }
+        });
+
+        let response = self
+            .core
+            .post_json("https://spansh.co.uk/api/bodies/search", &payload)
+            .await?;
         let bodies = response
-            .get("bodies")
+            .get("results")
             .and_then(Value::as_array)
-            .with_context(|| format!("EDSM API не вернул список тел системы {}", system.name))?;
+            .context("Spansh API вернул ответ без массива results")?;
 
         let mut planets = Vec::new();
         for body in bodies {
-            if !matches_body_filters(body, params.planet_type, params.atmosphere, params.gravity) {
+            let distance = body
+                .get("distance")
+                .and_then(Value::as_f64)
+                .context("Spansh API не вернул расстояние до тела")?;
+
+            // Results are sorted by distance, so no later page can be inside
+            // the requested radius once this boundary has been crossed.
+            if distance > SEARCH_RADIUS_LY {
+                self.finished = true;
+                break;
+            }
+
+            if !matches_body_filters(
+                body,
+                self.params.planet_type,
+                self.params.atmosphere,
+                self.params.gravity,
+            ) {
                 continue;
             }
 
-            if let Some(planet) = parse_api_planet(body)? {
+            if let Some(planet) = parse_spansh_planet(body)? {
                 planets.push(planet);
             }
         }
 
-        // Community clients report throttling around 700 system-body
-        // requests per minute. This delay and bounded concurrency keep
-        // this client comfortably below that reported rate.
-        sleep(Duration::from_millis(500)).await;
-        Ok(planets)
-    }
-
-    pub async fn next_page(&mut self) -> Result<Option<Vec<PlanetInfo>>> {
-        if self.finished || self.current_page >= self.params.max_pages {
-            self.finished = true;
-            return Ok(None);
-        }
-
-        if self.systems.is_none() {
-            self.systems = Some(self.load_systems().await?);
-        }
-
-        let systems = self.systems.as_ref().expect("systems loaded");
-        if self.current_system >= systems.len() {
-            self.finished = true;
-            return Ok(None);
-        }
-
-        let end = (self.current_system + 10).min(systems.len());
-        let batch = systems[self.current_system..end].to_vec();
-        self.current_system = end;
         self.current_page += 1;
-
-        let core = self.core.clone();
-        let params = self.params.clone();
-        let results = stream::iter(batch)
-            .map(move |system| {
-                let core = core.clone();
-                let params = params.clone();
-                async move { Self::load_system_bodies(&core, &params, system).await }
-            })
-            .buffer_unordered(4)
-            .collect::<Vec<_>>()
-            .await;
-
-        let mut planets = Vec::new();
-        for result in results {
-            planets.extend(result?);
+        let total_results = response.get("count").and_then(Value::as_u64);
+        if bodies.is_empty()
+            || bodies.len() < PAGE_SIZE
+            || total_results.is_some_and(|count| self.current_page * PAGE_SIZE >= count as usize)
+        {
+            self.finished = true;
         }
 
         Ok(Some(planets))
     }
 
-    /// Returns true when the configured batch limit stopped the scan while
-    /// more systems from the 100 ly sphere were still waiting.
-    pub fn reached_system_limit(&self) -> bool {
-        let total_systems = self.systems.as_ref().map_or(0, Vec::len);
-        search_was_truncated(
-            self.current_page,
-            self.params.max_pages,
-            self.current_system,
-            total_systems,
-        )
+    pub fn reached_search_limit(&self) -> bool {
+        self.current_page >= self.params.max_pages && !self.finished
     }
-}
-
-fn search_was_truncated(
-    current_page: usize,
-    max_pages: usize,
-    current_system: usize,
-    total_systems: usize,
-) -> bool {
-    current_page >= max_pages && current_system < total_systems
 }
 
 fn matches_body_filters(
@@ -318,13 +238,14 @@ fn matches_body_filters(
     gravity: GravityRange,
 ) -> bool {
     if body.get("type").and_then(Value::as_str) != Some("Planet")
-        || body.get("isLandable").and_then(Value::as_bool) != Some(true)
+        || body.get("is_landable").and_then(Value::as_bool) != Some(true)
     {
         return false;
     }
 
     let subtype = body
-        .get("subType")
+        .get("subtype")
+        .or_else(|| body.get("sub_type"))
         .and_then(Value::as_str)
         .unwrap_or("")
         .to_ascii_lowercase()
@@ -344,7 +265,7 @@ fn matches_body_filters(
     }
 
     let atmosphere = body
-        .get("atmosphereType")
+        .get("atmosphere")
         .and_then(Value::as_str)
         .unwrap_or("")
         .to_ascii_lowercase()
@@ -374,11 +295,7 @@ fn matches_body_filters(
         return false;
     }
 
-    let Some(gravity_g) = body
-        .get("gravity")
-        .and_then(Value::as_f64)
-        .map(|value| value / 9.80665)
-    else {
+    let Some(gravity_g) = body.get("gravity").and_then(Value::as_f64) else {
         return false;
     };
 
@@ -391,13 +308,13 @@ mod api_filter_tests {
     use serde_json::json;
 
     #[test]
-    fn matches_edsm_subtype_atmosphere_and_earth_gravity() {
+    fn matches_spansh_subtype_atmosphere_and_earth_gravity() {
         let body = json!({
             "type": "Planet",
-            "isLandable": true,
-            "subType": "Rocky body",
-            "atmosphereType": "Thin ammonia atmosphere",
-            "gravity": 9.80665
+            "is_landable": true,
+            "subtype": "Rocky body",
+            "atmosphere": "Thin ammonia atmosphere",
+            "gravity": 1.0
         });
 
         assert!(matches_body_filters(
@@ -412,10 +329,10 @@ mod api_filter_tests {
     fn rejects_wrong_atmosphere_and_gravity() {
         let body = json!({
             "type": "Planet",
-            "isLandable": true,
-            "subType": "Rocky body",
-            "atmosphereType": "Thin ammonia atmosphere",
-            "gravity": 19.6133
+            "is_landable": true,
+            "subtype": "Rocky body",
+            "atmosphere": "Thin ammonia atmosphere",
+            "gravity": 2.0
         });
 
         assert!(!matches_body_filters(
@@ -430,60 +347,5 @@ mod api_filter_tests {
             AtmosphereType::Ammonia,
             GravityRange { min: 0.9, max: 1.1 }
         ));
-    }
-}
-
-#[cfg(test)]
-mod limit_tests {
-    use super::search_was_truncated;
-
-    #[test]
-    fn reports_truncation_only_when_unchecked_systems_remain() {
-        assert!(search_was_truncated(100, 100, 1000, 1200));
-        assert!(!search_was_truncated(100, 100, 1200, 1200));
-        assert!(!search_was_truncated(40, 100, 400, 1200));
-    }
-}
-
-#[cfg(test)]
-mod coordinate_tests {
-    use super::Coordinates;
-
-    #[test]
-    fn computes_distance_in_light_years() {
-        let center = Coordinates {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        };
-        let point = Coordinates {
-            x: 3.0,
-            y: 4.0,
-            z: 0.0,
-        };
-
-        assert!((point.distance_to(center) - 5.0).abs() < 0.0001);
-    }
-
-    #[test]
-    fn keeps_only_systems_inside_search_radius() {
-        let center = Coordinates {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        };
-        let inside = Coordinates {
-            x: 60.0,
-            y: 60.0,
-            z: 0.0,
-        };
-        let outside = Coordinates {
-            x: 80.0,
-            y: 80.0,
-            z: 0.0,
-        };
-
-        assert!(inside.distance_to(center) <= 100.0);
-        assert!(outside.distance_to(center) > 100.0);
     }
 }
