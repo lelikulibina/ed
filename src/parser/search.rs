@@ -173,6 +173,50 @@ impl PlanetSearch {
             return Ok(coords);
         }
 
+        // Search the Spansh systems index directly by exact name. This
+        // also resolves systems absent from EDSM's public catalogue.
+        let system_lookup_payload = json!({
+            "filters": {
+                "name": { "value": self.params.commander_position }
+            },
+            "sort": [],
+            "size": 10,
+            "page": 0
+        });
+        let mut system_lookup_response = Value::Null;
+        if let Ok(response) = self
+            .core
+            .post_json("https://spansh.co.uk/api/systems/search", &system_lookup_payload)
+            .await
+        {
+            system_lookup_response = response.clone();
+            if let Some(results) = response.get("results").and_then(Value::as_array) {
+                for candidate in results {
+                    let name = candidate
+                        .get("name")
+                        .or_else(|| candidate.get("system_name"))
+                        .and_then(Value::as_str);
+                    if !name.is_some_and(|value| {
+                        value.eq_ignore_ascii_case(&self.params.commander_position)
+                    }) {
+                        continue;
+                    }
+                    if let Some(coords) = coordinates_from_json(candidate) {
+                        return Ok(coords);
+                    }
+                    if let Some(id64) = candidate.get("id64").and_then(Value::as_u64) {
+                        let system = self
+                            .core
+                            .fetch_json(&format!("https://spansh.co.uk/api/system/{id64}"))
+                            .await?;
+                        if let Some(coords) = coordinates_from_json(&system) {
+                            return Ok(coords);
+                        }
+                    }
+                }
+            }
+        }
+
         // Spansh quick search is an independent source when EDSM has no
         // coordinates for a valid system name.
         let spansh_search_url = format!("https://spansh.co.uk/api/search?q={encoded_name}");
