@@ -192,8 +192,9 @@ async fn main() -> Result<()> {
         println!("\nСписок найденных планет:\n");
         for p in results {
             println!(
-                "• {}\n  Температура: {:.1?}\n  Давление: {:.3?}\n  Гравитация: {:.3?}\n",
+                "• {}\n  Атмосфера: {}\n  Температура: {:.1?}\n  Давление: {:.3?}\n  Гравитация: {:.3?}\n",
                 p.name,
+                p.atmosphere.as_deref().unwrap_or("не указана"),
                 p.surface_temp.unwrap_or_default(),
                 p.pressure.unwrap_or_default(),
                 p.gravity.unwrap_or_default()
