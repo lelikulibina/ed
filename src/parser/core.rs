@@ -1,7 +1,8 @@
 use anyhow::{Context, Result, bail};
-use reqwest::{Client, header};
+use reqwest::{Client, StatusCode, header};
 use scraper::Html;
 use std::time::Duration;
+use tokio::time::sleep;
 
 /// Основной парсер с единым HTTP-клиентом.
 #[derive(Clone)]
@@ -29,46 +30,69 @@ impl ParserCore {
     }
 
     /// Загружает JSON-ответ EDSM API с проверкой статуса и формата.
+    ///
+    /// Повторяет только временные ошибки (429, 502, 503, 504), учитывая
+    /// Retry-After в секундах и используя ограниченный экспоненциальный backoff.
     pub async fn fetch_json(&self, url: &str) -> Result<serde_json::Value> {
-        let response = self
-            .client
-            .get(url)
-            .header(header::ACCEPT, "application/json")
-            .send()
-            .await
-            .with_context(|| format!("Ошибка API-запроса к {url}"))?;
+        const MAX_RETRIES: u32 = 3;
+        let mut attempt = 0;
 
-        let status = response.status();
-        let final_url = response.url().to_string();
-        let content_type = response
-            .headers()
-            .get(header::CONTENT_TYPE)
-            .and_then(|value| value.to_str().ok())
-            .map(str::to_ascii_lowercase);
+        loop {
+            let response = self
+                .client
+                .get(url)
+                .header(header::ACCEPT, "application/json")
+                .send()
+                .await
+                .with_context(|| format!("Ошибка API-запроса к {url}"))?;
 
-        let body = response
-            .text()
-            .await
-            .with_context(|| format!("Не удалось прочитать API-ответ от {final_url}"))?;
+            let status = response.status();
+            let retry_after = response
+                .headers()
+                .get(header::RETRY_AFTER)
+                .and_then(|value| value.to_str().ok())
+                .map(str::to_string);
 
-        if looks_like_cloudflare_challenge(&body) {
-            bail!(
-                "EDSM API вернул проверку Cloudflare вместо JSON ({final_url}, HTTP {status}). Автоматический доступ ограничен."
-            );
-        }
-
-        if !status.is_success() {
-            bail!("EDSM API вернул HTTP {status} для {final_url}");
-        }
-
-        if let Some(content_type) = content_type {
-            if !content_type.contains("application/json") && !content_type.contains("+json") {
-                bail!("Ожидался JSON от {final_url}, получен Content-Type: {content_type}");
+            if attempt < MAX_RETRIES {
+                if let Some(delay) = retry_delay(status, retry_after.as_deref(), attempt) {
+                    drop(response);
+                    sleep(delay).await;
+                    attempt += 1;
+                    continue;
+                }
             }
-        }
 
-        serde_json::from_str(&body)
-            .with_context(|| format!("EDSM API вернул некорректный JSON для {final_url}"))
+            let final_url = response.url().to_string();
+            let content_type = response
+                .headers()
+                .get(header::CONTENT_TYPE)
+                .and_then(|value| value.to_str().ok())
+                .map(str::to_ascii_lowercase);
+
+            let body = response
+                .text()
+                .await
+                .with_context(|| format!("Не удалось прочитать API-ответ от {final_url}"))?;
+
+            if looks_like_cloudflare_challenge(&body) {
+                bail!(
+                    "EDSM API вернул проверку Cloudflare вместо JSON ({final_url}, HTTP {status}). Автоматический доступ ограничен."
+                );
+            }
+
+            if !status.is_success() {
+                bail!("EDSM API вернул HTTP {status} для {final_url} после {attempt} повторов");
+            }
+
+            if let Some(content_type) = content_type {
+                if !content_type.contains("application/json") && !content_type.contains("+json") {
+                    bail!("Ожидался JSON от {final_url}, получен Content-Type: {content_type}");
+                }
+            }
+
+            return serde_json::from_str(&body)
+                .with_context(|| format!("EDSM API вернул некорректный JSON для {final_url}"));
+        }
     }
 
     /// Загружает только успешную HTML-страницу EDSM. Оставлено для возможного
@@ -124,6 +148,27 @@ impl ParserCore {
 
         Ok(Html::parse_document(&body))
     }
+}
+
+fn retry_delay(
+    status: reqwest::StatusCode,
+    retry_after: Option<&str>,
+    attempt: u32,
+) -> Option<Duration> {
+    let base_seconds = match status {
+        StatusCode::TOO_MANY_REQUESTS => 2,
+        StatusCode::BAD_GATEWAY | StatusCode::SERVICE_UNAVAILABLE | StatusCode::GATEWAY_TIMEOUT => 1,
+        _ => return None,
+    };
+
+    let delay_seconds = retry_after
+        .and_then(|value| value.trim().parse::<u64>().ok())
+        .unwrap_or_else(|| {
+            base_seconds.saturating_mul(1_u64.checked_shl(attempt).unwrap_or(60))
+        })
+        .min(60);
+
+    Some(Duration::from_secs(delay_seconds))
 }
 
 fn looks_like_cloudflare_challenge(body: &str) -> bool {
