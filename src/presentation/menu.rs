@@ -43,7 +43,9 @@ pub fn run_menu<R: BufRead, W: Write>(reader: &mut R, writer: &mut W) -> io::Res
                 else {
                     return Ok(MenuAction::Exit);
                 };
-                let count = prompt_count(reader, writer)?;
+                let Some(count) = prompt_count(reader, writer)? else {
+                    return Ok(MenuAction::Exit);
+                };
                 return Ok(MenuAction::Search {
                     system,
                     criteria: profile.criteria(count).expect("static profile is valid"),
@@ -54,26 +56,20 @@ pub fn run_menu<R: BufRead, W: Write>(reader: &mut R, writer: &mut W) -> io::Res
                 else {
                     return Ok(MenuAction::Exit);
                 };
-                let planet = prompt_nonempty(
-                    reader,
-                    writer,
+                let Some(planet) = prompt_allowed(
+                    reader, writer,
                     "Тип поверхности (rocky body / icy body / rocky ice world / high metal content world / any): ",
-                )?;
-                let Some(planet) = planet else {
-                    return Ok(MenuAction::Exit);
-                };
-                let atmosphere = prompt_nonempty(
-                    reader,
-                    writer,
+                    &["Rocky body", "Icy body", "Rocky ice world", "High metal content world", "any"],
+                )? else { return Ok(MenuAction::Exit); };
+                let Some(atmosphere) = prompt_allowed(
+                    reader, writer,
                     "Атмосфера (ammonia / water / carbon dioxide / sulphur dioxide / argon / oxygen / any): ",
-                )?;
-                let Some(atmosphere) = atmosphere else {
-                    return Ok(MenuAction::Exit);
-                };
-                let temperature = prompt_range_i32(reader, writer, "Температура, K (min-max): ")?;
-                let gravity = prompt_range_f32(reader, writer, "Гравитация, g (min-max): ")?;
-                let pressure = prompt_range_f32(reader, writer, "Давление, atm (min-max): ")?;
-                let count = prompt_count(reader, writer)?;
+                    &["Ammonia", "Water", "Carbon dioxide", "Sulphur dioxide", "Nitrogen", "Methane", "Helium", "Silicate vapour", "Neon", "Argon", "Oxygen", "any"],
+                )? else { return Ok(MenuAction::Exit); };
+                let Some(temperature) = prompt_range_i32(reader, writer, "Температура, K (min-max): ")? else { return Ok(MenuAction::Exit); };
+                let Some(gravity) = prompt_range_f32(reader, writer, "Гравитация, g (min-max): ")? else { return Ok(MenuAction::Exit); };
+                let Some(pressure) = prompt_range_f32(reader, writer, "Давление, atm (min-max): ")? else { return Ok(MenuAction::Exit); };
+                let Some(count) = prompt_count(reader, writer)? else { return Ok(MenuAction::Exit); };
                 let criteria = SearchCriteria::from_cli(
                     &planet,
                     &atmosphere,
@@ -147,39 +143,55 @@ fn prompt_nonempty<R: BufRead, W: Write>(
         writeln!(w, "Значение не должно быть пустым.")?;
     }
 }
-fn prompt_count<R: BufRead, W: Write>(r: &mut R, w: &mut W) -> io::Result<usize> {
+fn prompt_count<R: BufRead, W: Write>(r: &mut R, w: &mut W) -> io::Result<Option<usize>> {
     loop {
         write!(w, "Количество результатов [5]: ")?;
         w.flush()?;
         let Some(value) = read_line(r)? else {
-            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "EOF"));
+            return Ok(None);
         };
         if value.is_empty() {
-            return Ok(5);
+            return Ok(Some(5));
         }
         if let Ok(n) = value.parse::<usize>()
             && n > 0
         {
-            return Ok(n);
+            return Ok(Some(n));
         }
         writeln!(w, "Введите целое число больше нуля.")?;
+    }
+}
+fn prompt_allowed<R: BufRead, W: Write>(
+    r: &mut R,
+    w: &mut W,
+    prompt: &str,
+    allowed: &[&str],
+) -> io::Result<Option<String>> {
+    loop {
+        let Some(value) = prompt_nonempty(r, w, prompt)? else {
+            return Ok(None);
+        };
+        if let Some(canonical) = allowed.iter().find(|item| item.eq_ignore_ascii_case(&value)) {
+            return Ok(Some((*canonical).to_owned()));
+        }
+        writeln!(w, "Недопустимое значение. Выберите один из перечисленных вариантов.")?;
     }
 }
 fn prompt_range_i32<R: BufRead, W: Write>(
     r: &mut R,
     w: &mut W,
     prompt: &str,
-) -> io::Result<NumericRange> {
+) -> io::Result<Option<NumericRange>> {
     loop {
         write!(w, "{prompt}")?;
         w.flush()?;
         let Some(v) = read_line(r)? else {
-            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "EOF"));
+            return Ok(None);
         };
         if let Ok((a, b)) = parse_range_i32(&v)
             && let Some(range) = NumericRange::new(f64::from(a), f64::from(b))
         {
-            return Ok(range);
+            return Ok(Some(range));
         }
         writeln!(
             w,
@@ -250,6 +262,24 @@ mod tests {
             MenuAction::Exit => panic!("expected search"),
         }
     }
+    #[test]
+    fn eof_during_profile_input_exits_cleanly() {
+        let mut input = Cursor::new(b"4\\nSol\\n".to_vec());
+        let mut output = Vec::new();
+        assert!(matches!(run_menu(&mut input, &mut output).unwrap(), MenuAction::Exit));
+    }
+
+    #[test]
+    fn manual_mode_reprompts_after_invalid_surface_type() {
+        let mut input = Cursor::new(b"8\\nSol\\nnot-a-type\\nrocky body\\nwater\\n100-200\\n0.1-1.0\\n0.1-1.0\\n\\n".to_vec());
+        let mut output = Vec::new();
+        match run_menu(&mut input, &mut output).unwrap() {
+            MenuAction::Search { criteria, .. } => assert_eq!(criteria.planet_type, "Rocky body"),
+            MenuAction::Exit => panic!("expected manual search"),
+        }
+        assert!(String::from_utf8(output).unwrap().contains("Недопустимое значение"));
+    }
+
     #[test]
     fn profile_five_is_not_executed_without_verified_volcanism_contract() {
         let mut input = Cursor::new(b"5\n9\n".to_vec());
