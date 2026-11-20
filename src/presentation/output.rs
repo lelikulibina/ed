@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
-use crate::domain::{body::Body, exobiology::{self, CandidateStatus, EstimateError}};
+use crate::domain::{
+    body::Body,
+    exobiology::{self, CandidateStatus, EstimateError},
+};
 
 pub fn print_results(bodies: &[Body]) {
     if bodies.is_empty() {
