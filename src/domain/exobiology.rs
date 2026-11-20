@@ -41,6 +41,7 @@ pub struct ExobiologyEstimate {
     pub maximum_first_logged_value_cr: u64,
     pub probabilities_calculated: bool,
     pub biological_signal_count: Option<u32>,
+    pub geological_signal_count: Option<u32>,
     pub biological_genera: Option<Vec<String>>,
     pub catalog_is_complete: bool,
 }
@@ -137,6 +138,7 @@ pub fn estimate(body: &Body) -> Result<ExobiologyEstimate, EstimateError> {
         maximum_first_logged_value_cr: maximum_base_value_cr * FIRST_LOGGED_MULTIPLIER,
         probabilities_calculated: false,
         biological_signal_count: body.biological_signal_count,
+        geological_signal_count: body.geological_signal_count,
         biological_genera: body.biological_genera.clone(),
         catalog_is_complete: false,
     })
