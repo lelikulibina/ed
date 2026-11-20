@@ -42,6 +42,33 @@ pub enum BodyParseError {
 }
 
 impl Body {
+    /// Spansh does not expose a First Footfall flag. A pre-Odyssey body update
+    /// is a useful discovery lead, while a later update is only evidence of
+    /// post-launch activity and must not be treated as proof of a landing.
+    pub fn footfall_evidence(&self) -> FootfallEvidence {
+        let Some(timestamp) = self.last_updated_at.as_deref() else {
+            return FootfallEvidence::Unknown;
+        };
+        let Some(date) = timestamp.get(..10) else {
+            return FootfallEvidence::Unknown;
+        };
+        let bytes = date.as_bytes();
+        if bytes.len() != 10
+            || !bytes[0..4].iter().all(u8::is_ascii_digit)
+            || bytes[4] != b'-'
+            || !bytes[5..7].iter().all(u8::is_ascii_digit)
+            || bytes[7] != b'-'
+            || !bytes[8..10].iter().all(u8::is_ascii_digit)
+        {
+            return FootfallEvidence::Unknown;
+        }
+        if date < "2021-05-19" {
+            FootfallEvidence::PreOdysseyUpdate
+        } else {
+            FootfallEvidence::PostOdysseyUpdate
+        }
+    }
+
     pub fn from_json(value: &Value) -> Result<Self, BodyParseError> {
         if !value.is_object() {
             return Err(BodyParseError::NotObject);
