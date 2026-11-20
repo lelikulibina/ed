@@ -447,8 +447,8 @@ mod tests {
     fn known_no_volcanism_confirms_bacterium_but_volcanic_world_excludes_it() {
         let mut planet = body(Some("Rocky body"), Some("Water"), Some(250.0), Some(0.5));
         planet.volcanism_type = Some("No volcanism".to_owned());
-        let estimate = estimate(&planet).unwrap();
-        let cerbrus = estimate
+        let no_volcanism_estimate = estimate(&planet).unwrap();
+        let cerbrus = no_volcanism_estimate
             .genera
             .iter()
             .find(|genus| genus.genus == "Bacterium")
