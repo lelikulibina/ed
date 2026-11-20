@@ -90,7 +90,7 @@ mod tests {
                 "subtype":"Rocky body",
                 "is_landable":true,
                 "is_mapped":false,
-                "surface_temperature":250,
+                "surface_temperature":523.15,
                 "surface_pressure":1.0,
                 "gravity":1.0,
                 "atmosphere":"Nitrogen",
