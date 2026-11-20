@@ -108,3 +108,6 @@
 - CI run `44665347638` caught Clippy `collapsible_if`; corrected with a let-chain. New CI is required to confirm the fix.
 
 - Добавлен последний end-to-end live assertion: на 100-ly page 0 ищется не центральная система, а реальная landable планета, удовлетворяющая всем широким числовым критериям и atmosphere=any.
+
+- Live run `44665588127` прошёл end-to-end filter assertion: на 100-ly выдаче найден landable Rocky body `2045 PC2` в Alpha Centauri (4.37712 ly), temperature 85.062 K, pressure 0, gravity 0.0868 g, atmosphere No atmosphere; body прошёл широкие локальные критерии и центральная Sol была исключена.
+- CI run `44665588162`: Format, Clippy и Tests passed after atmosphere composition normalization and live assertion changes.
