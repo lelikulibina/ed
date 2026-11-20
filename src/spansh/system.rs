@@ -99,7 +99,7 @@ fn first_candidate(value: &Value) -> Option<Candidate> {
         }
     }
 
-    candidate_from_value(value)
+    candidate_from_value(value).filter(|candidate| candidate.id64.is_some())
 }
 
 fn exact_candidate(value: &Value, expected_name: &str) -> Option<Candidate> {
@@ -115,7 +115,7 @@ fn exact_candidate(value: &Value, expected_name: &str) -> Option<Candidate> {
             return items
                 .iter()
                 .filter_map(candidate_from_value)
-                .find(matches_name);
+                .find(|candidate| matches_name(candidate) && candidate.id64.is_some());
         }
     }
 
@@ -123,10 +123,11 @@ fn exact_candidate(value: &Value, expected_name: &str) -> Option<Candidate> {
         return items
             .iter()
             .filter_map(candidate_from_value)
-            .find(matches_name);
+            .find(|candidate| matches_name(candidate) && candidate.id64.is_some());
     }
 
-    candidate_from_value(value).filter(matches_name)
+    candidate_from_value(value)
+        .filter(|candidate| matches_name(candidate) && candidate.id64.is_some())
 }
 
 fn candidate_from_value(value: &Value) -> Option<Candidate> {
@@ -240,6 +241,32 @@ mod tests {
         assert_eq!(exact.name.as_deref(), Some("Sol"));
         assert_eq!(exact.id64.as_deref(), Some("2"));
         assert!(exact_candidate(&value, "Sol Beta").is_none());
+    }
+
+
+    #[test]
+    fn skips_name_only_candidates_and_selects_first_resolvable_fallback() {
+        let value = serde_json::json!({
+            "results": [
+                "Col 285 Sector BQ-Y",
+                {"name": "Col 285 Sector BQ-Y", "id64": "9223372036854775807"}
+            ]
+        });
+        let candidate = first_candidate(&value).unwrap();
+        assert_eq!(candidate.id64.as_deref(), Some("9223372036854775807"));
+        assert_eq!(candidate.name.as_deref(), Some("Col 285 Sector BQ-Y"));
+    }
+
+    #[test]
+    fn exact_candidate_skips_matching_name_without_id64() {
+        let value = serde_json::json!({
+            "results": [
+                {"name": "Sol"},
+                {"name": "Sol", "id64": "42"}
+            ]
+        });
+        let candidate = exact_candidate(&value, "Sol").unwrap();
+        assert_eq!(candidate.id64.as_deref(), Some("42"));
     }
 
     #[test]
