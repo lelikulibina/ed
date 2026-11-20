@@ -335,7 +335,10 @@ mod tests {
             MenuAction::Search { criteria, system } => {
                 assert_eq!(system, "Sol");
                 assert_eq!(criteria.count, 5);
-                assert_eq!(criteria.volcanism, crate::domain::criteria::VolcanismFilter::WaterMagmaAndGeysers);
+                assert_eq!(
+                    criteria.volcanism,
+                    crate::domain::criteria::VolcanismFilter::WaterMagmaAndGeysers
+                );
             }
             MenuAction::Exit => panic!("expected profile search"),
         }

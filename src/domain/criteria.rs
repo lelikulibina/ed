@@ -148,7 +148,12 @@ fn volcanism_matches(filter: VolcanismFilter, value: Option<&str>) -> bool {
         // The profile accepts either water-based class.
         VolcanismFilter::WaterMagmaAndGeysers => value.is_some_and(|value| {
             matches!(
-                value.trim().to_ascii_lowercase().split_whitespace().collect::<Vec<_>>().as_slice(),
+                value
+                    .trim()
+                    .to_ascii_lowercase()
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .as_slice(),
                 ["water", "magma"]
                     | ["minor", "water", "magma"]
                     | ["major", "water", "magma"]
