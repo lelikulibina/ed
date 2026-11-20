@@ -145,7 +145,10 @@ fn system_from_detail(
     fallback_id64: String,
     fallback_name: Option<String>,
 ) -> Option<ResolvedSystem> {
-    let root = detail.get("system").unwrap_or(detail);
+    let root = detail
+        .get("system")
+        .or_else(|| detail.get("record"))
+        .unwrap_or(detail);
     let id64 = ["id64", "system_id64", "id"]
         .iter()
         .find_map(|key| root.get(key).and_then(id_as_string))
