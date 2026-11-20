@@ -18,7 +18,11 @@ pub struct SpanshClient {
 impl SpanshClient {
     pub fn new(base_url: impl Into<String>, concurrency: usize) -> Result<Self, reqwest::Error> {
         let http = Client::builder()
-            .user_agent(concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION")))
+            .user_agent(concat!(
+                env!("CARGO_PKG_NAME"),
+                "/",
+                env!("CARGO_PKG_VERSION")
+            ))
             .connect_timeout(Duration::from_secs(5))
             .timeout(Duration::from_secs(30))
             .build()?;
@@ -50,7 +54,11 @@ impl SpanshClient {
         path: &str,
         body: Option<&Value>,
     ) -> Result<Value, SpanshError> {
-        let _permit = self.permits.acquire().await.map_err(|_| SpanshError::Closed)?;
+        let _permit = self
+            .permits
+            .acquire()
+            .await
+            .map_err(|_| SpanshError::Closed)?;
         let url = format!("{}/{}", self.base_url, path.trim_start_matches('/'));
 
         for attempt in 0..self.max_attempts {
@@ -68,8 +76,8 @@ impl SpanshClient {
                 }
                 Ok(response) => {
                     let status = response.status();
-                    let retryable = status == StatusCode::TOO_MANY_REQUESTS
-                        || status.is_server_error();
+                    let retryable =
+                        status == StatusCode::TOO_MANY_REQUESTS || status.is_server_error();
                     let message = response.text().await.unwrap_or_default();
                     if !retryable || attempt + 1 == self.max_attempts {
                         return Err(SpanshError::Status { status, message });
@@ -131,7 +139,9 @@ mod tests {
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(respond(
             listener,
-            vec!["HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 11\r\nconnection: close\r\n\r\n{\"ok\":true}"],
+            vec![
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 11\r\nconnection: close\r\n\r\n{\"ok\":true}",
+            ],
         ));
 
         let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
