@@ -172,6 +172,23 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn enforces_configured_minimum_interval_between_requests() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let response = "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 11\r\nconnection: close\r\n\r\n{\"ok\":true}";
+        let server = tokio::spawn(respond(listener, vec![response, response]));
+
+        let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        client.request_interval = Duration::from_millis(25);
+        let started = std::time::Instant::now();
+        client.get_json("/first").await.unwrap();
+        client.get_json("/second").await.unwrap();
+
+        assert!(started.elapsed() >= Duration::from_millis(20));
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
     async fn retries_server_errors_but_returns_successful_json() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
