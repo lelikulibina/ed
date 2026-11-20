@@ -53,3 +53,5 @@
 - В `BodySearch` добавлены обе стратегии: recall по search_reference и POST с page=N, когда reference отсутствует; конец выдачи определяется через count/from, а также пустую/короткую страницу.
 - Добавлены mock-тесты count/from и POST page fallback. CI run 44662932139: Format, Clippy и tests passed.
 - Следующая live-проверка расширена на GET resolver `/api/search/systems?q=Sol` + `/api/system/{id64}`, чтобы проверить реальный поиск системы и координаты.
+
+- Live probe with system resolver failed at `ResolveError::InvalidResponse` for `Sol`; body-search POST and recall are already verified. This failure may be in the system search response envelope or system detail coordinate shape. Added a diagnostic live probe to inspect both GET responses before changing the resolver parser.
