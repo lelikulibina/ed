@@ -262,6 +262,41 @@ mod tests {
         assert!(requests[2].starts_with("GET /api/system/9223372036854775807 "));
     }
 
+    #[tokio::test]
+    async fn exact_system_name_wins_over_earlier_prefix_candidate() {
+        use tokio::{
+            io::{AsyncReadExt, AsyncWriteExt},
+            net::TcpListener,
+        };
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let responses = [
+            r#"{"results":[{"name":"Sol Alpha","id64":"1"},{"name":"Sol","id64":"2"}]}"#,
+            r#"{"name":"Sol","id64":"2","coords":{"x":1.0,"y":2.0,"z":3.0}}"#,
+        ];
+        let server = tokio::spawn(async move {
+            for body in responses {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                let mut request = [0_u8; 2048];
+                let _ = socket.read(&mut request).await.unwrap();
+                let response = format!(
+                    "HTTP/1.1 200 OK\\r\\ncontent-type: application/json\\r\\ncontent-length: {}\\r\\nconnection: close\\r\\n\\r\\n{}",
+                    body.len(),
+                    body
+                );
+                socket.write_all(response.as_bytes()).await.unwrap();
+            }
+        });
+
+        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let system = SystemResolver::new(client).resolve("Sol").await.unwrap();
+
+        assert_eq!(system.name, "Sol");
+        assert_eq!(system.id64, "2");
+        server.await.unwrap();
+    }
+
     #[test]
     fn query_component_is_percent_encoded() {
         assert_eq!(
