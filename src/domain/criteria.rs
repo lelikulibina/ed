@@ -24,6 +24,7 @@ pub struct SearchCriteria {
     pub gravity: NumericRange,
     pub pressure: NumericRange,
     pub count: usize,
+    pub exclude_biological: bool,
 }
 
 impl SearchCriteria {
@@ -46,7 +47,13 @@ impl SearchCriteria {
             gravity,
             pressure,
             count,
+            exclude_biological: false,
         })
+    }
+
+    pub fn with_exclude_biological(mut self, exclude: bool) -> Self {
+        self.exclude_biological = exclude;
+        self
     }
 
     pub fn matches(&self, body: &Body) -> bool {
@@ -65,7 +72,16 @@ impl SearchCriteria {
             && self.pressure.contains(body.surface_pressure)
             && body.is_landable == Some(true)
             && body.is_mapped != Some(true)
+            && (!self.exclude_biological || !has_biological_evidence(body))
     }
+}
+
+fn has_biological_evidence(body: &Body) -> bool {
+    body.biological_signal_count.is_some_and(|count| count > 0)
+        || body
+            .biological_genera
+            .as_ref()
+            .is_some_and(|genera| !genera.is_empty())
 }
 
 #[derive(Debug, thiserror::Error, PartialEq)]
@@ -229,6 +245,47 @@ mod tests {
             signals_updated_at: None,
         };
         assert!(criteria().matches(&body));
+    }
+
+    #[test]
+    fn exclude_biological_filters_positive_signal_count_and_known_genera() {
+        let mut criteria = criteria().with_exclude_biological(true);
+        let mut body = Body {
+            id64: None,
+            name: "Bio world".to_owned(),
+            system_id64: None,
+            system_name: None,
+            subtype: Some("Rocky body".to_owned()),
+            distance_ly: None,
+            is_landable: Some(true),
+            is_mapped: Some(false),
+            last_updated_at: None,
+            surface_temperature: Some(250.0),
+            surface_pressure: Some(1.0),
+            gravity: Some(1.0),
+            atmosphere: Some("Nitrogen".to_owned()),
+            volcanism_type: None,
+            biological_signal_count: Some(2),
+            geological_signal_count: None,
+            biological_genera: None,
+            signals_updated_at: None,
+        };
+        assert!(!criteria.matches(&body));
+
+        body.biological_signal_count = Some(0);
+        body.biological_genera = Some(vec!["Tussock".to_owned()]);
+        assert!(!criteria.matches(&body));
+
+        body.biological_genera = Some(vec![]);
+        assert!(criteria.matches(&body));
+
+        body.biological_signal_count = None;
+        body.biological_genera = None;
+        assert!(criteria.matches(&body));
+
+        criteria.exclude_biological = false;
+        body.biological_signal_count = Some(3);
+        assert!(criteria.matches(&body));
     }
 
     #[test]
