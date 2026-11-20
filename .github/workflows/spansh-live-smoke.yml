@@ -8,8 +8,9 @@ on:
 
 jobs:
   live-smoke:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[spansh-live-smoke]')
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[spansh-live-smoke]') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
