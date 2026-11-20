@@ -129,3 +129,6 @@
 
 - После расширения enum regression test обнаружено, что прежний parser не принимал дефисную форму `sulphur-dioxide`, хотя CLI help её документировал. Добавлена совместимая поддержка дефисной формы; CI run `44667116048` прошёл Format, Clippy и Tests.
 - Добавлен отдельный mock test, проверяющий, что достижение лимита страниц возвращает `BodySearchError::PageLimit`, а не маскирует неполную выдачу как успешный пустой результат. CI для SHA `d5a146645aabb3441468d61dffbb4d7206dfad2c` выполняется.
+
+- Rust CI run `44667250884` на SHA `9bbeeac8ffc97243a106e6cfdb6d780281f13679`: Format, Clippy и Tests PASS; `40 passed, 0 failed, 1 ignored`. Включает полный набор прежних CLI enum значений, retry exhaustion и page-limit error tests.
+- Запускаю повторный live smoke с усиленными проверками физических значений Venus/Earth (давление, температура, гравитация).
