@@ -1160,8 +1160,7 @@ mod tests {
         let page = parse_page(&response).expect("Drojia response must parse");
         eprintln!(
             "Drojia rocky landable Water variants: count={:?}, rows={}",
-            page.total_count,
-            page.last_page_size
+            page.total_count, page.last_page_size
         );
         for body in page.bodies.iter().take(15) {
             eprintln!(
