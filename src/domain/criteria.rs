@@ -19,6 +19,8 @@ impl NumericRange {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SearchCriteria {
     pub planet_type: String,
+    /// Допустимые типы поверхности; несколько значений трактуются как OR.
+    pub planet_types: Vec<String>,
     pub atmosphere_type: String,
     pub temperature: NumericRange,
     pub gravity: NumericRange,
@@ -40,8 +42,12 @@ impl SearchCriteria {
             return Err(CriteriaError::Count);
         }
 
+        let planet_type = normalize_planet_type(planet_type)?;
+        let planet_types = if planet_type == "any" { Vec::new() } else { vec![planet_type.clone()] };
+
         Ok(Self {
-            planet_type: normalize_planet_type(planet_type)?,
+            planet_type,
+            planet_types,
             atmosphere_type: normalize_atmosphere_type(atmosphere_type)?,
             temperature,
             gravity,
@@ -57,11 +63,14 @@ impl SearchCriteria {
     }
 
     pub fn matches(&self, body: &Body) -> bool {
-        (self.planet_type == "any"
-            || body
-                .subtype
-                .as_deref()
-                .is_some_and(|value| value.eq_ignore_ascii_case(&self.planet_type)))
+        (if self.planet_types.is_empty() {
+            self.planet_type == "any"
+                || body.subtype.as_deref().is_some_and(|value| value.eq_ignore_ascii_case(&self.planet_type))
+        } else {
+            body.subtype.as_deref().is_some_and(|value| {
+                self.planet_types.iter().any(|allowed| value.eq_ignore_ascii_case(allowed))
+            })
+        })
             && (self.atmosphere_type == "any"
                 || body
                     .atmosphere
