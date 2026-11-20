@@ -58,7 +58,7 @@ CLI / Args
 3. **system resolver** — exact match по имени. Если точного совпадения нет, последовательно удаляет компоненты имени справа; на fallback выбирает первый результат API. Координаты берутся из `x/y/z` search result; если их нет — из `record` в `GET /api/system/{id64}`.
 4. **query builder** — строит payload Spansh из координат и радиуса. Температура, давление, гравитация, subtype, атмосфера и статусы тела проверяются локально.
 5. **pagination** — предпочитает recall по `search_reference`; если reference отсутствует, повторяет POST с `page=N`. Использует `count/from`, empty/short-page fallback и защитный лимит 100 страниц.
-6. **normalizer/evaluator** — приводит nullable-поля к доменным типам и проверяет точные границы локально. Отсутствующие числовые поля не превращаются в ноль.
+6. **normalizer/evaluator** — приводит nullable-поля к доменным типам и проверяет точные границы локально. Для атмосферы использует описательный label; если он равен `No atmosphere`, извлекает доминирующий газ из `atmosphere_composition[{name, share}]`. Отсутствующие числовые поля не превращаются в ноль.
 7. **presentation** — группирует строго по `system_id64`; не содержит HTTP и бизнес-логики.
 
 ## Контракт Spansh: подтверждённое и требующее проверки
@@ -71,8 +71,10 @@ CLI / Args
 - Ответ body search содержит `count`, `from`, `results`, `search`, `search_reference`, `size`.
 - `search_reference` — UUID; `GET /api/bodies/search/recall/{reference}/1` вернул следующую страницу. Для выдачи `count=40` запрос страницы 39 вернул `from=39` и одну строку; условие `from + rows >= count` корректно распознало последнюю страницу.
 - Повторный POST с `page=1` также вернул следующую страницу: `from` изменился с 0 на 1, ID64 тела отличался.
-- В живом ответе тела наблюдались поля `name`, `id64`, `system_id64`, `system_name`, `subtype`, `distance`, `is_landable`, `is_mapped`, `surface_temperature`, `surface_pressure`, `gravity`, `atmosphere`.
+- В живом ответе тела наблюдались поля `name`, `id64`, `system_id64`, `system_name`, `subtype`, `distance`, `is_landable`, `is_mapped`, `surface_temperature`, `surface_pressure`, `gravity`, `atmosphere`, `atmosphere_composition`.
 - Для Mercury поле `is_mapped` пришло как `null`; согласно legacy parser default, `null` трактуется как false (не отмечено как mapped).
+- `atmosphere` — описательный label и иногда содержит `No atmosphere` даже при заполненном составе. `atmosphere_composition` — массив компонентов с долями: Venus CO2 96.5%, Earth Nitrogen 77.89%/Oxygen 20.89%, Io Sulphur dioxide 90%. Нормализатор проверен live: Venus -> Carbon dioxide, Earth -> Nitrogen, Io -> Sulphur dioxide.
+- Температуры наблюдались в диапазоне, соответствующем Kelvin; gravity — в единицах g. Значения pressure выглядят совместимыми с atm, но единица давления остаётся требующей независимой проверки.
 
 Проверенные координаты: Sol `(0,0,0)`, радиус 1 св. л., страницы 0/1. Это подтверждает рабочий путь запроса и завершение 40-строчной выдачи, но не полный контракт API; выдачи 100+ строк ещё не проверены.
 
