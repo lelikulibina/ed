@@ -619,7 +619,7 @@ mod tests {
                 ))
             );
 
-            for page_index in [2_u32, 3, 4] {
+            for page_index in [2_u32, 3, 4, 5, 6, 7, 8, 9, 10] {
                 let page_response = client
                     .get_json(&format!("/api/bodies/search/recall/{guid}/{page_index}"))
                     .await
@@ -631,6 +631,8 @@ mod tests {
                     planet_page.bodies.first().map(|body| (
                         &body.name,
                         &body.subtype,
+                        body.is_landable,
+                        body.is_mapped,
                         body.surface_temperature,
                         body.surface_pressure,
                         body.gravity,
