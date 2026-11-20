@@ -697,6 +697,18 @@ mod tests {
                 total_count <= 10_000,
                 "current 100-page safety limit must cover the provider result cap"
             );
+            let nearby_landable = bulk_page
+                .bodies
+                .iter()
+                .find(|body| !is_center_system(body, &center) && body.is_landable == Some(true))
+                .expect("100-ly first page should include a landable body in another system");
+            eprintln!(
+                "Nearby landable body: {} in {:?}, subtype={:?}, distance={:?}",
+                nearby_landable.name,
+                nearby_landable.system_name,
+                nearby_landable.subtype,
+                nearby_landable.distance_ly
+            );
 
             let last_index = u32::try_from((total_count - 1) / 100).unwrap();
             let last_response = if let Some(reference) = find_guid(&bulk_response) {
