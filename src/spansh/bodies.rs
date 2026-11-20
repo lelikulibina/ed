@@ -590,8 +590,7 @@ mod tests {
                 is_last_page(&last_page, 39, 1)
             );
 
-            let mut wide_query =
-                BodySearchQuery::new(center.coordinates, 100.0, 1).unwrap();
+            let mut wide_query = BodySearchQuery::new(center.coordinates, 100.0, 1).unwrap();
             let wide_response = client
                 .post_json("/api/bodies/search", &wide_query.to_payload())
                 .await
@@ -607,9 +606,7 @@ mod tests {
             );
             let neighbor_response = if let Some(reference) = find_guid(&wide_response) {
                 client
-                    .get_json(&format!(
-                        "/api/bodies/search/recall/{reference}/40"
-                    ))
+                    .get_json(&format!("/api/bodies/search/recall/{reference}/40"))
                     .await
                     .expect("100-ly recall page 40 must succeed")
             } else {
@@ -636,9 +633,7 @@ mod tests {
             );
             eprintln!(
                 "Spansh 100-ly page 40: system={:?}, ID64={:?}, distance={:?}",
-                neighbor.system_name,
-                neighbor.system_id64,
-                neighbor.distance_ly
+                neighbor.system_name, neighbor.system_id64, neighbor.distance_ly
             );
         } else {
             query.page = 1;
