@@ -113,8 +113,8 @@ impl BodySearch {
                 let path = format!("/api/bodies/search/recall/{search_guid}/{next_page}");
                 self.client.get_json(&path).await?
             } else {
-                // Live API probe confirms page=N is accepted when no
-                // search_reference is present in the response.
+                // Live API probe confirms page=N advances the result set; use it
+                // as fallback when no search_reference is supplied.
                 query.page = next_page;
                 self.client
                     .post_json("/api/bodies/search", &query.to_payload())
