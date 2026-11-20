@@ -146,7 +146,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn menu_accepts_only_numeric_choices_one_through_nine() {
+    fn menu_choice_parser_accepts_numbers_and_rejects_text() {
         for choice in 1..=9 {
             assert_eq!(parse_menu_choice(&choice.to_string()).unwrap(), choice);
         }
