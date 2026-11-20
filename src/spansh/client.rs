@@ -1,8 +1,13 @@
 use std::{sync::Arc, time::Duration};
 
+use tokio::time::Instant;
+
 use reqwest::{Client, StatusCode};
 use serde_json::Value;
-use tokio::{sync::Semaphore, time::sleep};
+use tokio::{
+    sync::{Mutex, Semaphore},
+    time::sleep,
+};
 
 /// Низкоуровневый HTTP-транспорт Spansh. Контракт конкретных endpoint-ов
 /// намеренно остаётся в query/resolver слоях: API Spansh документирован не полностью.
@@ -13,6 +18,8 @@ pub struct SpanshClient {
     permits: Arc<Semaphore>,
     max_attempts: usize,
     retry_delay: Duration,
+    request_interval: Duration,
+    last_request_at: Arc<Mutex<Option<Instant>>>,
 }
 
 impl SpanshClient {
@@ -33,6 +40,8 @@ impl SpanshClient {
             permits: Arc::new(Semaphore::new(concurrency.max(1))),
             max_attempts: 4,
             retry_delay: Duration::from_millis(500),
+            request_interval: Duration::from_secs(1),
+            last_request_at: Arc::new(Mutex::new(None)),
         })
     }
 
@@ -62,6 +71,7 @@ impl SpanshClient {
         let url = format!("{}/{}", self.base_url, path.trim_start_matches('/'));
 
         for attempt in 0..self.max_attempts {
+            self.wait_for_request_slot().await;
             let mut request = match method {
                 Method::Get => self.http.get(&url),
                 Method::Post => self.http.post(&url),
@@ -97,6 +107,17 @@ impl SpanshClient {
         }
 
         unreachable!("retry loop always returns on the final attempt")
+    }
+
+    async fn wait_for_request_slot(&self) {
+        let mut last_request_at = self.last_request_at.lock().await;
+        if let Some(last_request_at) = *last_request_at {
+            let elapsed = last_request_at.elapsed();
+            if elapsed < self.request_interval {
+                sleep(self.request_interval - elapsed).await;
+            }
+        }
+        *last_request_at = Some(Instant::now());
     }
 }
 
@@ -164,6 +185,7 @@ mod tests {
 
         let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
         client.retry_delay = Duration::from_millis(1);
+        client.request_interval = Duration::from_millis(1);
         let value = client.get_json("/fixture").await.unwrap();
         assert!(value["ok"].as_bool().unwrap());
         server.await.unwrap();
