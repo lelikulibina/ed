@@ -55,7 +55,9 @@ fn footfall_evidence_summary(body: &Body) -> String {
         ),
         FootfallEvidence::UnfootfalledAtScan => format!(
             "журнал Scan.WasFootfalled=false ({}) — до этого сканирования высадки не было; хороший признак для бонуса, но не гарантия First Logged",
-            body.journal_scan_timestamp.as_deref().unwrap_or("дата неизвестна")
+            body.journal_scan_timestamp
+                .as_deref()
+                .unwrap_or("дата неизвестна")
         ),
         FootfallEvidence::PreOdysseyUpdate => format!(
             "прямой статус неизвестен; данные Spansh обновлялись до Odyssey ({updated_at}), потенциально перспективная планета, но свободная высадка не гарантирована"
