@@ -24,7 +24,7 @@ pub struct SearchCriteria {
     pub gravity: NumericRange,
     pub pressure: NumericRange,
     pub count: usize,
-    pub exclude_biological: bool,
+    pub exclude_with_bio_signals: bool,
 }
 
 impl SearchCriteria {
@@ -47,12 +47,12 @@ impl SearchCriteria {
             gravity,
             pressure,
             count,
-            exclude_biological: false,
+            exclude_with_bio_signals: false,
         })
     }
 
-    pub fn with_exclude_biological(mut self, exclude: bool) -> Self {
-        self.exclude_biological = exclude;
+    pub fn with_exclude_with_bio_signals(mut self, exclude: bool) -> Self {
+        self.exclude_with_bio_signals = exclude;
         self
     }
 
@@ -72,7 +72,7 @@ impl SearchCriteria {
             && self.pressure.contains(body.surface_pressure)
             && body.is_landable == Some(true)
             && body.is_mapped != Some(true)
-            && (!self.exclude_biological || !has_biological_evidence(body))
+            && (!self.exclude_with_bio_signals || !has_biological_evidence(body))
     }
 }
 
@@ -248,8 +248,8 @@ mod tests {
     }
 
     #[test]
-    fn exclude_biological_filters_positive_signal_count_and_known_genera() {
-        let mut criteria = criteria().with_exclude_biological(true);
+    fn exclude_with_bio_signals_filters_positive_signal_count_and_known_genera() {
+        let mut criteria = criteria().with_exclude_with_bio_signals(true);
         let mut body = Body {
             id64: None,
             name: "Bio world".to_owned(),
@@ -283,7 +283,7 @@ mod tests {
         body.biological_genera = None;
         assert!(criteria.matches(&body));
 
-        criteria.exclude_biological = false;
+        criteria.exclude_with_bio_signals = false;
         body.biological_signal_count = Some(3);
         assert!(criteria.matches(&body));
     }
