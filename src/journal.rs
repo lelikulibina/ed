@@ -159,10 +159,7 @@ fn scan_footfall_record(value: &Value) -> Option<(Vec<BodyKey>, FootfallRecord)>
         keys.push((format!("id:{system_address}"), body_name.clone()));
     }
     if let Some(system_name) = string_field(value, &["StarSystem", "SystemName", "system_name"]) {
-        keys.push((
-            format!("name:{}", normalize_key(&system_name)),
-            body_name,
-        ));
+        keys.push((format!("name:{}", normalize_key(&system_name)), body_name));
     }
 
     if keys.is_empty() {
