@@ -1083,6 +1083,11 @@ mod tests {
                 .resolve(name)
                 .await
                 .unwrap_or_else(|error| panic!("cannot resolve {name}: {error}"));
+            assert!(
+                center.name.eq_ignore_ascii_case(name),
+                "resolver selected {} instead of exact requested system {name}",
+                center.name
+            );
             let query = BodySearchQuery::new(center.coordinates, 1_000.0, 100).unwrap();
             let response = client
                 .post_json("/api/bodies/search", &query.to_payload())
