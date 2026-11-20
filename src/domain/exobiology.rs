@@ -607,11 +607,13 @@ mod tests {
         );
 
         planet.geological_signal_count = Some(0);
-        assert!(!estimate(&planet)
-            .unwrap()
-            .genera
-            .iter()
-            .any(|genus| genus.genus == "Fumerola"));
+        assert!(
+            !estimate(&planet)
+                .unwrap()
+                .genera
+                .iter()
+                .any(|genus| genus.genus == "Fumerola")
+        );
     }
 
     #[test]
