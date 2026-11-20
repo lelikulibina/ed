@@ -89,7 +89,7 @@ pub fn estimate(body: &Body) -> Result<ExobiologyEstimate, EstimateError> {
         {
             candidate
                 .unknown_conditions
-                .push("точный список биологических родов Spansh".to_owned());
+                .push("точный список биологических групп Spansh".to_owned());
             candidate.status = CandidateStatus::NeedsVerification;
         }
         by_genus
