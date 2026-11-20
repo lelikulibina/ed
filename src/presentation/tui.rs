@@ -148,7 +148,10 @@ fn run_manual_setup() -> Result<TuiSelection> {
         count.trim().parse::<usize>()?
     };
     let exclude = prompt("Исключать тела с зарегистрированными биосигналами? [н]")?;
-    let exclude = matches!(exclude.trim().to_ascii_lowercase().as_str(), "д" | "да" | "y" | "yes");
+    let exclude = matches!(
+        exclude.trim().to_ascii_lowercase().as_str(),
+        "д" | "да" | "y" | "yes"
+    );
     let criteria = SearchCriteria::from_cli(
         if planet.trim().is_empty() {
             "any"
