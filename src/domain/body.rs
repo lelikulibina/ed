@@ -467,6 +467,44 @@ mod tests {
     }
 
     #[test]
+    fn parses_official_body_lookup_record_shape() {
+        let body = Body::from_json(&serde_json::json!({
+            "record": {
+                "id64": 123,
+                "system_id64": 456,
+                "system_name": "Drojia",
+                "name": "Drojia 3",
+                "type": "Planet",
+                "subtype": "Rocky body",
+                "distance": 12.5,
+                "atmosphere": "Water",
+                "volcanism_type": "No volcanism",
+                "surface_temperature": 425.0,
+                "surface_pressure": 0.05,
+                "gravity": 0.2,
+                "is_landable": true,
+                "signals": [
+                    {"name": "Biological", "count": 3},
+                    {"name": "Geological", "count": 1}
+                ],
+                "signal_count": 4,
+                "signals_updated_at": "2026-11-20T00:00:00Z",
+                "genuses": [{"name": "Bacterial"}, {"name": "Tussocks"}]
+            }
+        }))
+        .unwrap();
+
+        assert_eq!(body.id64.as_deref(), Some("123"));
+        assert_eq!(body.system_id64.as_deref(), Some("456"));
+        assert_eq!(body.volcanism_type.as_deref(), Some("No volcanism"));
+        assert_eq!(body.biological_signal_count, Some(3));
+        assert_eq!(
+            body.biological_genera,
+            Some(vec!["Bacterium".to_owned(), "Tussock".to_owned()])
+        );
+    }
+
+    #[test]
     fn parses_dump_body_detail_wrapper_and_codex_genus_tokens() {
         let body = Body::from_json(&serde_json::json!({
             "record": {
