@@ -1132,58 +1132,44 @@ mod tests {
             .resolve("Drojia ZB-Z b32-0")
             .await
             .expect("Drojia center system must resolve");
-        let query = BodySearchQuery::new(center.coordinates, 1_000.0, 1).unwrap();
-        let stages = [
-            (
-                "subtype+atmosphere",
-                serde_json::json!({
-                    "subtype": { "value": ["Rocky body"] },
-                    "atmosphere": { "value": ["Water"] }
-                }),
-            ),
-            (
-                "subtype+landable",
-                serde_json::json!({
-                    "subtype": { "value": ["Rocky body"] },
-                    "is_landable": { "value": true }
-                }),
-            ),
-            (
-                "atmosphere+landable",
-                serde_json::json!({
-                    "atmosphere": { "value": ["Water"] },
-                    "is_landable": { "value": true }
-                }),
-            ),
-        ];
+        let query = BodySearchQuery::new(center.coordinates, 1_000.0, 100).unwrap();
+        let mut payload = query.to_payload();
+        payload["filters"] = serde_json::json!({
+            "distance": { "min": 0, "max": 1_000 },
+            "subtype": { "value": ["Rocky body"] },
+            "atmosphere": { "value": ["Water"] },
+            "surface_temperature": { "comparison": "<=>", "value": [190.0, 195.0] },
+            "surface_pressure": { "comparison": "<=>", "value": [0.042, 0.237] },
+            "gravity": { "comparison": "<=>", "value": [0.1, 1.0] }
+        });
+        eprintln!("Drojia exact physical filters without landability: {payload}");
 
-        for (label, filters) in stages {
-            let mut payload = query.to_payload();
-            payload["filters"] = filters;
-            let response = client
-                .post_json("/api/bodies/search", &payload)
-                .await
-                .unwrap_or_else(|error| panic!("Drojia stage {label} failed: {error}"));
-            let page = parse_page(&response).expect("Drojia stage response must parse");
+        let response = client
+            .post_json("/api/bodies/search", &payload)
+            .await
+            .expect("Drojia physical-filter query must succeed");
+        let page = parse_page(&response).expect("Drojia response must parse");
+        eprintln!(
+            "Drojia exact filters without is_landable: count={:?}, rows={}",
+            page.total_count,
+            page.last_page_size
+        );
+        for body in page.bodies.iter().take(15) {
             eprintln!(
-                "Drojia pair {label}: count={:?}, first={:?}",
-                page.total_count,
-                page.bodies.first().map(|body| (
-                    &body.name,
-                    &body.subtype,
-                    &body.atmosphere,
-                    body.is_landable,
-                    body.distance_ly
-                ))
+                "{} | system={} | subtype={:?} | atmosphere={:?} | temp={:?} K | pressure={:?} atm | gravity={:?} g | landable={:?}",
+                body.name,
+                body.system_name.as_deref().unwrap_or("?"),
+                body.subtype,
+                body.atmosphere,
+                body.surface_temperature,
+                body.surface_pressure,
+                body.gravity,
+                body.is_landable
             );
         }
         eprintln!(
-            "Drojia center resolved as {} (ID64={}) at ({:.3},{:.3},{:.3})",
-            center.name,
-            center.id64,
-            center.coordinates.x,
-            center.coordinates.y,
-            center.coordinates.z
+            "Drojia center resolved as {} (ID64={})",
+            center.name, center.id64
         );
     }
 
