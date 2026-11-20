@@ -61,8 +61,7 @@ impl BodySearch {
         center: &ResolvedSystem,
         criteria: &SearchCriteria,
     ) -> Result<Vec<Body>, BodySearchError> {
-        let mut query =
-            BodySearchQuery::new(center.coordinates, self.radius_ly, self.page_size)?;
+        let mut query = BodySearchQuery::new(center.coordinates, self.radius_ly, self.page_size)?;
         let initial = self
             .client
             .post_json("/api/bodies/search", &query.to_payload())
