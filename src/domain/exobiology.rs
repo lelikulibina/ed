@@ -267,6 +267,82 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
     })
 }
 
+fn conditional_temperature_rules_match(
+    entry: &Value,
+    body: &Body,
+    unknown_conditions: &mut Vec<String>,
+) -> bool {
+    let Some(rules) = entry["conditional_temperature_rules"].as_array() else {
+        return true;
+    };
+
+    for rule in rules {
+        let Some(atmospheres) = rule["atmospheres"].as_array() else {
+            continue;
+        };
+        match body.atmosphere.as_deref() {
+            Some(actual)
+                if atmospheres.iter().any(|value| {
+                    value
+                        .as_str()
+                        .is_some_and(|expected| expected.eq_ignore_ascii_case(actual.trim()))
+                }) =>
+            {
+                if !temperature_rule_matches(rule, body, unknown_conditions) {
+                    return false;
+                }
+            }
+            Some(_) => {}
+            None => unknown_conditions
+                .push("атмосфера для условного температурного ограничения".to_owned()),
+        }
+    }
+
+    true
+}
+
+fn temperature_rule_matches(
+    rule: &Value,
+    body: &Body,
+    unknown_conditions: &mut Vec<String>,
+) -> bool {
+    if let Some(minimum) = rule["temperature_min_k"].as_f64() {
+        let inclusive = rule["temperature_min_inclusive"].as_bool().unwrap_or(true);
+        match body.surface_temperature {
+            Some(actual) => {
+                let outside_range = if inclusive {
+                    actual < minimum
+                } else {
+                    actual <= minimum
+                };
+                if outside_range {
+                    return false;
+                }
+            }
+            None => unknown_conditions.push("температура поверхности".to_owned()),
+        }
+    }
+
+    if let Some(maximum) = rule["temperature_max_k"].as_f64() {
+        let inclusive = rule["temperature_max_inclusive"].as_bool().unwrap_or(true);
+        match body.surface_temperature {
+            Some(actual) => {
+                let outside_range = if inclusive {
+                    actual > maximum
+                } else {
+                    actual >= maximum
+                };
+                if outside_range {
+                    return false;
+                }
+            }
+            None => unknown_conditions.push("температура поверхности".to_owned()),
+        }
+    }
+
+    true
+}
+
 fn match_string_constraint(
     allowed: Option<&[Value]>,
     actual: Option<&str>,
