@@ -469,14 +469,15 @@ mod tests {
         let search_preview = ["systems", "results", "values", "data"]
             .iter()
             .find_map(|key| {
-                system_search.get(key).and_then(Value::as_array).map(|items| {
-                    items.iter().take(3).cloned().collect::<Vec<_>>()
-                })
+                system_search
+                    .get(key)
+                    .and_then(Value::as_array)
+                    .map(|items| items.iter().take(3).cloned().collect::<Vec<_>>())
             })
             .or_else(|| {
-                system_search.as_array().map(|items| {
-                    items.iter().take(3).cloned().collect::<Vec<_>>()
-                })
+                system_search
+                    .as_array()
+                    .map(|items| items.iter().take(3).cloned().collect::<Vec<_>>())
             });
         eprintln!("Live system search: keys=[{search_keys}], preview={search_preview:?}");
 
