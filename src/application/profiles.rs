@@ -130,41 +130,32 @@ pub const SEARCH_PROFILES: [SearchProfile; 7] = [
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn all_seven_profiles_keep_the_specified_ranges_and_order() {
-        let expected = [
-            (
-                1,
-                "Carbon dioxide",
-                (190.0, 195.0),
-                (0.042, 0.237),
-                9,
-                363_000_000,
-            ),
-            (
-                1,
-                "Carbon dioxide",
-                (180.0, 190.0),
-                (0.042, 0.275),
-                7,
-                166_000_000,
-            ),
-            (2, "Water", (395.0, 450.0), (0.040, 0.063), 6, 279_000_000),
-            (1, "Ammonia", (165.0, 175.0), (0.040, 0.340), 4, 94_000_000),
-            (1, "Argon", (50.0, 150.0), (0.167, 0.272), 3, 65_000_000),
-            (
-                1,
-                "Sulphur dioxide",
-                (132.0, 195.0),
-                (0.044, 0.275),
-                2,
-                141_000_000,
-            ),
-            (1, "Oxygen", (145.0, 270.0), (0.238, 0.275), 2, 111_000_000),
+        let expected_types: [&[&str]; 7] = [
+            &["Rocky body"],
+            &["Rocky body"],
+            &["Rocky body", "High metal content world"],
+            &["Rocky body"],
+            &["Icy body"],
+            &["Rocky body"],
+            &["Icy body"],
         ];
+        let expected = [
+            ("Carbon dioxide", (190.0, 195.0), (0.042, 0.237), 9, 363_000_000),
+            ("Carbon dioxide", (180.0, 190.0), (0.042, 0.275), 7, 166_000_000),
+            ("Water", (395.0, 450.0), (0.040, 0.063), 6, 279_000_000),
+            ("Ammonia", (165.0, 175.0), (0.040, 0.340), 4, 94_000_000),
+            ("Argon", (50.0, 150.0), (0.167, 0.272), 3, 65_000_000),
+            ("Sulphur dioxide", (132.0, 195.0), (0.044, 0.275), 2, 141_000_000),
+            ("Oxygen", (145.0, 270.0), (0.238, 0.275), 2, 111_000_000),
+        ];
+
         for (index, (profile, (atmosphere, temp, pressure, species, credits))) in
             SEARCH_PROFILES.iter().zip(expected).enumerate()
         {
+            assert_eq!(profile.number, index + 1);
             assert_eq!(profile.planet_types, expected_types[index]);
             assert_eq!(profile.atmosphere, atmosphere);
             assert_eq!(profile.temperature, temp);
