@@ -90,7 +90,8 @@
 - `cargo clippy --locked --all-targets --all-features -- -D warnings`
 - `cargo test --locked --all-targets`
 - Никакие unit/fixture tests не требуют интернета.
-- Smoke tests должны запускаться только явным флагом/отдельным workflow и иметь жёсткий timeout.
+- Smoke tests запускаются отдельным workflow по `workflow_dispatch` или commit marker `[spansh-live-smoke]`; текущий live probe подтверждает POST `/api/bodies/search` с Sol coords/radius=1/page size=5 (HTTP 2xx, 5 parseable rows, no recognized GUID). Page=1 behavior is being probed separately.
+- Live workflow does not run on ordinary commits; network smoke remains outside required CI.
 
 
 ## Фактическое покрытие текущей реализации
