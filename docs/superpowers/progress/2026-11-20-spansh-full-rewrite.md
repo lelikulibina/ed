@@ -120,3 +120,7 @@
 
 - CI `44666723736` подтвердил Format=pass, затем обнаружил два Clippy `collapsible_if` в новой логике пропуска name-only кандидатов. Оба исправлены let-chain в SHA `b9500b37c27a45a1fbca080c4ed4832590ad9df3`; новый Rust CI запущен.
 - Live smoke run `44666765601` запущен на коммите с обновлённым resolver; ожидается завершение contract probe.
+
+- CI run `44666840239` на SHA `e104df65de65bf7251e001556a9e93f56c6b7fcd`: Format, Clippy и Tests прошли.
+- Live smoke run `44666765601` на resolver fix: PASS. Подтверждены Sol coordinates, recall pagination, Alpha Centauri 4.37712 ly, найденный matching body `2045 PC2`, count=10000 и последняя page 99.
+- Добавил coverage test для каждого прежнего значения planet/atmosphere CLI enum. Также усилил live smoke: Venus должна возвращать ~93.19 pressure / 735 K / 0.904 g, Earth ~0.999 pressure / 288 K / 0.999 g. Это согласуется с атмосферными pressure units (atm), но остаётся проверкой на примерах, а не официальной спецификацией единиц.
