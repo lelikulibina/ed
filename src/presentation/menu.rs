@@ -57,19 +57,58 @@ pub fn run_menu<R: BufRead, W: Write>(reader: &mut R, writer: &mut W) -> io::Res
                     return Ok(MenuAction::Exit);
                 };
                 let Some(planet) = prompt_allowed(
-                    reader, writer,
+                    reader,
+                    writer,
                     "Тип поверхности (rocky body / icy body / rocky ice world / high metal content world / any): ",
-                    &["Rocky body", "Icy body", "Rocky ice world", "High metal content world", "any"],
-                )? else { return Ok(MenuAction::Exit); };
+                    &[
+                        "Rocky body",
+                        "Icy body",
+                        "Rocky ice world",
+                        "High metal content world",
+                        "any",
+                    ],
+                )?
+                else {
+                    return Ok(MenuAction::Exit);
+                };
                 let Some(atmosphere) = prompt_allowed(
-                    reader, writer,
+                    reader,
+                    writer,
                     "Атмосфера (ammonia / water / carbon dioxide / sulphur dioxide / argon / oxygen / any): ",
-                    &["Ammonia", "Water", "Carbon dioxide", "Sulphur dioxide", "Nitrogen", "Methane", "Helium", "Silicate vapour", "Neon", "Argon", "Oxygen", "any"],
-                )? else { return Ok(MenuAction::Exit); };
-                let Some(temperature) = prompt_range_i32(reader, writer, "Температура, K (min-max): ")? else { return Ok(MenuAction::Exit); };
-                let Some(gravity) = prompt_range_f32(reader, writer, "Гравитация, g (min-max): ")? else { return Ok(MenuAction::Exit); };
-                let Some(pressure) = prompt_range_f32(reader, writer, "Давление, atm (min-max): ")? else { return Ok(MenuAction::Exit); };
-                let Some(count) = prompt_count(reader, writer)? else { return Ok(MenuAction::Exit); };
+                    &[
+                        "Ammonia",
+                        "Water",
+                        "Carbon dioxide",
+                        "Sulphur dioxide",
+                        "Nitrogen",
+                        "Methane",
+                        "Helium",
+                        "Silicate vapour",
+                        "Neon",
+                        "Argon",
+                        "Oxygen",
+                        "any",
+                    ],
+                )?
+                else {
+                    return Ok(MenuAction::Exit);
+                };
+                let Some(temperature) =
+                    prompt_range_i32(reader, writer, "Температура, K (min-max): ")?
+                else {
+                    return Ok(MenuAction::Exit);
+                };
+                let Some(gravity) = prompt_range_f32(reader, writer, "Гравитация, g (min-max): ")?
+                else {
+                    return Ok(MenuAction::Exit);
+                };
+                let Some(pressure) = prompt_range_f32(reader, writer, "Давление, atm (min-max): ")?
+                else {
+                    return Ok(MenuAction::Exit);
+                };
+                let Some(count) = prompt_count(reader, writer)? else {
+                    return Ok(MenuAction::Exit);
+                };
                 let criteria = SearchCriteria::from_cli(
                     &planet,
                     &atmosphere,
@@ -171,10 +210,16 @@ fn prompt_allowed<R: BufRead, W: Write>(
         let Some(value) = prompt_nonempty(r, w, prompt)? else {
             return Ok(None);
         };
-        if let Some(canonical) = allowed.iter().find(|item| item.eq_ignore_ascii_case(&value)) {
+        if let Some(canonical) = allowed
+            .iter()
+            .find(|item| item.eq_ignore_ascii_case(&value))
+        {
             return Ok(Some((*canonical).to_owned()));
         }
-        writeln!(w, "Недопустимое значение. Выберите один из перечисленных вариантов.")?;
+        writeln!(
+            w,
+            "Недопустимое значение. Выберите один из перечисленных вариантов."
+        )?;
     }
 }
 fn prompt_range_i32<R: BufRead, W: Write>(
@@ -266,18 +311,28 @@ mod tests {
     fn eof_during_profile_input_exits_cleanly() {
         let mut input = Cursor::new(b"4\\nSol\\n".to_vec());
         let mut output = Vec::new();
-        assert!(matches!(run_menu(&mut input, &mut output).unwrap(), MenuAction::Exit));
+        assert!(matches!(
+            run_menu(&mut input, &mut output).unwrap(),
+            MenuAction::Exit
+        ));
     }
 
     #[test]
     fn manual_mode_reprompts_after_invalid_surface_type() {
-        let mut input = Cursor::new(b"8\\nSol\\nnot-a-type\\nrocky body\\nwater\\n100-200\\n0.1-1.0\\n0.1-1.0\\n\\n".to_vec());
+        let mut input = Cursor::new(
+            b"8\\nSol\\nnot-a-type\\nrocky body\\nwater\\n100-200\\n0.1-1.0\\n0.1-1.0\\n\\n"
+                .to_vec(),
+        );
         let mut output = Vec::new();
         match run_menu(&mut input, &mut output).unwrap() {
             MenuAction::Search { criteria, .. } => assert_eq!(criteria.planet_type, "Rocky body"),
             MenuAction::Exit => panic!("expected manual search"),
         }
-        assert!(String::from_utf8(output).unwrap().contains("Недопустимое значение"));
+        assert!(
+            String::from_utf8(output)
+                .unwrap()
+                .contains("Недопустимое значение")
+        );
     }
 
     #[test]
