@@ -626,6 +626,14 @@ mod tests {
                     .expect("nearby Sol planet page must be retrievable");
                 let planet_page =
                     parse_page(&page_response).expect("nearby Sol planet page must parse");
+                if let Some(body) = planet_page.bodies.first() {
+                    match page_index {
+                        2 => assert_eq!(body.atmosphere.as_deref(), Some("Carbon dioxide")),
+                        3 => assert_eq!(body.atmosphere.as_deref(), Some("Nitrogen")),
+                        7 => assert_eq!(body.atmosphere.as_deref(), Some("Sulphur dioxide")),
+                        _ => {}
+                    }
+                }
                 let raw_body = page_response
                     .get("results")
                     .and_then(Value::as_array)
