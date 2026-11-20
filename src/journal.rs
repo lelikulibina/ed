@@ -4,7 +4,6 @@ use std::{
     fs::{self, File},
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 use serde_json::Value;
@@ -206,7 +205,7 @@ fn normalize_key(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
+    use std::{fs, time::{SystemTime, UNIX_EPOCH}};
 
     #[test]
     fn reads_latest_was_footfalled_value_by_system_address_and_body_name() {
