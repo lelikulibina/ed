@@ -127,9 +127,8 @@ pub fn atmosphere_filter_labels(value: &str) -> Vec<String> {
         .map(str::to_owned),
     );
 
-    candidates.retain(|candidate| {
-        normalize_atmosphere_label(candidate).eq_ignore_ascii_case(value)
-    });
+    candidates
+        .retain(|candidate| normalize_atmosphere_label(candidate).eq_ignore_ascii_case(value));
     candidates.sort();
     candidates.dedup();
     candidates
