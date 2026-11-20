@@ -499,7 +499,6 @@ mod tests {
         assert_eq!(payload["page"], 1);
     }
 
-
     #[tokio::test]
     async fn returns_page_limit_error_instead_of_silent_partial_results() {
         use tokio::{
