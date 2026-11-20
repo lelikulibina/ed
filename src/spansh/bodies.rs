@@ -1125,58 +1125,61 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "requires live network; one targeted atmosphere-variant diagnostic"]
-    async fn live_drojia_water_rock_variants() {
+    #[ignore = "requires live network; one targeted query matching table row 2"]
+    async fn live_drojia_carbon_dioxide_rocky_query() {
         let client = SpanshClient::spansh(1).unwrap();
         let center = super::super::system::SystemResolver::new(client.clone())
             .resolve("Drojia ZB-Z b32-0")
             .await
             .expect("Drojia center system must resolve");
-        let query = BodySearchQuery::new(center.coordinates, 1_000.0, 100).unwrap();
-        let payload = serde_json::json!({
-            "filters": {
-                "distance": { "min": 0, "max": 1_000 },
-                "subtype": { "value": ["Rocky body"] },
-                "atmosphere": {
-                    "value": crate::domain::body::atmosphere_filter_labels("Water")
-                },
-                "is_landable": { "value": true }
+        let criteria = SearchCriteria::from_cli(
+            "Rock",
+            "Carbon dioxide",
+            crate::domain::criteria::NumericRange {
+                min: 190.0,
+                max: 195.0,
             },
-            "sort": [{ "distance": { "direction": "asc" } }],
-            "size": 100,
-            "page": 0,
-            "reference_coords": {
-                "x": query.reference_coords.x,
-                "y": query.reference_coords.y,
-                "z": query.reference_coords.z
-            }
-        });
-        eprintln!("Drojia normalized atmosphere filter payload: {payload}");
+            crate::domain::criteria::NumericRange {
+                min: 0.1,
+                max: 1.0,
+            },
+            crate::domain::criteria::NumericRange {
+                min: 0.042,
+                max: 0.237,
+            },
+            15,
+        )
+        .unwrap();
 
-        let response = client
-            .post_json("/api/bodies/search", &payload)
+        let results = BodySearch::new(client)
+            .search(&center, &criteria)
             .await
-            .expect("Drojia atmosphere variant query must succeed");
-        let page = parse_page(&response).expect("Drojia response must parse");
+            .expect("Drojia carbon dioxide query must succeed");
         eprintln!(
-            "Drojia rocky landable Water variants: count={:?}, rows={}",
-            page.total_count, page.last_page_size
+            "Drojia resolved as {} (ID64={}), table row 2 matches: {}",
+            center.name,
+            center.id64,
+            results.len()
         );
-        for body in page.bodies.iter().take(15) {
+        for body in &results {
             eprintln!(
-                "{} | subtype={:?} | atmosphere={:?} | temp={:?} K | pressure={:?} atm | gravity={:?} g | landable={:?}",
+                "{} | system={} | subtype={:?} | atmosphere={:?} | temp={:?} K | pressure={:?} atm | gravity={:?} g",
                 body.name,
+                body.system_name.as_deref().unwrap_or("?"),
                 body.subtype,
                 body.atmosphere,
                 body.surface_temperature,
                 body.surface_pressure,
-                body.gravity,
-                body.is_landable
+                body.gravity
+            );
+            assert!(
+                criteria.matches(body),
+                "each result must satisfy all currently supported criteria"
             );
         }
-        eprintln!(
-            "Drojia center resolved as {} (ID64={})",
-            center.name, center.id64
+        assert!(
+            results.len() <= 15,
+            "search must not return more than the requested count"
         );
     }
 
