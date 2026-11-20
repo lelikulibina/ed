@@ -200,6 +200,112 @@ mod tests {
         assert!(empty.exhausted);
     }
 
+    #[tokio::test]
+    async fn search_posts_center_and_follows_recall_pages() {
+        use tokio::{
+            io::{AsyncReadExt, AsyncWriteExt},
+            net::TcpListener,
+        };
+
+        async fn read_request(socket: &mut tokio::net::TcpStream) -> String {
+            let mut bytes = Vec::new();
+            let mut chunk = [0_u8; 2048];
+            loop {
+                let read = socket.read(&mut chunk).await.unwrap();
+                if read == 0 { break; }
+                bytes.extend_from_slice(&chunk[..read]);
+                if let Some(header_end) = bytes.windows(4).position(|window| window == b"\\r\\n\\r\\n") {
+                    let headers = String::from_utf8_lossy(&bytes[..header_end]);
+                    let content_length = headers.lines()
+                        .find_map(|line| {
+                            let (key, value) = line.split_once(':')?;
+                            key.eq_ignore_ascii_case("content-length").then(|| value.trim().parse::<usize>().ok()).flatten()
+                        })
+                        .unwrap_or(0);
+                    if bytes.len() >= header_end + 4 + content_length { break; }
+                }
+            }
+            String::from_utf8_lossy(&bytes).to_string()
+        }
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let first = serde_json::json!({
+            "guid": "test-guid",
+            "results": [{
+                "name": "Unmapped? No",
+                "id64": "1001",
+                "system_id64": "2001",
+                "system_name": "Nearby A",
+                "subtype": "Rocky body",
+                "is_landable": true,
+                "is_mapped": true,
+                "surface_temperature": 250,
+                "surface_pressure": 1.0,
+                "gravity": 1.0,
+                "atmosphere": "Nitrogen"
+            }]
+        }).to_string();
+        let second = serde_json::json!({
+            "has_more": false,
+            "results": [{
+                "name": "Nearby B 1",
+                "id64": "1002",
+                "system_id64": "2002",
+                "system_name": "Nearby B",
+                "subtype": "Rocky body",
+                "is_landable": true,
+                "is_mapped": false,
+                "surface_temperature": 250,
+                "surface_pressure": 1.0,
+                "gravity": 1.0,
+                "atmosphere": "Nitrogen",
+                "distance": 12.0
+            }]
+        }).to_string();
+
+        let server = tokio::spawn(async move {
+            let mut requests = Vec::new();
+            for body in [first, second] {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                requests.push(read_request(&mut socket).await);
+                let response = format!(
+                    "HTTP/1.1 200 OK\\r\\ncontent-type: application/json\\r\\ncontent-length: {}\\r\\nconnection: close\\r\\n\\r\\n{}",
+                    body.len(), body
+                );
+                socket.write_all(response.as_bytes()).await.unwrap();
+            }
+            requests
+        });
+
+        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let center = ResolvedSystem {
+            id64: "42".to_owned(),
+            name: "Sol".to_owned(),
+            coordinates: super::super::query::Coordinates { x: 1.0, y: 2.0, z: 3.0 },
+        };
+        let criteria = SearchCriteria::from_cli(
+            "rocky body", "nitrogen",
+            crate::domain::criteria::NumericRange { min: 200.0, max: 300.0 },
+            crate::domain::criteria::NumericRange { min: 0.5, max: 1.5 },
+            crate::domain::criteria::NumericRange { min: 0.0, max: 2.0 },
+            1,
+        ).unwrap();
+
+        let results = BodySearch::new(client)
+            .with_limits(100.0, 1, 3)
+            .search(&center, &criteria)
+            .await
+            .unwrap();
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].name, "Nearby B 1");
+        let requests = server.await.unwrap();
+        assert!(requests[0].starts_with("POST /api/bodies/search "));
+        assert!(requests[0].contains("\\"reference_coords\\":{\\"x\\":1.0,\\"y\\":2.0,\\"z\\":3.0}"));
+        assert!(requests[1].starts_with("GET /api/bodies/search/recall/test-guid/1 "));
+    }
+
     #[test]
     fn rejects_unknown_page_shape_instead_of_reporting_empty_results() {
         assert!(matches!(
