@@ -42,7 +42,7 @@ impl SystemResolver {
 
         for end in (1..=parts.len()).rev() {
             let query = parts[..end].join(" ");
-            let path = format!("/api/search/systems?q={}", encode_query_component(&query));
+            let path = format!("/api/systems/field_values/system_names?q={}", encode_query_component(&query));
             let response = self.client.get_json(&path).await?;
             let candidate = if end == parts.len() {
                 exact_candidate(&response, &query)
@@ -426,9 +426,9 @@ mod tests {
 
         let requests = server.await.unwrap();
         assert!(
-            requests[0].starts_with("GET /api/search/systems?q=Col%20285%20Sector%20BQ-Y%20d40 ")
+            requests[0].starts_with("GET /api/systems/field_values/system_names?q=Col%20285%20Sector%20BQ-Y%20d40 ")
         );
-        assert!(requests[1].starts_with("GET /api/search/systems?q=Col%20285%20Sector%20BQ-Y "));
+        assert!(requests[1].starts_with("GET /api/systems/field_values/system_names?q=Col%20285%20Sector%20BQ-Y "));
         assert!(requests[2].starts_with("GET /api/system/9223372036854775807 "));
     }
 
@@ -473,7 +473,7 @@ mod tests {
             server
                 .await
                 .unwrap()
-                .starts_with("GET /api/search/systems?q=Sol ")
+                .starts_with("GET /api/systems/field_values/system_names?q=Sol ")
         );
     }
 
