@@ -304,7 +304,11 @@ mod tests {
         assert_eq!(results[0].name, "Nearby B 1");
         let requests = server.await.unwrap();
         assert!(requests[0].starts_with("POST /api/bodies/search "));
-        assert!(requests[0].contains("\\"reference_coords\\":{\\"x\\":1.0,\\"y\\":2.0,\\"z\\":3.0}"));
+        let (_, request_body) = requests[0].split_once("\\r\\n\\r\\n").unwrap();
+        let payload: Value = serde_json::from_str(request_body).unwrap();
+        assert_eq!(payload["reference_coords"]["x"], 1.0);
+        assert_eq!(payload["reference_coords"]["y"], 2.0);
+        assert_eq!(payload["reference_coords"]["z"], 3.0);
         assert!(requests[1].starts_with("GET /api/bodies/search/recall/test-guid/1 "));
     }
 
