@@ -13,6 +13,7 @@ use super::{
 const DEFAULT_RADIUS_LY: f64 = 1_000.0;
 const PAGE_SIZE: u16 = 100;
 const MAX_PAGES: u32 = 100;
+const PROVIDER_RESULT_LIMIT: usize = 10_000;
 
 #[derive(Debug, thiserror::Error)]
 pub enum BodySearchError {
@@ -24,6 +25,8 @@ pub enum BodySearchError {
     InvalidResponse,
     #[error("Spansh вернул некорректный объект планеты: {0}")]
     InvalidBody(String),
+    #[error("Spansh вернул {0} записей — возможно достигнут лимит выдачи 10 000; не удалось гарантировать полноту результатов")]
+    PotentialTruncation(usize),
     #[error("достигнут предел страниц поиска ({0}); результаты могут быть неполными")]
     PageLimit(u32),
 }
@@ -101,6 +104,12 @@ impl BodySearch {
             }
 
             if is_last_page(&page, page_index, self.page_size) {
+                if let Some(count) = page
+                    .total_count
+                    .filter(|count| *count >= PROVIDER_RESULT_LIMIT)
+                {
+                    return Err(BodySearchError::PotentialTruncation(count));
+                }
                 completed = true;
                 break;
             }
