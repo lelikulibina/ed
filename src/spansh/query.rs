@@ -143,12 +143,30 @@ mod tests {
 
         let payload = query.to_payload_with_criteria(&criteria);
         assert_eq!(payload["filters"]["distance"]["max"], 1_000.0);
-        assert_eq!(payload["filters"]["subtype"]["value"], serde_json::json!(["Rocky body"]));
-        assert_eq!(payload["filters"]["atmosphere"]["value"], serde_json::json!(["Water"]));
-        assert_eq!(payload["filters"]["surface_temperature"]["comparison"], "<=>");
-        assert_eq!(payload["filters"]["surface_temperature"]["value"], serde_json::json!([190.0, 195.0]));
-        assert_eq!(payload["filters"]["surface_pressure"]["value"], serde_json::json!([0.042, 0.237]));
-        assert_eq!(payload["filters"]["gravity"]["value"], serde_json::json!([0.1, 1.0]));
+        assert_eq!(
+            payload["filters"]["subtype"]["value"],
+            serde_json::json!(["Rocky body"])
+        );
+        assert_eq!(
+            payload["filters"]["atmosphere"]["value"],
+            serde_json::json!(["Water"])
+        );
+        assert_eq!(
+            payload["filters"]["surface_temperature"]["comparison"],
+            "<=>"
+        );
+        assert_eq!(
+            payload["filters"]["surface_temperature"]["value"],
+            serde_json::json!([190.0, 195.0])
+        );
+        assert_eq!(
+            payload["filters"]["surface_pressure"]["value"],
+            serde_json::json!([0.042, 0.237])
+        );
+        assert_eq!(
+            payload["filters"]["gravity"]["value"],
+            serde_json::json!([0.1, 1.0])
+        );
         assert_eq!(payload["filters"]["is_landable"]["value"], true);
         assert_eq!(payload["page"], 0);
         assert_eq!(payload["size"], 100);
