@@ -23,15 +23,6 @@ pub struct Body {
     pub signals_updated_at: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FootfallEvidence {
-    /// The latest Spansh update is before 2022; treat the body as not yet footfalled.
-    Pre2022Update,
-    /// The latest Spansh update is in 2022 or later; a landing may have happened.
-    Since2022Update,
-    Unknown,
-}
-
 #[derive(Debug, thiserror::Error, PartialEq)]
 pub enum BodyParseError {
     #[error("ожидался JSON-объект небесного тела")]
@@ -41,32 +32,6 @@ pub enum BodyParseError {
 }
 
 impl Body {
-    /// Spansh does not expose a direct First Footfall flag. Per the search heuristic,
-    /// a body whose last update predates 2022 is treated as not yet footfalled.
-    pub fn footfall_evidence(&self) -> FootfallEvidence {
-        let Some(timestamp) = self.last_updated_at.as_deref() else {
-            return FootfallEvidence::Unknown;
-        };
-        let Some(date) = timestamp.get(..10) else {
-            return FootfallEvidence::Unknown;
-        };
-        let bytes = date.as_bytes();
-        if bytes.len() != 10
-            || !bytes[0..4].iter().all(u8::is_ascii_digit)
-            || bytes[4] != b'-'
-            || !bytes[5..7].iter().all(u8::is_ascii_digit)
-            || bytes[7] != b'-'
-            || !bytes[8..10].iter().all(u8::is_ascii_digit)
-        {
-            return FootfallEvidence::Unknown;
-        }
-        if date < "2022-01-01" {
-            FootfallEvidence::Pre2022Update
-        } else {
-            FootfallEvidence::Since2022Update
-        }
-    }
-
     pub fn from_json(value: &Value) -> Result<Self, BodyParseError> {
         if !value.is_object() {
             return Err(BodyParseError::NotObject);
@@ -408,24 +373,6 @@ fn bool_field(value: &Value, names: &[&str]) -> Option<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn treats_pre_2022_updates_as_not_footfalled() {
-        let mut body = Body::from_json(&serde_json::json!({
-            "name": "Old body",
-            "updated_at": "2021-12-31T23:59:59Z"
-        }))
-        .unwrap();
-        assert_eq!(body.footfall_evidence(), FootfallEvidence::Pre2022Update);
-
-        body.last_updated_at = Some("2022-01-01T00:00:00Z".to_owned());
-        assert_eq!(body.footfall_evidence(), FootfallEvidence::Since2022Update);
-
-        body.last_updated_at = None;
-        assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
-        body.last_updated_at = Some("not-a-date".to_owned());
-        assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
-    }
 
     #[test]
     fn parses_body_without_losing_large_ids_or_nullable_fields() {
