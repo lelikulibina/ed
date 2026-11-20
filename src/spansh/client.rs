@@ -228,6 +228,33 @@ mod tests {
         server.await.unwrap();
     }
 
+
+    #[tokio::test]
+    async fn returns_server_error_after_retry_budget_is_exhausted() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let unavailable =
+            "HTTP/1.1 503 Service Unavailable\r\ncontent-length: 0\r\nconnection: close\r\n\r\n";
+        let server = tokio::spawn(respond(
+            listener,
+            vec![unavailable, unavailable, unavailable, unavailable],
+        ));
+
+        let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        client.retry_delay = Duration::from_millis(1);
+        client.request_interval = Duration::from_millis(1);
+        let error = client.get_json("/fixture").await.unwrap_err();
+
+        assert!(matches!(
+            error,
+            SpanshError::Status {
+                status: StatusCode::SERVICE_UNAVAILABLE,
+                ..
+            }
+        ));
+        server.await.unwrap();
+    }
+
     #[tokio::test]
     async fn does_not_retry_non_retryable_client_errors() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
