@@ -446,9 +446,15 @@ mod tests {
         assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
 
         body.journal_was_footfalled = Some(true);
-        assert_eq!(body.footfall_evidence(), FootfallEvidence::FootfalledBeforeScan);
+        assert_eq!(
+            body.footfall_evidence(),
+            FootfallEvidence::FootfalledBeforeScan
+        );
         body.journal_was_footfalled = Some(false);
-        assert_eq!(body.footfall_evidence(), FootfallEvidence::UnfootfalledAtScan);
+        assert_eq!(
+            body.footfall_evidence(),
+            FootfallEvidence::UnfootfalledAtScan
+        );
     }
 
     #[test]
