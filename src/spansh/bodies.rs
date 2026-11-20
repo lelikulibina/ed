@@ -531,7 +531,8 @@ mod tests {
                     break;
                 }
                 bytes.extend_from_slice(&chunk[..read]);
-                if let Some(header_end) = bytes.windows(4).position(|window| window == b"\r\n\r\n") {
+                if let Some(header_end) = bytes.windows(4).position(|window| window == b"\r\n\r\n")
+                {
                     let headers = String::from_utf8_lossy(&bytes[..header_end]);
                     let content_length = headers
                         .lines()
