@@ -17,5 +17,5 @@ jobs:
         with:
           components: rustfmt
       - uses: Swatinem/rust-cache@v2
-      - name: Run one targeted Drojia atmosphere-variant diagnostic
-        run: cargo test --locked --all-targets live_drojia_water_rock_variants -- --ignored --nocapture
+      - name: Run one targeted Drojia table-row-2 query
+        run: cargo test --locked --all-targets live_drojia_carbon_dioxide_rocky_query -- --ignored --nocapture
