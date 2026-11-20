@@ -437,10 +437,11 @@ mod tests {
             payload["filters"]["subtype"]["value"],
             serde_json::json!(["Rocky body"])
         );
-        assert_eq!(
-            payload["filters"]["atmosphere"]["value"],
-            serde_json::json!(["Nitrogen"])
-        );
+        let atmosphere_values = payload["filters"]["atmosphere"]["value"]
+            .as_array()
+            .unwrap();
+        assert!(atmosphere_values.contains(&serde_json::json!("Nitrogen")));
+        assert!(atmosphere_values.contains(&serde_json::json!("Thin Nitrogen")));
         assert_eq!(
             payload["filters"]["surface_temperature"]["value"],
             serde_json::json!([200.0, 300.0])
