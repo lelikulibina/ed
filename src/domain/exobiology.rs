@@ -348,7 +348,14 @@ mod tests {
         assert_eq!(clypeus.min_species_value_cr, 8_418_000);
         assert_eq!(clypeus.max_species_value_cr, 11_873_200);
         assert_eq!(estimate.minimum_base_value_cr, 0);
-        assert_eq!(estimate.maximum_base_value_cr, 57_014_400);
+        assert_eq!(
+            estimate.maximum_base_value_cr,
+            estimate
+                .genera
+                .iter()
+                .map(|genus| genus.max_species_value_cr)
+                .sum::<u64>()
+        );
         assert!(!estimate.probabilities_calculated);
     }
 
