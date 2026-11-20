@@ -12,7 +12,7 @@ use super::{
 
 const DEFAULT_RADIUS_LY: f64 = 1_000.0;
 const PAGE_SIZE: u16 = 100;
-const MAX_PAGES: u32 = 100;
+const MAX_PAGES: u32 = 1_000;
 const PROVIDER_RESULT_LIMIT: usize = 10_000;
 
 #[derive(Debug, thiserror::Error)]
@@ -25,10 +25,6 @@ pub enum BodySearchError {
     InvalidResponse,
     #[error("Spansh вернул некорректный объект планеты: {0}")]
     InvalidBody(String),
-    #[error(
-        "Spansh вернул {0} записей — возможно достигнут лимит выдачи 10 000; не удалось гарантировать полноту результатов"
-    )]
-    PotentialTruncation(usize),
     #[error("достигнут предел страниц поиска ({0}); результаты могут быть неполными")]
     PageLimit(u32),
 }
@@ -106,12 +102,6 @@ impl BodySearch {
             }
 
             if is_last_page(&page, page_index, self.page_size) {
-                if let Some(count) = page
-                    .total_count
-                    .filter(|count| *count >= PROVIDER_RESULT_LIMIT)
-                {
-                    return Err(BodySearchError::PotentialTruncation(count));
-                }
                 completed = true;
                 break;
             }
@@ -180,6 +170,17 @@ fn is_center_system(body: &Body, center: &ResolvedSystem) -> bool {
 }
 
 fn is_last_page(page: &ParsedPage, page_index: u32, page_size: u16) -> bool {
+    if page.last_page_size == 0 {
+        return true;
+    }
+
+    // Spansh may cap the reported count at 10,000. Do not treat that
+    // metadata (or a full capped final page) as proof that no later pages
+    // exist: probe the next page and stop only when it is actually empty.
+    if page.total_count.is_some_and(|count| count >= PROVIDER_RESULT_LIMIT) {
+        return false;
+    }
+
     if page.exhausted {
         return true;
     }
@@ -747,93 +748,6 @@ mod tests {
             .unwrap_err();
 
         assert!(matches!(error, BodySearchError::PageLimit(1)));
-        server.await.unwrap();
-    }
-
-    #[tokio::test]
-    async fn reports_possible_provider_truncation_when_10000_rows_are_exhausted() {
-        use tokio::{
-            io::{AsyncReadExt, AsyncWriteExt},
-            net::TcpListener,
-        };
-
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
-        let rows: Vec<Value> = (0..100)
-            .map(|index| {
-                serde_json::json!({
-                "name": format!("Mapped Body {index}"),
-                "id64": format!("{}{}", 1000, index),
-                "system_id64": format!("{}{}", 2000, index),
-                "system_name": format!("Nearby {index}"),
-                "subtype": "Rocky body",
-                "distance": index as f64,
-                "is_landable": true,
-                "is_mapped": true,
-                "surface_temperature": 250,
-                "surface_pressure": 1.0,
-                "gravity": 1.0,
-                "atmosphere": "Nitrogen"
-                })
-            })
-            .collect();
-        let response_body = serde_json::json!({
-            "count": 10000,
-            "from": 9900,
-            "results": rows
-        })
-        .to_string();
-
-        let server = tokio::spawn(async move {
-            let (mut socket, _) = listener.accept().await.unwrap();
-            let mut request = [0_u8; 8192];
-            let _ = socket.read(&mut request).await.unwrap();
-            let response = format!(
-                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
-                response_body.len(),
-                response_body
-            );
-            socket.write_all(response.as_bytes()).await.unwrap();
-        });
-
-        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
-        let center = ResolvedSystem {
-            id64: "42".to_owned(),
-            name: "Sol".to_owned(),
-            coordinates: super::super::query::Coordinates {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-        };
-        let criteria = SearchCriteria::from_cli(
-            "any",
-            "any",
-            crate::domain::criteria::NumericRange {
-                min: 0.0,
-                max: 5000.0,
-            },
-            crate::domain::criteria::NumericRange {
-                min: 0.0,
-                max: 10.0,
-            },
-            crate::domain::criteria::NumericRange {
-                min: 0.0,
-                max: 10.0,
-            },
-            1,
-        )
-        .unwrap();
-
-        let result = BodySearch::new(client)
-            .with_limits(1_000.0, 100, 100)
-            .search(&center, &criteria)
-            .await;
-
-        assert!(matches!(
-            result,
-            Err(BodySearchError::PotentialTruncation(10_000))
-        ));
         server.await.unwrap();
     }
 
