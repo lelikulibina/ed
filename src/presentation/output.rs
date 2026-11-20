@@ -218,6 +218,33 @@ mod tests {
     }
 
     #[test]
+    fn exobiology_summary_uses_biological_signal_count_and_confirmed_genera() {
+        let mut body = body("Test body", "100", "Test system");
+        body.subtype = Some("Rocky body".to_owned());
+        body.atmosphere = Some("Water".to_owned());
+        body.surface_temperature = Some(200.0);
+        body.gravity = Some(0.2);
+        body.biological_signal_count = Some(2);
+        body.biological_genera = Some(vec!["Osseus".to_owned(), "Tussock".to_owned()]);
+
+        let summary = exobiology_summary(&body).unwrap().unwrap();
+        assert!(summary.contains("Экзобиология — уточнение по родам Spansh"));
+        assert!(summary.contains("Биологических сигналов Spansh: 2"));
+        assert!(summary.contains("Роды Spansh: Osseus, Tussock"));
+        assert!(summary.contains("Каталог видов неполный"));
+        assert!(!summary.contains("Bacterium:"));
+    }
+
+    #[test]
+    fn exobiology_summary_reports_zero_biological_signals_explicitly() {
+        let mut body = body("Test body", "100", "Test system");
+        body.biological_signal_count = Some(0);
+
+        let summary = exobiology_summary(&body).unwrap().unwrap();
+        assert!(summary.contains("биологических сигналов Spansh не обнаружил"));
+    }
+
+    #[test]
     fn exobiology_summary_is_omitted_when_no_species_match_known_conditions() {
         let mut body = body("Test body", "100", "Test system");
         body.subtype = Some("Icy body".to_owned());
