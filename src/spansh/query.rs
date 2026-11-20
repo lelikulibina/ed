@@ -125,7 +125,7 @@ mod tests {
         assert_eq!(payload["reference_coords"]["x"], 55.7);
         assert_eq!(payload["filters"]["distance"]["max"], 50.0);
         assert_eq!(payload["filters"]["subtype"]["value"][0], "Earth-like world");
-        assert_eq!(payload["filters"]["is_landable"]["value"], true);
+        assert!(payload["filters"]["is_landable"]["value"].as_bool().unwrap());
         assert_eq!(payload["page"], 0);
         assert_eq!(payload["size"], 100);
     }
