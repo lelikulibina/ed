@@ -1228,6 +1228,75 @@ mod tests {
         }
     }
 
+    #[tokio::test]
+    #[ignore = "requires live network; targeted Spansh water-atmosphere diagnosis"]
+    async fn live_spansh_water_atmosphere_diagnostic() {
+        let client = SpanshClient::spansh(1).unwrap();
+        let center = super::super::system::SystemResolver::new(client.clone())
+            .resolve("Drojia ZB-Z b32-0")
+            .await
+            .expect("Drojia center system must resolve");
+        eprintln!(
+            "WATER_DIAGNOSTIC center={} id64={} coords=({},{},{})",
+            center.name, center.id64, center.coordinates.x, center.coordinates.y, center.coordinates.z
+        );
+
+        let base = serde_json::json!({
+            "filters": { "distance": { "min": 0, "max": 1000 } },
+            "sort": [{ "distance": { "direction": "asc" } }],
+            "size": 100,
+            "page": 0,
+            "reference_coords": {
+                "x": center.coordinates.x,
+                "y": center.coordinates.y,
+                "z": center.coordinates.z
+            }
+        });
+
+        let mut variants_payload = base.clone();
+        variants_payload["filters"]["atmosphere"] = serde_json::json!({
+            "value": crate::domain::body::atmosphere_filter_labels("Water")
+        });
+        let variants = client.post_json("/api/bodies/search", &variants_payload).await.unwrap();
+        eprintln!(
+            "WATER_DIAGNOSTIC variants labels={:?} count={:?} rows={}",
+            variants_payload["filters"]["atmosphere"]["value"],
+            variants.get("count"),
+            parse_page(&variants).unwrap().last_page_size
+        );
+        for row in variants.get("results").and_then(Value::as_array).into_iter().flatten().take(15) {
+            let parsed = Body::from_json(row).ok();
+            eprintln!(
+                "WATER_ROW raw={:?} composition={:?} parsed={:?} subtype={:?} landable={:?} mapped={:?} temp={:?} pressure={:?} gravity={:?} system={:?}",
+                row.get("atmosphere"),
+                row.get("atmosphere_composition"),
+                parsed.as_ref().and_then(|body| body.atmosphere.as_deref()),
+                parsed.as_ref().and_then(|body| body.subtype.as_deref()),
+                parsed.as_ref().and_then(|body| body.is_landable),
+                parsed.as_ref().and_then(|body| body.is_mapped),
+                parsed.as_ref().and_then(|body| body.surface_temperature),
+                parsed.as_ref().and_then(|body| body.surface_pressure),
+                parsed.as_ref().and_then(|body| body.gravity),
+                parsed.as_ref().and_then(|body| body.system_name.as_deref())
+            );
+        }
+
+        for label in ["Water", "Water-rich"] {
+            let mut payload = base.clone();
+            payload["filters"]["atmosphere"] = serde_json::json!({ "value": [label] });
+            let response = client.post_json("/api/bodies/search", &payload).await.unwrap();
+            eprintln!(
+                "WATER_DIAGNOSTIC exact_label={} count={:?} rows={} first={:?}",
+                label,
+                response.get("count"),
+                parse_page(&response).unwrap().last_page_size,
+                response.get("results").and_then(Value::as_array).and_then(|rows| rows.first())
+            );
+        }
+
+        assert!(variants.get("results").and_then(Value::as_array).is_some());
+    }
+
     #[test]
     fn rejects_unknown_page_shape_instead_of_reporting_empty_results() {
         assert!(matches!(
