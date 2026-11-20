@@ -248,17 +248,17 @@ fn prompt_range_f32<R: BufRead, W: Write>(
     r: &mut R,
     w: &mut W,
     prompt: &str,
-) -> io::Result<NumericRange> {
+) -> io::Result<Option<NumericRange>> {
     loop {
         write!(w, "{prompt}")?;
         w.flush()?;
         let Some(v) = read_line(r)? else {
-            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "EOF"));
+            return Ok(None);
         };
         if let Ok((a, b)) = parse_range_f32(&v)
             && let Some(range) = NumericRange::new(f64::from(a), f64::from(b))
         {
-            return Ok(range);
+            return Ok(Some(range));
         }
         writeln!(
             w,
