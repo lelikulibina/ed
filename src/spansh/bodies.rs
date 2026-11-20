@@ -457,8 +457,6 @@ mod tests {
     #[tokio::test]
     #[ignore = "requires live network; low-volume Spansh contract and pagination probe"]
     async fn live_spansh_body_search_contract() {
-        use super::super::query::Coordinates;
-
         let client = SpanshClient::spansh(1).unwrap();
         let center = super::super::system::SystemResolver::new(client.clone())
             .resolve("Sol")
