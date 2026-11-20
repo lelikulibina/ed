@@ -82,25 +82,23 @@ fn first_candidate(value: &Value) -> Option<Candidate> {
     // Поддерживаем распространённые обёртки API, не фиксируя пока
     // неподтверждённую единственную форму ответа.
     for key in ["systems", "results", "values", "data"] {
-        if let Some(items) = value.get(key).and_then(Value::as_array) {
-            if let Some(candidate) = items
+        if let Some(items) = value.get(key).and_then(Value::as_array)
+            && let Some(candidate) = items
                 .iter()
                 .filter_map(candidate_from_value)
                 .find(|candidate| candidate.id64.is_some())
-            {
-                return Some(candidate);
-            }
-        }
-    }
-
-    if let Some(items) = value.as_array() {
-        if let Some(candidate) = items
-            .iter()
-            .filter_map(candidate_from_value)
-            .find(|candidate| candidate.id64.is_some())
         {
             return Some(candidate);
         }
+    }
+
+    if let Some(items) = value.as_array()
+        && let Some(candidate) = items
+            .iter()
+            .filter_map(candidate_from_value)
+            .find(|candidate| candidate.id64.is_some())
+    {
+        return Some(candidate);
     }
 
     candidate_from_value(value).filter(|candidate| candidate.id64.is_some())
