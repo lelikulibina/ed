@@ -412,6 +412,25 @@ mod tests {
     use super::*;
 
     #[test]
+    fn classifies_spansh_update_age_without_claiming_actual_footfall_status() {
+        let mut body = Body::from_json(&serde_json::json!({
+            "name": "Old body",
+            "updated_at": "2021-05-18T23:59:59Z"
+        }))
+        .unwrap();
+        assert_eq!(body.footfall_evidence(), FootfallEvidence::PreOdysseyUpdate);
+
+        body.last_updated_at = Some("2026-11-20T10:00:00Z".to_owned());
+        assert_eq!(body.footfall_evidence(), FootfallEvidence::PostOdysseyUpdate);
+
+        body.last_updated_at = None;
+        assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
+        body.last_updated_at = Some("not-a-date".to_owned());
+        assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
+    }
+
+
+    #[test]
     fn parses_body_without_losing_large_ids_or_nullable_fields() {
         let value = serde_json::json!({
             "name": "Sol 3",
