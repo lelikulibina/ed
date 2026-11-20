@@ -144,10 +144,10 @@ mod tests {
             "body": {
                 "name": "A 1",
                 "id64": "9007199254740993",
-                "subtype": "Rocky body",
-                "system": {"id64": "123", "name": "A"},
-                "distance": 2.5
-            }
+                "subtype": "Rocky body"
+            },
+            "system": {"id64": "123", "name": "A"},
+            "distance": 2.5
         }))
         .unwrap();
         assert_eq!(body.id64.as_deref(), Some("9007199254740993"));
