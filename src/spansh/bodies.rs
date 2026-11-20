@@ -335,6 +335,114 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn search_uses_post_page_fallback_when_reference_is_missing() {
+        use tokio::{
+            io::{AsyncReadExt, AsyncWriteExt},
+            net::TcpListener,
+        };
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let responses = [
+            r#"{"count":2,"from":0,"size":1,"results":[{
+                "name":"Mapped Body",
+                "id64":"1001",
+                "system_id64":"2001",
+                "system_name":"Nearby A",
+                "subtype":"Rocky body",
+                "is_landable":true,
+                "is_mapped":true,
+                "surface_temperature":250,
+                "surface_pressure":1.0,
+                "gravity":1.0,
+                "atmosphere":"Nitrogen",
+                "distance":1.0
+            }]}"#,
+            r#"{"count":2,"from":1,"size":1,"results":[{
+                "name":"Unmapped Body",
+                "id64":"1002",
+                "system_id64":"2002",
+                "system_name":"Nearby B",
+                "subtype":"Rocky body",
+                "is_landable":true,
+                "is_mapped":false,
+                "surface_temperature":250,
+                "surface_pressure":1.0,
+                "gravity":1.0,
+                "atmosphere":"Nitrogen",
+                "distance":2.0
+            }]}"#,
+        ];
+
+        let server = tokio::spawn(async move {
+            let mut requests = Vec::new();
+            for body in responses {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                let mut bytes = Vec::new();
+                let mut chunk = [0_u8; 2048];
+                loop {
+                    let read = socket.read(&mut chunk).await.unwrap();
+                    if read == 0 {
+                        break;
+                    }
+                    bytes.extend_from_slice(&chunk[..read]);
+                    if let Some(header_end) = bytes.windows(4).position(|window| window == b"\r\n\r\n") {
+                        let headers = String::from_utf8_lossy(&bytes[..header_end]);
+                        let content_length = headers.lines().find_map(|line| {
+                            let (key, value) = line.split_once(':')?;
+                            key.eq_ignore_ascii_case("content-length")
+                                .then(|| value.trim().parse::<usize>().ok())
+                                .flatten()
+                        }).unwrap_or(0);
+                        if bytes.len() >= header_end + 4 + content_length {
+                            break;
+                        }
+                    }
+                }
+                requests.push(String::from_utf8_lossy(&bytes).to_string());
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                );
+                socket.write_all(response.as_bytes()).await.unwrap();
+            }
+            requests
+        });
+
+        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let center = ResolvedSystem {
+            id64: "42".to_owned(),
+            name: "Sol".to_owned(),
+            coordinates: super::super::query::Coordinates { x: 1.0, y: 2.0, z: 3.0 },
+        };
+        let criteria = SearchCriteria::from_cli(
+            "rocky body",
+            "nitrogen",
+            crate::domain::criteria::NumericRange { min: 200.0, max: 300.0 },
+            crate::domain::criteria::NumericRange { min: 0.5, max: 1.5 },
+            crate::domain::criteria::NumericRange { min: 0.0, max: 2.0 },
+            1,
+        ).unwrap();
+
+        let results = BodySearch::new(client)
+            .with_limits(100.0, 1, 3)
+            .search(&center, &criteria)
+            .await
+            .unwrap();
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].name, "Unmapped Body");
+        let requests = server.await.unwrap();
+        assert_eq!(requests.len(), 2);
+        assert!(requests[0].starts_with("POST /api/bodies/search "));
+        assert!(requests[1].starts_with("POST /api/bodies/search "));
+        let (_, body) = requests[1].split_once("\r\n\r\n").unwrap();
+        let payload: Value = serde_json::from_str(body).unwrap();
+        assert_eq!(payload["page"], 1);
+    }
+
+    #[tokio::test]
     #[ignore = "requires live network; low-volume Spansh contract and pagination probe"]
     async fn live_spansh_body_search_contract() {
         use super::super::query::Coordinates;
