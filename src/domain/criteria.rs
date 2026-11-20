@@ -79,7 +79,12 @@ impl SearchCriteria {
         let mut normalized = Vec::new();
         for value in planet_types {
             let value = normalize_planet_type(value)?;
-            if value != "any" && !normalized.contains(&value) {
+            if value == "any" {
+                normalized.clear();
+                normalized.push(value);
+                break;
+            }
+            if !normalized.contains(&value) {
                 normalized.push(value);
             }
         }
@@ -139,7 +144,7 @@ impl SearchCriteria {
 fn volcanism_matches(filter: VolcanismFilter, value: Option<&str>) -> bool {
     match filter {
         VolcanismFilter::Any => true,
-        // Exact value present in the repository's Spansh body fixtures.
+        // EDSM's API example and body records use this canonical Spansh label.
         VolcanismFilter::None => {
             value.is_some_and(|v| v.trim().eq_ignore_ascii_case("No volcanism"))
         }
@@ -375,6 +380,19 @@ mod tests {
         criteria.exclude_with_bio_signals = false;
         body.biological_signal_count = Some(3);
         assert!(criteria.matches(&body));
+    }
+
+    #[test]
+    fn any_subtype_overrides_other_values_in_a_multi_type_set() {
+        let criteria = SearchCriteria::from_types(
+            &["any", "Rocky body"],
+            "Nitrogen",
+            NumericRange { min: 200.0, max: 300.0 },
+            NumericRange { min: 0.5, max: 1.5 },
+            NumericRange { min: 0.0, max: 2.0 },
+            5,
+        ).unwrap();
+        assert_eq!(criteria.planet_types, vec!["any"]);
     }
 
     #[test]

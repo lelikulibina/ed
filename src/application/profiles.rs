@@ -162,10 +162,10 @@ mod tests {
             ),
             (1, "Oxygen", (145.0, 270.0), (0.238, 0.275), 2, 111_000_000),
         ];
-        for (profile, (types, atmosphere, temp, pressure, species, credits)) in
-            SEARCH_PROFILES.iter().zip(expected)
+        for (index, (profile, (atmosphere, temp, pressure, species, credits))) in
+            SEARCH_PROFILES.iter().zip(expected).enumerate()
         {
-            assert_eq!(profile.planet_types.len(), types);
+            assert_eq!(profile.planet_types, expected_types[index]);
             assert_eq!(profile.atmosphere, atmosphere);
             assert_eq!(profile.temperature, temp);
             assert_eq!(profile.pressure, pressure);

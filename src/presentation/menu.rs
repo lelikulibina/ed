@@ -67,16 +67,21 @@ pub fn run_menu<R: BufRead, W: Write>(reader: &mut R, writer: &mut W) -> io::Res
                 let Some(atmosphere) = prompt_allowed(
                     reader,
                     writer,
-                    "Атмосфера (ammonia / water / carbon dioxide / sulphur dioxide / argon / oxygen / any): ",
+                    "Атмосфера (ammonia / water / carbon dioxide / sulphur dioxide / nitrogen / water-rich / methane-rich / carbon dioxide-rich / methane / helium / silicate vapour / neon-rich / argon-rich / neon / argon / oxygen / any): ",
                     &[
                         "Ammonia",
                         "Water",
                         "Carbon dioxide",
                         "Sulphur dioxide",
                         "Nitrogen",
+                        "Water-rich",
+                        "Methane-rich",
+                        "Carbon dioxide-rich",
                         "Methane",
                         "Helium",
                         "Silicate vapour",
+                        "Neon-rich",
+                        "Argon-rich",
                         "Neon",
                         "Argon",
                         "Oxygen",
@@ -302,7 +307,7 @@ mod tests {
     }
     #[test]
     fn eof_during_profile_input_exits_cleanly() {
-        let mut input = Cursor::new(b"4\\nSol\\n".to_vec());
+        let mut input = Cursor::new(b"4\nSol\n".to_vec());
         let mut output = Vec::new();
         assert!(matches!(
             run_menu(&mut input, &mut output).unwrap(),
