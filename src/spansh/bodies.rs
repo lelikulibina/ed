@@ -1357,7 +1357,7 @@ mod tests {
             );
         }
 
-        let mut water_landable_payload = serde_json::json!({
+        let water_landable_payload = serde_json::json!({
             "filters": {
                 "distance": { "min": 0, "max": 1000 },
                 "atmosphere": { "value": ["Water"] },
