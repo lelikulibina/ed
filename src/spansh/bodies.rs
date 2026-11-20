@@ -312,19 +312,19 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "requires live network; one low-volume Spansh contract probe"]
+    #[ignore = "requires live network; low-volume Spansh contract and pagination probe"]
     async fn live_spansh_body_search_contract() {
         use super::super::query::Coordinates;
 
         let client = SpanshClient::spansh(1).unwrap();
-        let query = BodySearchQuery::new(
+        let mut query = BodySearchQuery::new(
             Coordinates {
                 x: 0.0,
                 y: 0.0,
                 z: 0.0,
             },
             1.0,
-            5,
+            1,
         )
         .unwrap();
 
@@ -335,10 +335,29 @@ mod tests {
         let page = parse_page(&response)
             .expect("live response must match one of the supported page envelopes");
 
+        let response_keys = response
+            .as_object()
+            .map(|object| object.keys().cloned().collect::<Vec<_>>().join(", "))
+            .unwrap_or_else(|| "non-object response".to_owned());
+        let first_body = page.bodies.first();
         eprintln!(
-            "Spansh live body-search contract: {} body rows, search reference present: {}",
+            "Spansh page 0: top-level keys=[{response_keys}], rows={}, guid={:?}, first body={:?}",
             page.bodies.len(),
-            find_guid(&response).is_some()
+            find_guid(&response),
+            first_body.map(|body| (
+                &body.name,
+                &body.id64,
+                &body.system_id64,
+                &body.system_name,
+                &body.subtype,
+                body.distance_ly,
+                body.is_landable,
+                body.is_mapped,
+                body.surface_temperature,
+                body.surface_pressure,
+                body.gravity,
+                &body.atmosphere
+            ))
         );
 
         if let Some(guid) = find_guid(&response) {
@@ -346,8 +365,22 @@ mod tests {
                 .get_json(&format!("/api/bodies/search/recall/{guid}/1"))
                 .await
                 .expect("recall page request must succeed");
-            let _ =
-                parse_page(&recall).expect("recall response must match a supported page envelope");
+            let next = parse_page(&recall)
+                .expect("recall response must match a supported page envelope");
+            eprintln!("Spansh recall page: {} rows", next.bodies.len());
+        } else {
+            query.page = 1;
+            let response = client
+                .post_json("/api/bodies/search", &query.to_payload())
+                .await
+                .expect("page=1 body-search POST must succeed when no recall reference exists");
+            let next = parse_page(&response)
+                .expect("page=1 response must match a supported page envelope");
+            let next_id = next.bodies.first().and_then(|body| body.id64.as_deref());
+            eprintln!(
+                "Spansh page=1: {} rows, first body ID64={next_id:?}",
+                next.bodies.len()
+            );
         }
     }
 
