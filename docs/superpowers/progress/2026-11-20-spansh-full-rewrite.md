@@ -36,3 +36,11 @@
 - Temporary CI formatting/artifact/auto-commit steps have been removed; CI now checks the committed lockfile with `--locked`.
 - Added a one-request-per-second interval to the Spansh HTTP client; CI run 44661798487 passed for this change.
 - Added a full application mock integration test. CI run 44661832288 failed only at Format due to rustfmt layout in the new test; the formatting diff was applied. The latest CI runs for the formatted integration test and sibling-envelope DTO parser are pending.
+
+
+## Live contract probe
+
+- Live run 44662286671 succeeded against Spansh on 2026-11-20.
+- POST `/api/bodies/search` with Sol coordinates `(0,0,0)`, radius 1 ly and page size 5 returned HTTP 2xx and five parseable body rows.
+- The response did not expose a GUID/search reference recognized by the current parser. This does not prove pagination is absent; the next probe checks the top-level response keys and direct POST with `page=1`.
+- Recall pagination has not yet been live-confirmed.
