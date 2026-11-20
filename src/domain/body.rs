@@ -97,7 +97,12 @@ impl Body {
 fn biological_data(
     root: &Value,
     value: &Value,
-) -> (Option<u32>, Option<u32>, Option<Vec<String>>, Option<String>) {
+) -> (
+    Option<u32>,
+    Option<u32>,
+    Option<Vec<String>>,
+    Option<String>,
+) {
     let signal_data = root.get("signals").or_else(|| value.get("signals"));
     let mut biological_count = None;
     let mut geological_count = None;
