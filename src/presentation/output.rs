@@ -66,7 +66,9 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
     let estimate = exobiology::estimate(body)?;
 
     if estimate.biological_signal_count == Some(0) {
-        return Ok(Some("Биологических сигналов Spansh не обнаружил.".to_owned()));
+        return Ok(Some(
+            "Биологических сигналов Spansh не обнаружил.".to_owned(),
+        ));
     }
 
     if estimate.genera.is_empty() {
@@ -100,11 +102,12 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         .flat_map(|genus| {
             genus.candidates.iter().map(move |candidate| {
                 let status = match candidate.status {
-                    CandidateStatus::EligibleByKnownData => "По известным условиям подходит".to_owned(),
-                    CandidateStatus::NeedsVerification => format!(
-                        "Проверить: {}",
-                        candidate.unknown_conditions.join(", ")
-                    ),
+                    CandidateStatus::EligibleByKnownData => {
+                        "По известным условиям подходит".to_owned()
+                    }
+                    CandidateStatus::NeedsVerification => {
+                        format!("Проверить: {}", candidate.unknown_conditions.join(", "))
+                    }
                 };
                 vec![
                     genus.genus.clone(),
@@ -181,7 +184,10 @@ fn render_table(headers: &[&str], rows: &[Vec<String>]) -> Vec<String> {
 
     let mut output = vec![border('┌', '┬', '┐')];
     output.push(format_row(
-        &headers.iter().map(|header| (*header).to_owned()).collect::<Vec<_>>(),
+        &headers
+            .iter()
+            .map(|header| (*header).to_owned())
+            .collect::<Vec<_>>(),
     ));
     output.push(border('├', '┼', '┤'));
     output.extend(rows.iter().map(|row| format_row(row)));
