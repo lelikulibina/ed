@@ -44,7 +44,13 @@ pub fn print_results(bodies: &[Body]) {
                 body.biological_genera
                     .as_ref()
                     .filter(|genera| !genera.is_empty())
-                    .map_or_else(|| "не указаны".to_owned(), |genera| genera.join(", "))
+                    .map_or_else(|| "не указаны".to_owned(), |genera| {
+                        genera
+                            .iter()
+                            .map(|genus| russian_group_name(genus))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    })
             );
 
             match exobiology_summary(body) {
@@ -78,7 +84,11 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         {
             return Ok(Some(format!(
                 "Spansh указал биологические группы {}, но подходящие виды в справочнике не найдены.",
-                genera.join(", ")
+                genera
+                    .iter()
+                    .map(|genus| russian_group_name(genus))
+                    .collect::<Vec<_>>()
+                    .join(", ")
             )));
         }
         return Ok(None);
@@ -334,6 +344,13 @@ mod tests {
         body.geological_signal_count = Some(0);
 
         assert_eq!(exobiology_summary(&body).unwrap(), None);
+    }
+
+    #[test]
+    fn russian_group_names_are_localized() {
+        assert_eq!(russian_group_name("Osseus"), "Оссии");
+        assert_eq!(russian_group_name("Tussock"), "Дерновина");
+        assert_eq!(russian_group_name("Bacterium"), "Бактерии");
     }
 
     #[test]
