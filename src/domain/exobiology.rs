@@ -486,6 +486,105 @@ mod tests {
     }
 
     #[test]
+    fn catalog_covers_species_for_the_profiles_main_atmospheres() {
+        let co2_192 = estimate(&body(
+            Some("Rocky body"),
+            Some("Carbon dioxide"),
+            Some(192.0),
+            Some(0.2),
+        ))
+        .unwrap();
+        assert!(co2_192.genera.iter().any(|genus| {
+            genus.genus == "Aleoida"
+                && genus.candidates.iter().any(|candidate| candidate.species == "Gravis")
+        }));
+        assert!(co2_192.genera.iter().any(|genus| {
+            genus.genus == "Stratum"
+                && genus.candidates.iter().any(|candidate| candidate.species == "Cucumisis")
+        }));
+
+        let ammonia_170 = estimate(&body(
+            Some("Rocky body"),
+            Some("Ammonia"),
+            Some(170.0),
+            Some(0.2),
+        ))
+        .unwrap();
+        assert!(ammonia_170.genera.iter().any(|genus| {
+            genus.genus == "Frutexa"
+                && genus.candidates.iter().any(|candidate| candidate.species == "Flammasis")
+        }));
+        assert!(ammonia_170.genera.iter().any(|genus| {
+            genus.genus == "Aleoida"
+                && genus.candidates.iter().any(|candidate| candidate.species == "Spica")
+        }));
+
+        let oxygen_icy = estimate(&body(
+            Some("Icy body"),
+            Some("Oxygen"),
+            Some(200.0),
+            Some(0.2),
+        ))
+        .unwrap();
+        assert!(oxygen_icy.genera.iter().any(|genus| {
+            genus.genus == "Fonticulua"
+                && genus.candidates.iter().any(|candidate| candidate.species == "Fluctus")
+        }));
+
+        let sulphur_dioxide = estimate(&body(
+            Some("Rocky body"),
+            Some("Sulphur dioxide"),
+            Some(180.0),
+            Some(0.2),
+        ))
+        .unwrap();
+        assert!(sulphur_dioxide.genera.iter().any(|genus| {
+            genus.genus == "Tussock"
+                && genus.candidates.iter().any(|candidate| candidate.species == "Stigmasis")
+        }));
+        assert!(sulphur_dioxide.genera.iter().any(|genus| {
+            genus.genus == "Recepta"
+                && genus
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.species == "Deltahedronix")
+        }));
+    }
+
+    #[test]
+    fn fumerola_requires_matching_volcanism_and_unverified_geological_features() {
+        let mut planet = body(
+            Some("Rocky Ice world"),
+            Some("Argon"),
+            Some(100.0),
+            Some(0.2),
+        );
+        planet.volcanism_type = Some("Water Magma".to_owned());
+        planet.geological_signal_count = Some(1);
+
+        let estimate = estimate(&planet).unwrap();
+        let aquatis = estimate
+            .genera
+            .iter()
+            .find(|genus| genus.genus == "Fumerola")
+            .unwrap()
+            .candidates
+            .iter()
+            .find(|candidate| candidate.species == "Aquatis")
+            .unwrap();
+        assert_eq!(aquatis.status, CandidateStatus::NeedsVerification);
+        assert!(aquatis.unknown_conditions.iter().any(|value| value.contains("фумаролы")));
+        assert!(aquatis.unknown_conditions.iter().any(|value| value.contains("рельефа")));
+
+        planet.geological_signal_count = Some(0);
+        assert!(!estimate(&planet)
+            .unwrap()
+            .genera
+            .iter()
+            .any(|genus| genus.genus == "Fumerola"));
+    }
+
+    #[test]
     fn first_logged_is_reported_as_a_separate_five_times_scenario() {
         let estimate = estimate(&body(
             Some("Rocky body"),
