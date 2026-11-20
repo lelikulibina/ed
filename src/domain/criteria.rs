@@ -274,10 +274,7 @@ mod tests {
 
     #[test]
     fn changing_result_count_rejects_zero_and_keeps_positive_values() {
-        assert_eq!(
-            criteria().with_count(0),
-            Err(CriteriaError::Count)
-        );
+        assert_eq!(criteria().with_count(0), Err(CriteriaError::Count));
         assert_eq!(criteria().with_count(12).unwrap().count, 12);
     }
 
