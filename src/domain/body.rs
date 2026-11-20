@@ -29,23 +29,27 @@ impl Body {
         if !value.is_object() {
             return Err(BodyParseError::NotObject);
         }
+        let root = value.get("body").filter(|body| body.is_object()).unwrap_or(value);
+        let system = root.get("system").filter(|system| system.is_object());
 
-        let name = string_field(value, &["name", "body_name"])
+        let name = string_field(root, &["name", "body_name"])
             .ok_or(BodyParseError::MissingName)?;
 
         Ok(Self {
-            id64: id_field(value, &["id64", "body_id64", "id"]),
+            id64: id_field(root, &["id64", "body_id64", "id"]),
             name,
-            system_id64: id_field(value, &["system_id64", "systemId64"]),
-            system_name: string_field(value, &["system_name", "systemName"]),
-            subtype: string_field(value, &["subtype", "type"]),
-            distance_ly: number_field(value, &["distance", "distance_ly"]),
-            is_landable: bool_field(value, &["is_landable", "landable"]),
-            is_mapped: bool_field(value, &["is_mapped", "mapped"]),
-            surface_temperature: number_field(value, &["surface_temperature", "surface_temp"]),
-            surface_pressure: number_field(value, &["surface_pressure", "pressure"]),
-            gravity: number_field(value, &["gravity"]),
-            atmosphere: string_field(value, &["atmosphere", "atmosphere_type"]),
+            system_id64: id_field(root, &["system_id64", "systemId64"])
+                .or_else(|| system.and_then(|value| id_field(value, &["id64", "system_id64", "id"]))),
+            system_name: string_field(root, &["system_name", "systemName"])
+                .or_else(|| system.and_then(|value| string_field(value, &["name", "system_name"]))),
+            subtype: string_field(root, &["subtype", "type"]),
+            distance_ly: number_field(root, &["distance", "distance_ly"]),
+            is_landable: bool_field(root, &["is_landable", "landable"]),
+            is_mapped: bool_field(root, &["is_mapped", "mapped"]),
+            surface_temperature: number_field(root, &["surface_temperature", "surface_temp"]),
+            surface_pressure: number_field(root, &["surface_pressure", "pressure"]),
+            gravity: number_field(root, &["gravity"]),
+            atmosphere: string_field(root, &["atmosphere", "atmosphere_type"]),
         })
     }
 }
