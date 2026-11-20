@@ -35,7 +35,8 @@ async fn main() -> Result<()> {
         gravity,
         pressure,
         args.count,
-    )?;
+    )?
+    .with_exclude_biological(args.exclude_biological);
 
     let client = SpanshClient::spansh(1)?;
     let search = SearchUseCase::new(client);
