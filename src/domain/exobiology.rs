@@ -313,4 +313,3 @@ fn temperature_rule_matches(
 
     true
 }
-
