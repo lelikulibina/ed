@@ -103,7 +103,8 @@ mod tests {
             Args::try_parse_from(["ed", "-S", "Sol", "-P", "rocky body", "-A", "water"]).unwrap();
         let criteria = criteria_from_args(&args).unwrap();
         assert_eq!(criteria.count, 5);
-        assert_eq!(criteria.gravity, NumericRange { min: 0.1, max: 1.0 });
+        assert!((criteria.gravity.min - 0.1).abs() < 1e-6);
+        assert_eq!(criteria.gravity.max, 1.0);
         assert_eq!(
             criteria.temperature,
             NumericRange {
