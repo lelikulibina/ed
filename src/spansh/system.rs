@@ -273,7 +273,7 @@ mod tests {
         let address = listener.local_addr().unwrap();
         let responses = [
             r#"{"results":[{"name":"Sol Alpha","id64":"1"},{"name":"Sol","id64":"2"}]}"#,
-            r#"{"name":"Sol","id64":"2","coords":{"x":1.0,"y":2.0,"z":3.0}}"#,
+            r#"{"name":"Sol Alpha","id64":"1","coords":{"x":1.0,"y":2.0,"z":3.0}}"#,
         ];
         let server = tokio::spawn(async move {
             for body in responses {
