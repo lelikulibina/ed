@@ -15,7 +15,7 @@ impl Coordinates {
         {
             Ok(self)
         } else {
-            Err(QueryError::InvalidCoordinates)
+            Err(QueryError::Coordinates)
         }
     }
 }
@@ -38,10 +38,10 @@ impl BodySearchQuery {
     ) -> Result<Self, QueryError> {
         reference_coords.validate()?;
         if !radius_ly.is_finite() || radius_ly <= 0.0 {
-            return Err(QueryError::InvalidRadius);
+            return Err(QueryError::Radius);
         }
         if page_size == 0 {
-            return Err(QueryError::InvalidPageSize);
+            return Err(QueryError::PageSize);
         }
 
         Ok(Self {
@@ -102,11 +102,11 @@ impl BodySearchQuery {
 #[derive(Debug, thiserror::Error, PartialEq)]
 pub enum QueryError {
     #[error("координаты системы должны быть конечными числами")]
-    InvalidCoordinates,
+    Coordinates,
     #[error("радиус поиска должен быть конечным числом больше нуля")]
-    InvalidRadius,
+    Radius,
     #[error("размер страницы должен быть больше нуля")]
-    InvalidPageSize,
+    PageSize,
 }
 
 #[cfg(test)]
