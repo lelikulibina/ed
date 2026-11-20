@@ -231,7 +231,7 @@ mod tests {
                 bytes.extend_from_slice(&chunk[..read]);
                 if let Some(header_end) = bytes
                     .windows(4)
-                    .position(|window| window == b"\\r\\n\\r\\n")
+                    .position(|window| window == b"\r\n\r\n")
                 {
                     let headers = String::from_utf8_lossy(&bytes[..header_end]);
                     let content_length = headers
@@ -262,7 +262,7 @@ mod tests {
                 let (mut socket, _) = listener.accept().await.unwrap();
                 requests.push(read_request(&mut socket).await);
                 let response = format!(
-                    "HTTP/1.1 200 OK\\r\\ncontent-type: application/json\\r\\ncontent-length: {}\\r\\nconnection: close\\r\\n\\r\\n{}",
+                    "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
                     body.len(),
                     body
                 );
@@ -304,7 +304,7 @@ mod tests {
         assert_eq!(results[0].name, "Nearby B 1");
         let requests = server.await.unwrap();
         assert!(requests[0].starts_with("POST /api/bodies/search "));
-        let (_, request_body) = requests[0].split_once("\\r\\n\\r\\n").unwrap();
+        let (_, request_body) = requests[0].split_once("\r\n\r\n").unwrap();
         let payload: Value = serde_json::from_str(request_body).unwrap();
         assert_eq!(payload["reference_coords"]["x"], 1.0);
         assert_eq!(payload["reference_coords"]["y"], 2.0);
