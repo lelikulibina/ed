@@ -23,7 +23,7 @@ pub struct Body {
     pub signals_updated_at: Option<String>,
 }
 
-#[derive(Debug, thiserror::Error, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FootfallEvidence {
     /// The latest Spansh body update predates the Odyssey release.
     /// This is a lead only, not proof that First Footfall is available.
