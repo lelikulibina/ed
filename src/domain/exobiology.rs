@@ -399,6 +399,72 @@ mod tests {
     }
 
     #[test]
+    fn confirmed_biological_genera_narrow_the_candidate_list() {
+        let mut planet = body(
+            Some("Rocky body"),
+            Some("Water"),
+            Some(200.0),
+            Some(0.2),
+        );
+        planet.biological_signal_count = Some(2);
+        planet.biological_genera = Some(vec!["Osseus".to_owned(), "Tussock".to_owned()]);
+
+        let estimate = estimate(&planet).unwrap();
+        assert_eq!(
+            estimate
+                .genera
+                .iter()
+                .map(|genus| genus.genus.as_str())
+                .collect::<Vec<_>>(),
+            vec!["Osseus", "Tussock"]
+        );
+        assert_eq!(estimate.maximum_base_value_cr, 27_248_600);
+        assert_eq!(estimate.biological_signal_count, Some(2));
+        assert!(!estimate.catalog_is_complete);
+    }
+
+    #[test]
+    fn zero_biological_signals_suppress_all_species_candidates() {
+        let mut planet = body(
+            Some("Rocky body"),
+            Some("Water"),
+            Some(200.0),
+            Some(0.2),
+        );
+        planet.biological_signal_count = Some(0);
+
+        let estimate = estimate(&planet).unwrap();
+        assert!(estimate.genera.is_empty());
+        assert_eq!(estimate.maximum_base_value_cr, 0);
+    }
+
+    #[test]
+    fn known_no_volcanism_confirms_bacterium_but_volcanic_world_excludes_it() {
+        let mut planet = body(
+            Some("Rocky body"),
+            Some("Water"),
+            Some(250.0),
+            Some(0.5),
+        );
+        planet.volcanism_type = Some("No volcanism".to_owned());
+        let estimate = estimate(&planet).unwrap();
+        let cerbrus = estimate
+            .genera
+            .iter()
+            .find(|genus| genus.genus == "Bacterium")
+            .unwrap()
+            .candidates
+            .iter()
+            .find(|candidate| candidate.species == "Cerbrus")
+            .unwrap();
+        assert_eq!(cerbrus.status, CandidateStatus::EligibleByKnownData);
+
+        planet.volcanism_type = Some("Minor Rocky Magma".to_owned());
+        let estimate = estimate(&planet).unwrap();
+        assert!(!estimate.genera.iter().any(|genus| genus.genus == "Bacterium"));
+    }
+
+    #[test]
     fn first_logged_is_reported_as_a_separate_five_times_scenario() {
         let estimate = estimate(&body(
             Some("Rocky body"),
