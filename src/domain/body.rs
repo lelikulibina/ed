@@ -153,7 +153,7 @@ mod tests {
             "surface_temperature": null,
             "surface_pressure": "0.12",
             "gravity": 0.98,
-            "atmosphere": "Nitrogen"
+            "atmosphere": "Hot thick Carbon dioxide"
         });
 
         let body = Body::from_json(&value).unwrap();
@@ -163,6 +163,7 @@ mod tests {
         assert_eq!(body.surface_pressure, Some(0.12));
         assert_eq!(body.gravity, Some(0.98));
         assert_eq!(body.is_mapped, Some(false));
+        assert_eq!(body.atmosphere.as_deref(), Some("Carbon dioxide"));
     }
 
     #[test]
