@@ -73,10 +73,10 @@ fn atmosphere_from_values(root: &Value, value: &Value) -> Option<String> {
     let label = string_field(root, &["atmosphere", "atmosphere_type"])
         .or_else(|| string_field(value, &["atmosphere", "atmosphere_type"]));
 
-    if let Some(label) = label.as_deref() {
-        if !label.eq_ignore_ascii_case("No atmosphere") {
-            return Some(normalize_atmosphere_label(label));
-        }
+    if let Some(label) = label.as_deref()
+        && !label.eq_ignore_ascii_case("No atmosphere")
+    {
+        return Some(normalize_atmosphere_label(label));
     }
 
     let composition = root
