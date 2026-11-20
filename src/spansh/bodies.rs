@@ -65,7 +65,7 @@ impl BodySearch {
         let mut query = BodySearchQuery::new(center.coordinates, self.radius_ly, self.page_size)?;
         let initial = self
             .client
-            .post_json("/api/bodies/search", &query.to_payload())
+            .post_json("/api/bodies/search", &query.to_payload_with_criteria(criteria))
             .await?;
 
         let mut page = parse_page(&initial)?;
