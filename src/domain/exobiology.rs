@@ -65,11 +65,18 @@ pub fn estimate(body: &Body) -> Result<ExobiologyEstimate, EstimateError> {
         if body.biological_signal_count == Some(0) {
             break;
         }
-        if let Some(genera) = body.biological_genera.as_ref().filter(|genera| !genera.is_empty()) {
+        if let Some(genera) = body
+            .biological_genera
+            .as_ref()
+            .filter(|genera| !genera.is_empty())
+        {
             let Some(genus) = entry["genus"].as_str() else {
                 continue;
             };
-            if !genera.iter().any(|candidate| candidate.eq_ignore_ascii_case(genus)) {
+            if !genera
+                .iter()
+                .any(|candidate| candidate.eq_ignore_ascii_case(genus))
+            {
                 continue;
             }
         }
@@ -79,7 +86,9 @@ pub fn estimate(body: &Body) -> Result<ExobiologyEstimate, EstimateError> {
         if body.biological_signal_count.is_some_and(|count| count > 0)
             && body.biological_genera.as_ref().is_none_or(Vec::is_empty)
         {
-            candidate.unknown_conditions.push("точный список биологических родов Spansh".to_owned());
+            candidate
+                .unknown_conditions
+                .push("точный список биологических родов Spansh".to_owned());
             candidate.status = CandidateStatus::NeedsVerification;
         }
         by_genus
@@ -208,11 +217,17 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
         }
     }
 
-    if let Some(allowed) = entry["volcanism"].as_array().filter(|values| !values.is_empty()) {
+    if let Some(allowed) = entry["volcanism"]
+        .as_array()
+        .filter(|values| !values.is_empty())
+    {
         match body.volcanism_type.as_deref() {
-            Some(actual) if allowed.iter().any(|value| {
-                value.as_str().is_some_and(|expected| expected.eq_ignore_ascii_case(actual.trim()))
-            }) => {}
+            Some(actual)
+                if allowed.iter().any(|value| {
+                    value
+                        .as_str()
+                        .is_some_and(|expected| expected.eq_ignore_ascii_case(actual.trim()))
+                }) => {}
             Some(_) => return None,
             None => unknown_conditions.push("тип вулканизма".to_owned()),
         }
@@ -400,12 +415,7 @@ mod tests {
 
     #[test]
     fn confirmed_biological_genera_narrow_the_candidate_list() {
-        let mut planet = body(
-            Some("Rocky body"),
-            Some("Water"),
-            Some(200.0),
-            Some(0.2),
-        );
+        let mut planet = body(Some("Rocky body"), Some("Water"), Some(200.0), Some(0.2));
         planet.biological_signal_count = Some(2);
         planet.biological_genera = Some(vec!["Osseus".to_owned(), "Tussock".to_owned()]);
 
@@ -440,12 +450,7 @@ mod tests {
 
     #[test]
     fn known_no_volcanism_confirms_bacterium_but_volcanic_world_excludes_it() {
-        let mut planet = body(
-            Some("Rocky body"),
-            Some("Water"),
-            Some(250.0),
-            Some(0.5),
-        );
+        let mut planet = body(Some("Rocky body"), Some("Water"), Some(250.0), Some(0.5));
         planet.volcanism_type = Some("No volcanism".to_owned());
         let estimate = estimate(&planet).unwrap();
         let cerbrus = estimate
@@ -461,7 +466,12 @@ mod tests {
 
         planet.volcanism_type = Some("Minor Rocky Magma".to_owned());
         let estimate = estimate(&planet).unwrap();
-        assert!(!estimate.genera.iter().any(|genus| genus.genus == "Bacterium"));
+        assert!(
+            !estimate
+                .genera
+                .iter()
+                .any(|genus| genus.genus == "Bacterium")
+        );
     }
 
     #[test]
