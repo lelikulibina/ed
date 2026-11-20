@@ -86,3 +86,26 @@ fn volcanism_requirement_uses_the_official_spansh_enum_value() {
         .expect("Bacterium Cerbrus");
     assert_eq!(cerbrus["volcanism"], serde_json::json!(["No volcanism"]));
 }
+
+#[test]
+fn catalog_covers_all_profile_atmospheres_with_representative_species() {
+    let catalog = catalog();
+    let species = catalog["species"].as_array().expect("species array");
+    assert!(species.len() >= 70);
+
+    for (genus, name, value) in [
+        ("Aleoida", "Gravis", 12_934_900),
+        ("Frutexa", "Flammasis", 10_326_000),
+        ("Fonticulua", "Fluctus", 16_777_215),
+        ("Tussock", "Stigmasis", 19_010_800),
+        ("Stratum", "Tectonicas", 19_010_800),
+        ("Fumerola", "Aquatis", 6_284_600),
+        ("Bacterium", "Volu", 7_774_700),
+    ] {
+        assert!(species.iter().any(|entry| {
+            entry["genus"] == genus
+                && entry["species"] == name
+                && entry["base_value_cr"].as_u64() == Some(value)
+        }));
+    }
+}
