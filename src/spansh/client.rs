@@ -228,7 +228,6 @@ mod tests {
         server.await.unwrap();
     }
 
-
     #[tokio::test]
     async fn returns_server_error_after_retry_budget_is_exhausted() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
