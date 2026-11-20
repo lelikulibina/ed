@@ -76,6 +76,9 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
     if let Some(count) = estimate.biological_signal_count {
         lines.push(format!("      Биологических сигналов Spansh: {count}"));
     }
+    if let Some(count) = estimate.geological_signal_count {
+        lines.push(format!("      Геологических сигналов Spansh: {count}"));
+    }
     if let Some(genera) = estimate
         .biological_genera
         .as_ref()
