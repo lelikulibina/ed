@@ -229,7 +229,7 @@ mod tests {
                 let size = socket.read(&mut request).await.unwrap();
                 requests.push(String::from_utf8_lossy(&request[..size]).to_string());
                 let response = format!(
-                    "HTTP/1.1 200 OK\\r\\ncontent-type: application/json\\r\\ncontent-length: {}\\r\\nconnection: close\\r\\n\\r\\n{}",
+                    "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
                     body.len(),
                     body
                 );
