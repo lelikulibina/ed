@@ -138,7 +138,7 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
         match body.surface_temperature {
             Some(actual) => {
                 let inclusive = entry["temperature_min_inclusive"].as_bool().unwrap_or(true);
-                if if inclusive { actual < minimum } else { actual <= minimum } {
+                if (if inclusive { actual < minimum } else { actual <= minimum }) {
                     return None;
                 }
             }
@@ -150,7 +150,7 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
         match body.surface_temperature {
             Some(actual) => {
                 let inclusive = entry["temperature_max_inclusive"].as_bool().unwrap_or(true);
-                if if inclusive { actual > maximum } else { actual >= maximum } {
+                if (if inclusive { actual > maximum } else { actual >= maximum }) {
                     return None;
                 }
             }
@@ -170,7 +170,10 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
         }
     }
 
-    if entry["volcanism"].as_array().is_some_and(|values| !values.is_empty()) {
+    if entry["volcanism"]
+        .as_array()
+        .is_some_and(|values| !values.is_empty())
+    {
         // The Spansh body response contract has not yet been verified for volcanism.
         unknown_conditions.push("тип вулканизма (поле Spansh пока не подтверждено)".to_owned());
     }
@@ -249,9 +252,22 @@ mod tests {
         ))
         .unwrap();
 
-        let osseus = estimate.genera.iter().find(|genus| genus.genus == "Osseus").unwrap();
-        assert!(osseus.candidates.iter().any(|candidate| candidate.species == "Discus"));
-        let clypeus = estimate.genera.iter().find(|genus| genus.genus == "Clypeus").unwrap();
+        let osseus = estimate
+            .genera
+            .iter()
+            .find(|genus| genus.genus == "Osseus")
+            .unwrap();
+        assert!(
+            osseus
+                .candidates
+                .iter()
+                .any(|candidate| candidate.species == "Discus")
+        );
+        let clypeus = estimate
+            .genera
+            .iter()
+            .find(|genus| genus.genus == "Clypeus")
+            .unwrap();
         assert_eq!(clypeus.min_species_value_cr, 8_418_000);
         assert_eq!(clypeus.max_species_value_cr, 11_873_200);
         assert_eq!(estimate.minimum_base_value_cr, 0);
@@ -267,10 +283,12 @@ mod tests {
             Some(0.2),
         ))
         .unwrap();
-        assert!(!at_temperature_limit
-            .genera
-            .iter()
-            .any(|genus| genus.genus == "Clypeus"));
+        assert!(
+            !at_temperature_limit
+                .genera
+                .iter()
+                .any(|genus| genus.genus == "Clypeus")
+        );
 
         let at_gravity_limit = estimate(&body(
             Some("Rocky body"),
@@ -279,10 +297,12 @@ mod tests {
             Some(0.27),
         ))
         .unwrap();
-        assert!(!at_gravity_limit
-            .genera
-            .iter()
-            .any(|genus| genus.genus == "Recepta"));
+        assert!(
+            !at_gravity_limit
+                .genera
+                .iter()
+                .any(|genus| genus.genus == "Recepta")
+        );
     }
 
     #[test]
@@ -294,14 +314,23 @@ mod tests {
             Some(0.5),
         ))
         .unwrap();
-        let bacterium = estimate.genera.iter().find(|genus| genus.genus == "Bacterium").unwrap();
+        let bacterium = estimate
+            .genera
+            .iter()
+            .find(|genus| genus.genus == "Bacterium")
+            .unwrap();
         let cerbrus = bacterium
             .candidates
             .iter()
             .find(|candidate| candidate.species == "Cerbrus")
             .unwrap();
         assert_eq!(cerbrus.status, CandidateStatus::NeedsVerification);
-        assert!(cerbrus.unknown_conditions.iter().any(|value| value.contains("вулканизма")));
+        assert!(
+            cerbrus
+                .unknown_conditions
+                .iter()
+                .any(|value| value.contains("вулканизма"))
+        );
     }
 
     #[test]
