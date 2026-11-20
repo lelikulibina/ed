@@ -40,6 +40,7 @@
 - [x] Реализован Body DTO с nullable-полями, ID64 и parent-system данными.
 - [x] Поддерживаются flat body fields, вложенный body и sibling system envelope.
 - [x] Фильтры subtype, atmosphere, temperature, pressure, gravity, landable.
+- [x] Atmosphere normalizer: descriptive label + dominant `atmosphere_composition` fallback.
 - [x] `is_mapped=true` исключается; `false/null` считается неотмеченным как mapped по legacy default.
 - [x] Дедупликация по body ID64; fallback по системе и имени.
 - [x] Центральная система исключается по system_id64 (fallback — имя).
@@ -78,7 +79,7 @@
 - [x] `cargo clippy --locked --all-targets --all-features -- -D warnings`.
 - [x] `cargo test --locked --all-targets`.
 - [x] Проверены старые CLI flags/defaults unit tests.
-- [x] Live smoke: system search, detail envelope, body search, search_reference, recall pages 1 и 39 (последняя страница для count=40), direct POST page 1.
+- [x] Live smoke: system search, detail envelope, body search, search_reference, recall pages 1 и 39, direct POST page 1, 100-ly neighboring systems, page size 100/page 99, live atmosphere normalization.
 - [x] Проверить последнюю страницу на выдаче count=40.
 - [x] Проверить live поиск на 10 000 результатов: page size 100, page 40 (Alpha Centauri) и последняя page 99.
 - [ ] Проверить, что происходит при выдаче свыше 10 000 (возможно provider cap).
