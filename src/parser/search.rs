@@ -18,7 +18,7 @@ pub enum PlanetType {
 }
 
 impl PlanetType {
-    pub fn to_code(&self) -> u16 {
+    pub fn to_code(self) -> u16 {
         match self {
             PlanetType::Any => 255,
             PlanetType::RockyBody => 11,
@@ -68,7 +68,7 @@ pub enum AtmosphereType {
 }
 
 impl AtmosphereType {
-    pub fn to_code(&self) -> u8 {
+    pub fn to_code(self) -> u8 {
         match self {
             AtmosphereType::Any => 255, // использовать как "без фильтра"
             AtmosphereType::Ammonia => 3,
@@ -161,9 +161,7 @@ impl PlanetSearchParams {
     #[allow(dead_code)]
     fn extract_sector(full: &str) -> &str {
         let mut pos = 0;
-        let mut iter = full.split_whitespace().peekable();
-
-        while let Some(word) = iter.next() {
+        for word in full.split_whitespace() {
             if Self::looks_like_code(word) {
                 return &full[..pos.max(1) - 1];
             }
