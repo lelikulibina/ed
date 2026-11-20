@@ -321,8 +321,8 @@ mod tests {
             &[vec!["Osseus".to_owned(), "Discus".to_owned()]],
         );
         assert!(lines[0].contains("┌"));
-        assert!(lines[1].contains("Osseus"));
-        assert!(lines[1].contains("Discus"));
+        assert!(lines[3].contains("Osseus"));
+        assert!(lines[3].contains("Discus"));
         assert!(lines.last().unwrap().contains("└"));
     }
 
