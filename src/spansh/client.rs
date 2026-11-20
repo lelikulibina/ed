@@ -261,9 +261,7 @@ mod tests {
         let address = listener.local_addr().unwrap();
         let server = tokio::spawn(respond(
             listener,
-            vec![
-                "HTTP/1.1 400 Bad Request\r\ncontent-length: 0\r\nconnection: close\r\n\r\n",
-            ],
+            vec!["HTTP/1.1 400 Bad Request\r\ncontent-length: 0\r\nconnection: close\r\n\r\n"],
         ));
 
         let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
@@ -279,5 +277,4 @@ mod tests {
         ));
         server.await.unwrap();
     }
-
 }
