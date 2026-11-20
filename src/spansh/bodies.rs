@@ -25,7 +25,9 @@ pub enum BodySearchError {
     InvalidResponse,
     #[error("Spansh вернул некорректный объект планеты: {0}")]
     InvalidBody(String),
-    #[error("Spansh вернул {0} записей — возможно достигнут лимит выдачи 10 000; не удалось гарантировать полноту результатов")]
+    #[error(
+        "Spansh вернул {0} записей — возможно достигнут лимит выдачи 10 000; не удалось гарантировать полноту результатов"
+    )]
     PotentialTruncation(usize),
     #[error("достигнут предел страниц поиска ({0}); результаты могут быть неполными")]
     PageLimit(u32),
@@ -1179,8 +1181,14 @@ mod tests {
                 .resolve(name)
                 .await
                 .unwrap_or_else(|error| panic!("cannot resolve {name}: {error}"));
-            assert!(!center.name.trim().is_empty(), "resolver returned an empty system name");
-            assert!(!center.id64.trim().is_empty(), "resolver returned an empty system ID64");
+            assert!(
+                !center.name.trim().is_empty(),
+                "resolver returned an empty system name"
+            );
+            assert!(
+                !center.id64.trim().is_empty(),
+                "resolver returned an empty system ID64"
+            );
             eprintln!(
                 "Requested center «{name}», Spansh resolved «{}» (ID64={})",
                 center.name, center.id64
