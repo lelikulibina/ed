@@ -1139,10 +1139,7 @@ mod tests {
                 min: 190.0,
                 max: 195.0,
             },
-            crate::domain::criteria::NumericRange {
-                min: 0.1,
-                max: 1.0,
-            },
+            crate::domain::criteria::NumericRange { min: 0.1, max: 1.0 },
             crate::domain::criteria::NumericRange {
                 min: 0.042,
                 max: 0.237,
