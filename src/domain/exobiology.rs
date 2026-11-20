@@ -359,6 +359,8 @@ mod tests {
             is_landable: Some(true),
             is_mapped: Some(false),
             last_updated_at: None,
+            journal_was_footfalled: None,
+            journal_scan_timestamp: None,
             surface_temperature: temperature,
             surface_pressure: None,
             gravity,
