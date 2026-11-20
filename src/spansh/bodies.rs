@@ -225,6 +225,40 @@ mod tests {
     use super::*;
 
     #[test]
+    fn identifies_center_system_by_id64_and_falls_back_to_name() {
+        let center = ResolvedSystem {
+            id64: "42".to_owned(),
+            name: "Sol".to_owned(),
+            coordinates: super::super::query::Coordinates {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        };
+        let mut body = Body {
+            id64: Some("100".to_owned()),
+            name: "Sol 1".to_owned(),
+            system_id64: Some("42".to_owned()),
+            system_name: Some("Different label".to_owned()),
+            subtype: None,
+            distance_ly: Some(0.0),
+            is_landable: Some(true),
+            is_mapped: None,
+            surface_temperature: None,
+            surface_pressure: None,
+            gravity: None,
+            atmosphere: None,
+        };
+
+        assert!(is_center_system(&body, &center));
+        body.system_id64 = None;
+        body.system_name = Some("sOL".to_owned());
+        assert!(is_center_system(&body, &center));
+        body.system_id64 = Some("43".to_owned());
+        assert!(!is_center_system(&body, &center));
+    }
+
+    #[test]
     fn parses_body_page_and_marks_empty_page_exhausted() {
         let response = serde_json::json!({
             "guid": "abc-123",
