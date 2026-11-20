@@ -254,6 +254,10 @@ mod tests {
             surface_pressure: None,
             gravity,
             atmosphere: atmosphere.map(str::to_owned),
+            volcanism_type: None,
+            biological_signal_count: None,
+            biological_genera: None,
+            signals_updated_at: None,
         }
     }
 
