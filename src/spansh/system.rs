@@ -214,6 +214,21 @@ mod tests {
     }
 
     #[test]
+    fn candidate_parser_reads_flat_system_coordinates() {
+        let value = serde_json::json!({
+            "results": [{
+                "name": "Sol",
+                "id64": "10477373803",
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }]
+        });
+        let candidate = first_candidate(&value).unwrap();
+        assert_eq!(candidate.coordinates, Some(Coordinates { x: 0.0, y: 0.0, z: 0.0 }));
+    }
+
+    #[test]
     fn candidate_parser_preserves_large_id64_as_string() {
         let value = serde_json::json!({
             "results": [{
@@ -335,6 +350,39 @@ mod tests {
         );
         assert!(requests[1].starts_with("GET /api/search/systems?q=Col%20285%20Sector%20BQ-Y "));
         assert!(requests[2].starts_with("GET /api/system/9223372036854775807 "));
+    }
+
+    #[tokio::test]
+    async fn resolver_uses_coordinates_from_search_without_detail_request() {
+        use tokio::{
+            io::{AsyncReadExt, AsyncWriteExt},
+            net::TcpListener,
+        };
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = [0_u8; 2048];
+            let size = socket.read(&mut request).await.unwrap();
+            let request = String::from_utf8_lossy(&request[..size]).to_string();
+            let body = r#"{"count":1,"query":"Sol","results":[{"name":"Sol","id64":"42","x":1.0,"y":2.0,"z":3.0}]}"#;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            socket.write_all(response.as_bytes()).await.unwrap();
+            request
+        });
+
+        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let system = SystemResolver::new(client).resolve("Sol").await.unwrap();
+
+        assert_eq!(system.id64, "42");
+        assert_eq!(system.name, "Sol");
+        assert_eq!(system.coordinates, Coordinates { x: 1.0, y: 2.0, z: 3.0 });
+        assert!(server.await.unwrap().starts_with("GET /api/search/systems?q=Sol "));
     }
 
     #[tokio::test]
