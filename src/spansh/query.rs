@@ -50,6 +50,44 @@ impl BodySearchQuery {
         })
     }
 
+    /// Формирует запрос с серверными фильтрами Spansh. Локальная проверка
+    /// остаётся в BodySearch как защита от расхождений API и нормализации.
+    pub fn to_payload_with_criteria(&self, criteria: &crate::domain::criteria::SearchCriteria) -> Value {
+        let mut payload = self.to_payload();
+        let filters = payload["filters"]
+            .as_object_mut()
+            .expect("base query always contains an object of filters");
+
+        if criteria.planet_type != "any" {
+            filters.insert(
+                "subtype".to_owned(),
+                json!({ "value": [criteria.planet_type] }),
+            );
+        }
+        if criteria.atmosphere_type != "any" {
+            filters.insert(
+                "atmosphere".to_owned(),
+                json!({ "value": [criteria.atmosphere_type] }),
+            );
+        }
+
+        filters.insert(
+            "surface_temperature".to_owned(),
+            numeric_range_filter(criteria.temperature.min, criteria.temperature.max),
+        );
+        filters.insert(
+            "surface_pressure".to_owned(),
+            numeric_range_filter(criteria.pressure.min, criteria.pressure.max),
+        );
+        filters.insert(
+            "gravity".to_owned(),
+            numeric_range_filter(criteria.gravity.min, criteria.gravity.max),
+        );
+        filters.insert("is_landable".to_owned(), json!({ "value": true }));
+
+        payload
+    }
+
     /// Предварительный payload: на сервер отправляются только координаты,
     /// радиус и параметры выдачи. Остальные критерии проверяются локально,
     /// пока точная схема фильтров Spansh не подтверждена.
@@ -68,6 +106,13 @@ impl BodySearchQuery {
             }
         })
     }
+}
+
+fn numeric_range_filter(min: f64, max: f64) -> Value {
+    json!({
+        "comparison": "<=>",
+        "value": [min, max]
+    })
 }
 
 #[derive(Debug, thiserror::Error, PartialEq)]
