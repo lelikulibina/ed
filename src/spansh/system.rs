@@ -243,7 +243,6 @@ mod tests {
         assert!(exact_candidate(&value, "Sol Beta").is_none());
     }
 
-
     #[test]
     fn skips_name_only_candidates_and_selects_first_resolvable_fallback() {
         let value = serde_json::json!({
