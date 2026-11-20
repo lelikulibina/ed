@@ -515,7 +515,6 @@ mod tests {
         assert_eq!(payload["page"], 1);
     }
 
-
     #[tokio::test]
     async fn falls_back_to_direct_post_when_recall_reference_has_expired() {
         use tokio::{
@@ -532,7 +531,10 @@ mod tests {
                     break;
                 }
                 bytes.extend_from_slice(&chunk[..read]);
-                if let Some(header_end) = bytes.windows(4).position(|window| window == b"\r\n\r\n") {
+                if let Some(header_end) = bytes
+                    .windows(4)
+                    .position(|window| window == b"\r\n\r\n")
+                {
                     let headers = String::from_utf8_lossy(&bytes[..header_end]);
                     let content_length = headers
                         .lines()
