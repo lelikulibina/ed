@@ -42,7 +42,9 @@
 - В этих моделях нет полей First Footfall или First Logged. `is_mapped`, `landmarks` и отсутствие биосигналов не являются заменой этим статусам.
 - `parents` позволяют восстановить родительскую цепочку, но для правил по звезде может потребоваться загрузить тела системы из dump и связать их по ID64.
 
-Парсер `Body::from_json` поддерживает SearchBody и dump Body. Для genus names и Codex-токенов нормализуются известные соответствия, в частности Bacterial → Bacterium, Cactoids → Cactoida, Tussocks → Tussock.
+Парсер `Body::from_json` поддерживает SearchBody и dump Body. Для genus names и Codex-токенов нормализуются известные соответствия, в частности Bacterial → Bacterium, Cactoids → Cactoida, Fumerolas → Fumerola, Tussocks → Tussock.
+
+Текущий JSON-справочник содержит 73 записи по 14 родам. Это расширенный профильный набор, но не полный список всех известных видов. Для правил с обязательным рельефом/фумаролами отсутствие terrain в SearchBody не трактуется как совпадение: кандидат помечается как требующий проверки. Geological signal count исключает Fumerola при известном нуле, но положительное значение само по себе не подтверждает нужную фумаролу.
 
 ## Три уровня оценки
 
@@ -93,7 +95,7 @@ First Logged сценарий:
 
 ## Необходимые данные в модели
 
-Текущий `Body` уже хранит subtype, atmosphere, temperature (K), pressure, gravity, landability, mapped state, volcanism_type, biological signal count, genus list и signals update time. Контракт полей вулканизма и биологии подтверждён официальными схемами Spansh и реализован в парсере.
+Текущий `Body` уже хранит subtype, atmosphere, temperature (K), pressure, gravity, landability, mapped state, volcanism_type, biological/geological signal count, genus list и signals update time. Контракт полей вулканизма и биологии подтверждён официальными схемами Spansh и реализован в парсере.
 
 Для следующих этапов остаются:
 - body star/system context: восстановление primary star class и признаков требуемых соседних тел по parents и system dump;
