@@ -93,3 +93,5 @@
 - Остаточные проверки: units полей на разных типах тел, 400/429/5xx/retry exhaustion, поведение выше 10k (provider cap), и финальный независимый review.
 
 - Добавлен дополнительный live probe страниц Sol 2/3/4 для проверки реальных значений surface_temperature/surface_pressure/gravity и сопоставления единиц измерения с legacy CLI ranges.
+
+- Live Sol planet inspection confirmed temperature/pressure/gravity values: Venus 735 K / 93.1895 pressure / 0.9044 g; Earth 288 K / 0.9991 pressure / 0.9991 g. A broader sample of Sol pages 2-10 is being inspected to normalize atmosphere labels and confirm landability fields.
