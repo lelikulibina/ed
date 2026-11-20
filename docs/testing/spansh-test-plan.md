@@ -61,12 +61,14 @@ Workflow: `.github/workflows/spansh-live-smoke.yml`; запускается вр
 - `POST /api/bodies/search` с радиусом 1 ly и размером страницы 1 вернул `count=40`, `from=0`, `size=1`, `search_reference` UUID и body rows.
 - `GET /api/bodies/search/recall/{search_reference}/1` вернул Mercury на следующей странице.
 - `GET /api/bodies/search/recall/{search_reference}/39` вернул последнюю строку: `count=40`, `from=39`, одна строка; проверка `from + rows >= count` определила конец выдачи.
+- Радиус 100 ly вернул `count=10000`; page 40 — Alpha Centauri на 4.37712 ly. В первой странице размера 100 найден landable Rocky body `2045 PC2` в Alpha Centauri.
+- Размер страницы 100 работает; recall page 99 вернул `from=9900`, 100 строк и распознан как последняя страница.
 - Отдельный direct POST с `page=1` также вернул следующую запись с `from=1` и другим ID64.
 - Живой Mercury result содержал `id64`, `system_id64`, `subtype`, `distance`, `is_landable=true`, `is_mapped=null`, `surface_temperature`, `surface_pressure`, `gravity`, `atmosphere`. Это подтвердило форму полей, но не единицы измерения для всех типов тел.
 
 ## Что ещё не подтверждено
 
-- Выдача на 40 строк проверена от первой до последней страницы; поведение на больших выдачах (100+ строк) и точная семантика count/from для всех размеров страницы ещё не подтверждены.
+- Выдача 10 000 строк проверена на page size 100 до последней страницы 99. Поведение сверх 10 000 результатов и точная верхняя граница provider cap ещё не подтверждены.
 - Максимальный page size и максимальное количество страниц.
 - Единицы surface_temperature/surface_pressure/gravity и все enum values subtype/atmosphere.
 - Distance semantics на разных центральных системах и при большом радиусе.
