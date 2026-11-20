@@ -81,7 +81,7 @@ struct Candidate {
 fn first_candidate(value: &Value) -> Option<Candidate> {
     // Поддерживаем распространённые обёртки API, не фиксируя пока
     // неподтверждённую единственную форму ответа.
-    for key in ["systems", "results", "values", "data"] {
+    for key in ["systems", "results", "values", "data", "min_max"] {
         if let Some(items) = value.get(key).and_then(Value::as_array)
             && let Some(candidate) = items
                 .iter()
@@ -112,12 +112,14 @@ fn exact_candidate(value: &Value, expected_name: &str) -> Option<Candidate> {
             .is_some_and(|name| name.trim().eq_ignore_ascii_case(expected_name.trim()))
     };
 
-    for key in ["systems", "results", "values", "data"] {
-        if let Some(items) = value.get(key).and_then(Value::as_array) {
-            return items
+    for key in ["systems", "results", "values", "data", "min_max"] {
+        if let Some(items) = value.get(key).and_then(Value::as_array)
+            && let Some(candidate) = items
                 .iter()
                 .filter_map(candidate_from_value)
-                .find(|candidate| matches_name(candidate) && candidate.id64.is_some());
+                .find(|candidate| matches_name(candidate) && candidate.id64.is_some())
+        {
+            return Some(candidate);
         }
     }
 
@@ -256,6 +258,20 @@ mod tests {
         let candidate = first_candidate(&value).unwrap();
         assert_eq!(candidate.id64.as_deref(), Some("9223372036854775807"));
         assert_eq!(candidate.name.as_deref(), Some("Col 285 Sector BQ-Y"));
+    }
+
+    #[test]
+    fn exact_candidate_checks_min_max_even_when_results_only_has_prefixes() {
+        let value = serde_json::json!({
+            "results": [{"name": "Thraikuae NS-U e2-18", "id64": "1"}],
+            "values": ["Thraikuae NS-U e2-2"],
+            "min_max": [
+                {"name": "Thraikuae NS-U e2-2", "id64": "2", "x": 10.0, "y": 20.0, "z": 30.0}
+            ]
+        });
+        let candidate = exact_candidate(&value, "Thraikuae NS-U e2-2").unwrap();
+        assert_eq!(candidate.name.as_deref(), Some("Thraikuae NS-U e2-2"));
+        assert_eq!(candidate.id64.as_deref(), Some("2"));
     }
 
     #[test]
