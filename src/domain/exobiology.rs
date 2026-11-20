@@ -40,6 +40,9 @@ pub struct ExobiologyEstimate {
     pub minimum_first_logged_value_cr: u64,
     pub maximum_first_logged_value_cr: u64,
     pub probabilities_calculated: bool,
+    pub biological_signal_count: Option<u32>,
+    pub biological_genera: Option<Vec<String>>,
+    pub catalog_is_complete: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -59,9 +62,26 @@ pub fn estimate(body: &Body) -> Result<ExobiologyEstimate, EstimateError> {
     let mut by_genus: BTreeMap<String, Vec<SpeciesCandidate>> = BTreeMap::new();
 
     for entry in entries {
-        let Some(candidate) = evaluate_species(entry, body) else {
+        if body.biological_signal_count == Some(0) {
+            break;
+        }
+        if let Some(genera) = body.biological_genera.as_ref().filter(|genera| !genera.is_empty()) {
+            let Some(genus) = entry["genus"].as_str() else {
+                continue;
+            };
+            if !genera.iter().any(|candidate| candidate.eq_ignore_ascii_case(genus)) {
+                continue;
+            }
+        }
+        let Some(mut candidate) = evaluate_species(entry, body) else {
             continue;
         };
+        if body.biological_signal_count.is_some_and(|count| count > 0)
+            && body.biological_genera.as_ref().is_none_or(Vec::is_empty)
+        {
+            candidate.unknown_conditions.push("точный список биологических родов Spansh".to_owned());
+            candidate.status = CandidateStatus::NeedsVerification;
+        }
         by_genus
             .entry(candidate.genus.clone())
             .or_default()
@@ -107,6 +127,9 @@ pub fn estimate(body: &Body) -> Result<ExobiologyEstimate, EstimateError> {
         minimum_first_logged_value_cr: 0,
         maximum_first_logged_value_cr: maximum_base_value_cr * FIRST_LOGGED_MULTIPLIER,
         probabilities_calculated: false,
+        biological_signal_count: body.biological_signal_count,
+        biological_genera: body.biological_genera.clone(),
+        catalog_is_complete: false,
     })
 }
 
@@ -185,12 +208,14 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
         }
     }
 
-    if entry["volcanism"]
-        .as_array()
-        .is_some_and(|values| !values.is_empty())
-    {
-        // The Spansh body response contract has not yet been verified for volcanism.
-        unknown_conditions.push("тип вулканизма (поле Spansh пока не подтверждено)".to_owned());
+    if let Some(allowed) = entry["volcanism"].as_array().filter(|values| !values.is_empty()) {
+        match body.volcanism_type.as_deref() {
+            Some(actual) if allowed.iter().any(|value| {
+                value.as_str().is_some_and(|expected| expected.eq_ignore_ascii_case(actual.trim()))
+            }) => {}
+            Some(_) => return None,
+            None => unknown_conditions.push("тип вулканизма".to_owned()),
+        }
     }
 
     Some(SpeciesCandidate {
