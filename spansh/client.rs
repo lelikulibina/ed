@@ -136,7 +136,7 @@ mod tests {
 
         let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
         let value = client.get_json("/fixture").await.unwrap();
-        assert_eq!(value["ok"], true);
+        assert!(value["ok"].as_bool().unwrap());
         server.await.unwrap();
     }
 
