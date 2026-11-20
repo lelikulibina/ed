@@ -249,6 +249,17 @@ mod tests {
     }
 
     #[test]
+    fn atmosphere_filter_labels_include_descriptive_variants() {
+        let labels = atmosphere_filter_labels("Water");
+        assert!(labels.contains(&"Water".to_owned()));
+        assert!(labels.contains(&"Thin Water".to_owned()));
+        assert!(labels.contains(&"Thick Water".to_owned()));
+        assert!(labels.contains(&"Hot Water".to_owned()));
+        assert!(labels.contains(&"Hot thick Water".to_owned()));
+        assert!(!labels.contains(&"Water-rich".to_owned()));
+    }
+
+    #[test]
     fn rejects_non_object_and_missing_name() {
         assert_eq!(
             Body::from_json(&serde_json::json!([])),
