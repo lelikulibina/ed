@@ -340,8 +340,14 @@ mod tests {
             match run_menu(&mut input, &mut output).unwrap() {
                 MenuAction::Search { criteria, system } => {
                     assert_eq!(system, "Sol");
-                    assert_eq!(criteria.planet_types, SEARCH_PROFILES[number - 1].planet_types);
-                    assert_eq!(criteria.atmosphere_type, SEARCH_PROFILES[number - 1].atmosphere);
+                    assert_eq!(
+                        criteria.planet_types,
+                        SEARCH_PROFILES[number - 1].planet_types
+                    );
+                    assert_eq!(
+                        criteria.atmosphere_type,
+                        SEARCH_PROFILES[number - 1].atmosphere
+                    );
                     assert_eq!(criteria.count, 5);
                 }
                 MenuAction::Exit => panic!("profile {number} should start a search"),

@@ -99,7 +99,10 @@ mod tests {
     #[test]
     fn no_user_arguments_select_the_menu_and_explicit_arguments_select_cli() {
         assert!(!has_cli_arguments(&[OsString::from("ed")]));
-        assert!(has_cli_arguments(&[OsString::from("ed"), OsString::from("--help")]));
+        assert!(has_cli_arguments(&[
+            OsString::from("ed"),
+            OsString::from("--help")
+        ]));
     }
 
     #[test]
