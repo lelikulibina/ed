@@ -61,7 +61,8 @@ impl BodySearch {
         center: &ResolvedSystem,
         criteria: &SearchCriteria,
     ) -> Result<Vec<Body>, BodySearchError> {
-        let query = BodySearchQuery::new(center.coordinates, self.radius_ly, self.page_size)?;
+        let mut query =
+            BodySearchQuery::new(center.coordinates, self.radius_ly, self.page_size)?;
         let initial = self
             .client
             .post_json("/api/bodies/search", &query.to_payload())
@@ -99,7 +100,7 @@ impl BodySearch {
                 }
             }
 
-            if page.exhausted {
+            if is_last_page(&page, page_index, self.page_size) {
                 completed = true;
                 break;
             }
@@ -108,20 +109,18 @@ impl BodySearch {
                 return Err(BodySearchError::PageLimit(self.max_pages));
             }
 
-            let Some(search_guid) = guid.as_deref() else {
-                // Without a documented cursor/GUID, don't fabricate a next
-                // page request. Treat a short page as terminal; a full page
-                // is an explicit contract error to avoid silent truncation.
-                if page.last_page_size < usize::from(self.page_size) {
-                    completed = true;
-                    break;
-                }
-                return Err(BodySearchError::InvalidResponse);
-            };
-
             let next_page = page_index + 1;
-            let path = format!("/api/bodies/search/recall/{search_guid}/{next_page}");
-            let response = self.client.get_json(&path).await?;
+            let response = if let Some(search_guid) = guid.as_deref() {
+                let path = format!("/api/bodies/search/recall/{search_guid}/{next_page}");
+                self.client.get_json(&path).await?
+            } else {
+                // Live API probe confirms page=N is accepted when no
+                // search_reference is present in the response.
+                query.page = next_page;
+                self.client
+                    .post_json("/api/bodies/search", &query.to_payload())
+                    .await?
+            };
             page = parse_page(&response)?;
             if let Some(next_guid) = find_guid(&response) {
                 guid = Some(next_guid);
@@ -139,6 +138,22 @@ struct ParsedPage {
     bodies: Vec<Body>,
     exhausted: bool,
     last_page_size: usize,
+    total_count: Option<usize>,
+    from: Option<usize>,
+}
+
+fn is_last_page(page: &ParsedPage, page_index: u32, page_size: u16) -> bool {
+    if page.exhausted {
+        return true;
+    }
+
+    if let Some(total_count) = page.total_count {
+        let default_offset = page_index as usize * usize::from(page_size);
+        let offset = page.from.unwrap_or(default_offset);
+        return offset.saturating_add(page.last_page_size) >= total_count;
+    }
+
+    page.last_page_size < usize::from(page_size)
 }
 
 fn parse_page(value: &Value) -> Result<ParsedPage, BodySearchError> {
@@ -171,6 +186,14 @@ fn parse_page(value: &Value) -> Result<ParsedPage, BodySearchError> {
         bodies,
         exhausted,
         last_page_size: array.len(),
+        total_count: value
+            .get("count")
+            .and_then(Value::as_u64)
+            .and_then(|count| usize::try_from(count).ok()),
+        from: value
+            .get("from")
+            .and_then(Value::as_u64)
+            .and_then(|from| usize::try_from(from).ok()),
     })
 }
 
