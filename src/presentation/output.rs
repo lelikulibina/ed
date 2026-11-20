@@ -47,26 +47,14 @@ fn footfall_evidence_summary(body: &Body) -> String {
     let updated_at = body.last_updated_at.as_deref().unwrap_or("дата неизвестна");
 
     match body.footfall_evidence() {
-        FootfallEvidence::FootfalledBeforeScan => format!(
-            "журнал Scan.WasFootfalled=true ({}) — кто-то высадился до этого сканирования",
-            body.journal_scan_timestamp
-                .as_deref()
-                .unwrap_or("дата неизвестна")
+        FootfallEvidence::Pre2022Update => format!(
+            "последнее обновление Spansh: {updated_at} — до 2022 года; считаем, что высадки ещё не было (эвристика)"
         ),
-        FootfallEvidence::UnfootfalledAtScan => format!(
-            "журнал Scan.WasFootfalled=false ({}) — до этого сканирования высадки не было; хороший признак для бонуса, но не гарантия First Logged",
-            body.journal_scan_timestamp
-                .as_deref()
-                .unwrap_or("дата неизвестна")
-        ),
-        FootfallEvidence::PreOdysseyUpdate => format!(
-            "прямой статус неизвестен; данные Spansh обновлялись до Odyssey ({updated_at}), потенциально перспективная планета, но свободная высадка не гарантирована"
-        ),
-        FootfallEvidence::PostOdysseyUpdate => format!(
-            "прямой статус неизвестен; данные Spansh обновлялись после выхода Odyssey ({updated_at}), возможна предыдущая активность, но это не доказывает высадку"
+        FootfallEvidence::Since2022Update => format!(
+            "последнее обновление Spansh: {updated_at} — 2022 год или позже; высадка могла быть, First Footfall не подтверждён"
         ),
         FootfallEvidence::Unknown => {
-            "статус неизвестен — Spansh не публикует прямой флаг высадки".to_owned()
+            "дата обновления Spansh неизвестна — статус высадки определить нельзя".to_owned()
         }
     }
 }
@@ -225,8 +213,6 @@ mod tests {
             is_landable: None,
             is_mapped: None,
             last_updated_at: None,
-            journal_was_footfalled: None,
-            journal_scan_timestamp: None,
             surface_temperature: None,
             surface_pressure: None,
             gravity: None,
@@ -242,24 +228,19 @@ mod tests {
     #[test]
     fn footfall_summary_explains_update_time_is_only_a_heuristic() {
         let mut body = body("Test body", "100", "Test system");
-        body.last_updated_at = Some("2021-05-18T23:59:59Z".to_owned());
+        body.last_updated_at = Some("2021-12-31T23:59:59Z".to_owned());
         let old = footfall_evidence_summary(&body);
-        assert!(old.contains("до Odyssey"));
-        assert!(old.contains("свободная высадка не гарантирована"));
+        assert!(old.contains("до 2022 года"));
+        assert!(old.contains("высадки ещё не было"));
 
-        body.last_updated_at = Some("2026-11-20T10:00:00Z".to_owned());
+        body.last_updated_at = Some("2022-01-01T00:00:00Z".to_owned());
         let recent = footfall_evidence_summary(&body);
-        assert!(recent.contains("после выхода Odyssey"));
-        assert!(recent.contains("не доказывает высадку"));
+        assert!(recent.contains("2022 год или позже"));
+        assert!(recent.contains("могла быть"));
 
         body.last_updated_at = None;
         assert!(footfall_evidence_summary(&body).contains("статус неизвестен"));
 
-        body.journal_was_footfalled = Some(true);
-        body.journal_scan_timestamp = Some("2026-01-01T00:00:00Z".to_owned());
-        assert!(footfall_evidence_summary(&body).contains("WasFootfalled=true"));
-        body.journal_was_footfalled = Some(false);
-        assert!(footfall_evidence_summary(&body).contains("WasFootfalled=false"));
     }
 
     #[test]
