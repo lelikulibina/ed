@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::domain::{
     body::Body,
-    exobiology::{self, CandidateStatus, EstimateError},
+    exobiology::{self, CandidateStatus, EstimateError, ExobiologyEstimate},
 };
 
 pub fn print_results(bodies: &[Body]) {
@@ -17,44 +17,58 @@ pub fn print_results(bodies: &[Body]) {
             .find_map(|body| body.system_name.as_deref())
             .unwrap_or("неизвестная система");
         println!("Система: {system_name} (ID64: {system_id})");
+
         for body in planets {
             println!(
-                "  • {}{}\n    Тип: {}\n    Атмосфера: {}\n    Температура: {} K\n    Давление: {}\n    Гравитация: {} g\n    Расстояние от центра поиска: {} св. л.\n    Биологические сигналы Spansh: {}\n    Обнаруженные биологические роды: {}\n    First Footfall: не предоставляется Spansh\n",
+                "\n┌─ {}{}",
                 body.name,
                 if body.is_mapped == Some(true) {
                     " [картографирована]"
                 } else {
                     ""
-                },
-                body.subtype.as_deref().unwrap_or("неизвестно"),
-                body.atmosphere.as_deref().unwrap_or("неизвестно"),
+                }
+            );
+            println!(
+                "│ {} | {} | {} K | {} atm | {} g | {:.3} св. л.",
+                body.subtype.as_deref().unwrap_or("тип неизвестен"),
+                body.atmosphere.as_deref().unwrap_or("атмосфера неизвестна"),
                 display_number(body.surface_temperature),
                 display_number(body.surface_pressure),
                 display_number(body.gravity),
-                display_number(body.distance_ly),
+                body.distance_ly.unwrap_or_default()
+            );
+            println!(
+                "│ Биосигналы Spansh: {} | Роды: {}",
                 body.biological_signal_count
                     .map_or_else(|| "нет данных".to_owned(), |count| count.to_string()),
                 body.biological_genera
                     .as_ref()
                     .filter(|genera| !genera.is_empty())
-                    .map_or_else(|| "нет данных".to_owned(), |genera| genera.join(", ")),
+                    .map_or_else(|| "не указаны".to_owned(), |genera| genera.join(", "))
             );
+            println!("│ First Footfall: Spansh не предоставляет этот статус");
+
             match exobiology_summary(body) {
-                Ok(Some(summary)) => println!("{summary}"),
-                Ok(None) => {}
-                Err(error) => println!("    Не удалось рассчитать экзобиологию: {error}"),
+                Ok(Some(summary)) => {
+                    for line in summary.lines() {
+                        println!("│ {line}");
+                    }
+                }
+                Ok(None) => println!("│ Подходящие виды в текущем справочнике не найдены."),
+                Err(error) => println!("│ Ошибка расчёта экзобиологии: {error}"),
             }
+            println!("└{}", "─".repeat(78));
         }
     }
 }
 
 fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
     let estimate = exobiology::estimate(body)?;
+
     if estimate.biological_signal_count == Some(0) {
-        return Ok(Some(
-            "    Экзобиология: биологических сигналов Spansh не обнаружил.".to_owned(),
-        ));
+        return Ok(Some("Биологических сигналов Spansh не обнаружил.".to_owned()));
     }
+
     if estimate.genera.is_empty() {
         if let Some(genera) = estimate
             .biological_genera
@@ -62,98 +76,117 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
             .filter(|genera| !genera.is_empty())
         {
             return Ok(Some(format!(
-                "    Экзобиология: Spansh указал роды {}, но по текущим параметрам в справочнике не найдено подходящих видов.",
+                "Spansh указал роды {}, но подходящие виды в справочнике не найдены.",
                 genera.join(", ")
             )));
         }
         return Ok(None);
     }
 
-    let title = if estimate
+    let mut lines = Vec::new();
+    let confirmed_genera = estimate
         .biological_genera
         .as_ref()
-        .is_some_and(|genera| !genera.is_empty())
-    {
-        "    Экзобиология — уточнение по родам Spansh:"
+        .is_some_and(|genera| !genera.is_empty());
+    lines.push(if confirmed_genera {
+        "Возможные виды по родам, зарегистрированным Spansh:".to_owned()
     } else {
-        "    Экзобиология — предварительный прогноз:"
-    };
-    let mut lines = vec![title.to_owned()];
-    if let Some(count) = estimate.biological_signal_count {
-        lines.push(format!("      Биологических сигналов Spansh: {count}"));
-    }
-    if let Some(count) = estimate.geological_signal_count {
-        lines.push(format!("      Геологических сигналов Spansh: {count}"));
-    }
-    if let Some(genera) = estimate
-        .biological_genera
-        .as_ref()
-        .filter(|genera| !genera.is_empty())
-    {
-        lines.push(format!("      Роды Spansh: {}", genera.join(", ")));
-    }
-    for genus in &estimate.genera {
-        let candidates = genus
-            .candidates
-            .iter()
-            .map(|candidate| {
-                let verification = match candidate.status {
-                    CandidateStatus::EligibleByKnownData => String::new(),
+        "Предварительные кандидаты по параметрам планеты (роды не подтверждены):".to_owned()
+    });
+
+    let rows = estimate
+        .genera
+        .iter()
+        .flat_map(|genus| {
+            genus.candidates.iter().map(move |candidate| {
+                let status = match candidate.status {
+                    CandidateStatus::EligibleByKnownData => "По известным условиям подходит".to_owned(),
                     CandidateStatus::NeedsVerification => format!(
-                        " [нужна проверка: {}]",
+                        "Проверить: {}",
                         candidate.unknown_conditions.join(", ")
                     ),
                 };
-                format!(
-                    "{} — {} CR{}",
-                    candidate.species,
-                    format_credits(candidate.base_value_cr),
-                    verification
-                )
+                vec![
+                    genus.genus.clone(),
+                    candidate.species.clone(),
+                    format!("{} CR", format_credits(candidate.base_value_cr)),
+                    status,
+                ]
             })
-            .collect::<Vec<_>>()
-            .join("; ");
-        lines.push(format!("      {}: {}", genus.genus, candidates));
-    }
+        })
+        .collect::<Vec<_>>();
+
+    lines.extend(render_table(
+        &["Род", "Вид-кандидат", "За 3 образца", "Статус"],
+        &rows,
+    ));
 
     lines.push(format!(
-        "      Потенциальная стоимость (базовая): 0–{} CR",
+        "Потенциальная базовая выручка: 0–{} CR",
         format_credits(estimate.maximum_base_value_cr)
     ));
-    lines.push(
-        "      Spansh не предоставляет достоверный статус First Footfall; бонус First Logged ×5 остаётся отдельным условным сценарием.".to_owned(),
-    );
     lines.push(format!(
-        "      Сценарий First Logged ×5 (если доступен для конкретного вида): 0–{} CR",
+        "При First Logged ×5: 0–{} CR (условный сценарий)",
         format_credits(estimate.maximum_first_logged_value_cr)
     ));
-    if estimate
-        .biological_genera
-        .as_ref()
-        .is_some_and(|genera| !genera.is_empty())
-    {
-        lines.push(
-            "      Список родов Spansh учтён; внутри каждого рода вид пока неизвестен.".to_owned(),
-        );
-    } else {
-        lines.push(
-            "      Состав родов не подтверждён; верхняя граница предполагает наличие всех указанных родов."
-                .to_owned(),
-        );
-    }
+
+    let mut notes = Vec::new();
     if !estimate.catalog_is_complete {
-        lines.push(
-            "      Каталог видов неполный: верхняя граница рассчитана только по внесённым видам."
-                .to_owned(),
-        );
+        notes.push("справочник видов неполный");
     }
-    lines.push(
-        "      Кандидаты совпадают только по условиям, внесённым в справочник; полный набор игровых условий ещё не моделируется."
-            .to_owned(),
-    );
-    lines.push("      Вероятности появления видов не рассчитаны.".to_owned());
+    notes.push("вероятности появления видов не рассчитаны");
+    notes.push("учтены только условия, внесённые в справочник");
+    notes.push("внутри одного рода учитывается один вид, а не сумма всех кандидатов");
+    lines.push(format!("Примечание: {}.", notes.join("; ")));
 
     Ok(Some(lines.join("\n")))
+}
+
+/// Builds a compact, dynamically sized text table suitable for a terminal.
+fn render_table(headers: &[&str], rows: &[Vec<String>]) -> Vec<String> {
+    let widths = headers
+        .iter()
+        .enumerate()
+        .map(|(column, header)| {
+            rows.iter()
+                .map(|row| row.get(column).map_or(0, |cell| cell.chars().count()))
+                .fold(header.chars().count(), usize::max)
+        })
+        .collect::<Vec<_>>();
+
+    let border = |left: char, middle: char, right: char| {
+        format!(
+            "{left}{}{right}",
+            widths
+                .iter()
+                .map(|width| "─".repeat(width + 2))
+                .collect::<Vec<_>>()
+                .join(&middle.to_string())
+        )
+    };
+    let format_row = |cells: &[String]| {
+        format!(
+            "│ {} │",
+            widths
+                .iter()
+                .enumerate()
+                .map(|(index, width)| {
+                    let value = cells.get(index).map_or("", String::as_str);
+                    format!("{value:<width$}")
+                })
+                .collect::<Vec<_>>()
+                .join(" │ ")
+        )
+    };
+
+    let mut output = vec![border('┌', '┬', '┐')];
+    output.push(format_row(
+        &headers.iter().map(|header| (*header).to_owned()).collect::<Vec<_>>(),
+    ));
+    output.push(border('├', '┼', '┤'));
+    output.extend(rows.iter().map(|row| format_row(row)));
+    output.push(border('└', '┴', '┘'));
+    output
 }
 
 fn format_credits(value: u64) -> String {
@@ -215,7 +248,7 @@ mod tests {
     }
 
     #[test]
-    fn exobiology_summary_reports_range_and_separates_first_logged_scenario() {
+    fn species_candidates_are_rendered_as_a_structured_table() {
         let mut body = body("Test body", "100", "Test system");
         body.subtype = Some("Rocky body".to_owned());
         body.atmosphere = Some("Water".to_owned());
@@ -223,18 +256,18 @@ mod tests {
         body.gravity = Some(0.2);
 
         let summary = exobiology_summary(&body).unwrap().unwrap();
-        assert!(summary.contains("Экзобиология — предварительный прогноз"));
-        assert!(summary.contains("Потенциальная стоимость (базовая): 0–"));
-        assert!(
-            summary.contains("Сценарий First Logged ×5 (если доступен для конкретного вида): 0–")
-        );
-        assert!(summary.contains("Вероятности появления видов не рассчитаны"));
-        assert!(summary.contains("Кандидаты совпадают только по условиям"));
-        assert!(summary.contains("нужна проверка: тип вулканизма"));
+        assert!(summary.contains("┌"));
+        assert!(summary.contains("Род"));
+        assert!(summary.contains("Вид-кандидат"));
+        assert!(summary.contains("За 3 образца"));
+        assert!(summary.contains("Потенциальная базовая выручка: 0–"));
+        assert!(summary.contains("При First Logged ×5: 0–"));
+        assert!(summary.contains("Проверить: тип вулканизма"));
+        assert!(!summary.contains("Вероятности появления видов не рассчитаны.\n"));
     }
 
     #[test]
-    fn exobiology_summary_uses_biological_signal_count_and_confirmed_genera() {
+    fn confirmed_spansh_genera_limit_the_species_table() {
         let mut body = body("Test body", "100", "Test system");
         body.subtype = Some("Rocky body".to_owned());
         body.atmosphere = Some("Water".to_owned());
@@ -245,25 +278,25 @@ mod tests {
         body.biological_genera = Some(vec!["Osseus".to_owned(), "Tussock".to_owned()]);
 
         let summary = exobiology_summary(&body).unwrap().unwrap();
-        assert!(summary.contains("Экзобиология — уточнение по родам Spansh"));
-        assert!(summary.contains("Биологических сигналов Spansh: 2"));
-        assert!(summary.contains("Геологических сигналов Spansh: 1"));
-        assert!(summary.contains("Роды Spansh: Osseus, Tussock"));
-        assert!(summary.contains("Каталог видов неполный"));
-        assert!(!summary.contains("Bacterium:"));
+        assert!(summary.contains("по родам, зарегистрированным Spansh"));
+        assert!(summary.contains("Osseus"));
+        assert!(summary.contains("Tussock"));
+        assert!(summary.contains("справочник видов неполный"));
+        assert!(!summary.contains("Bacterium"));
     }
 
     #[test]
-    fn exobiology_summary_reports_zero_biological_signals_explicitly() {
+    fn zero_biological_signals_are_reported_without_species_candidates() {
         let mut body = body("Test body", "100", "Test system");
         body.biological_signal_count = Some(0);
 
         let summary = exobiology_summary(&body).unwrap().unwrap();
-        assert!(summary.contains("биологических сигналов Spansh не обнаружил"));
+        assert!(summary.contains("Биологических сигналов Spansh не обнаружил"));
+        assert!(!summary.contains("Вид-кандидат"));
     }
 
     #[test]
-    fn exobiology_summary_is_omitted_when_no_species_match_known_conditions() {
+    fn no_matching_species_returns_none_when_no_genera_are_known() {
         let mut body = body("Test body", "100", "Test system");
         body.subtype = Some("Icy body".to_owned());
         body.atmosphere = Some("Neon".to_owned());
@@ -273,6 +306,18 @@ mod tests {
         body.geological_signal_count = Some(0);
 
         assert_eq!(exobiology_summary(&body).unwrap(), None);
+    }
+
+    #[test]
+    fn table_columns_expand_to_fit_the_longest_cell() {
+        let lines = render_table(
+            &["Род", "Вид"],
+            &[vec!["Osseus".to_owned(), "Discus".to_owned()]],
+        );
+        assert!(lines[0].contains("┌"));
+        assert!(lines[1].contains("Osseus"));
+        assert!(lines[1].contains("Discus"));
+        assert!(lines.last().unwrap().contains("└"));
     }
 
     #[test]
