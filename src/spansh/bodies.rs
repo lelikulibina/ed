@@ -485,7 +485,15 @@ mod tests {
             .get_json("/api/system/10477373803")
             .await
             .expect("system detail endpoint must respond");
-        eprintln!("Live system detail: {system_detail}");
+        let system_record = system_detail.get("record").unwrap_or(&system_detail);
+        eprintln!(
+            "Live system detail: name={:?}, id64={:?}, coords=({:?}, {:?}, {:?})",
+            system_record.get("name"),
+            system_record.get("id64"),
+            system_record.get("x"),
+            system_record.get("y"),
+            system_record.get("z")
+        );
 
         let center = super::super::system::SystemResolver::new(client.clone())
             .resolve("Sol")
