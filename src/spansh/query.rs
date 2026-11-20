@@ -135,7 +135,11 @@ mod tests {
             payload["filters"]["subtype"]["value"][0],
             "Earth-like world"
         );
-        assert!(payload["filters"]["is_landable"]["value"].as_bool().unwrap());
+        assert!(
+            payload["filters"]["is_landable"]["value"]
+                .as_bool()
+                .unwrap()
+        );
         assert_eq!(payload["page"], 0);
         assert_eq!(payload["size"], 100);
     }
