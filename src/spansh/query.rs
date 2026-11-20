@@ -80,10 +80,7 @@ impl BodySearchQuery {
 
         filters.insert(
             "surface_temperature".to_owned(),
-            numeric_range_filter(
-                criteria.temperature_kelvin().min,
-                criteria.temperature_kelvin().max,
-            ),
+            numeric_range_filter(criteria.temperature.min, criteria.temperature.max),
         );
         filters.insert(
             "surface_pressure".to_owned(),
@@ -210,7 +207,7 @@ mod tests {
         );
         assert_eq!(
             payload["filters"]["surface_temperature"]["value"],
-            serde_json::json!([463.15, 468.15])
+            serde_json::json!([190.0, 195.0])
         );
         assert_eq!(
             payload["filters"]["surface_pressure"]["value"],
