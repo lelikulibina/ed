@@ -143,6 +143,10 @@ mod tests {
             surface_pressure: None,
             gravity: None,
             atmosphere: None,
+            volcanism_type: None,
+            biological_signal_count: None,
+            biological_genera: None,
+            signals_updated_at: None,
         }
     }
 
