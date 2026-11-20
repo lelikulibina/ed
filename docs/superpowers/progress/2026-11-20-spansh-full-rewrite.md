@@ -135,3 +135,6 @@
 
 - Rust CI run `44667317592` на SHA `f65e8106a33d56fca3e64fa0d3d48ccf4454f2b3`: Format, Clippy, Tests PASS.
 - Повторный live smoke `44667317582` PASS на том же SHA: Venus assertions прошли (735 K, 93.1895 pressure, 0.9044 g, Carbon dioxide); Earth assertions прошли (288 K, 0.99908 pressure, 0.99906 g, Nitrogen). 100-ly поиск по-прежнему находит `2045 PC2` в Alpha Centauri, последняя страница 99 из 10 000 строк определяется корректно.
+
+- Добавлен fallback для истёкшего/временно недоступного recall: на HTTP 404/405/410/5xx поиск продолжает страницы через live-confirmed POST `page=N`; 429 и остальные ошибки по-прежнему возвращаются явно. Mock test проверяет цепочку POST page 0 -> recall 404 -> POST page 1 -> найденный результат.
+- Rust CI run `44667716901` на SHA `dceeb52c87d976b6f8b8e3167d54eb78974b5716`: Format, Clippy, Tests PASS; `41 passed, 0 failed, 1 ignored`.
