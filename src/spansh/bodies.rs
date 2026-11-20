@@ -433,6 +433,19 @@ mod tests {
         assert_eq!(payload["reference_coords"]["x"], 1.0);
         assert_eq!(payload["reference_coords"]["y"], 2.0);
         assert_eq!(payload["reference_coords"]["z"], 3.0);
+        assert_eq!(
+            payload["filters"]["subtype"]["value"],
+            serde_json::json!(["Rocky body"])
+        );
+        assert_eq!(
+            payload["filters"]["atmosphere"]["value"],
+            serde_json::json!(["Nitrogen"])
+        );
+        assert_eq!(
+            payload["filters"]["surface_temperature"]["value"],
+            serde_json::json!([200.0, 300.0])
+        );
+        assert_eq!(payload["filters"]["is_landable"]["value"], true);
         assert!(requests[1].starts_with("GET /api/bodies/search/recall/test-guid/1 "));
     }
 
