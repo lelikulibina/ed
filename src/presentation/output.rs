@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::domain::{
-    body::{Body, FootfallEvidence},
+    body::Body,
     exobiology::{self, CandidateStatus, EstimateError},
 };
 
@@ -19,7 +19,7 @@ pub fn print_results(bodies: &[Body]) {
         println!("Система: {system_name} (ID64: {system_id})");
         for body in planets {
             println!(
-                "  • {}{}\n    Тип: {}\n    Атмосфера: {}\n    Температура: {} K\n    Давление: {}\n    Гравитация: {} g\n    Расстояние от центра поиска: {} св. л.\n    First Footfall: {}\n",
+                "  • {}{}\n    Тип: {}\n    Атмосфера: {}\n    Температура: {} K\n    Давление: {}\n    Гравитация: {} g\n    Расстояние от центра поиска: {} св. л.\n    Биологические сигналы Spansh: {}\n    Обнаруженные биологические роды: {}\n    First Footfall: не предоставляется Spansh\n",
                 body.name,
                 if body.is_mapped == Some(true) {
                     " [картографирована]"
@@ -32,29 +32,14 @@ pub fn print_results(bodies: &[Body]) {
                 display_number(body.surface_pressure),
                 display_number(body.gravity),
                 display_number(body.distance_ly),
-                footfall_evidence_summary(body),
+                body.biological_signal_count.map_or_else(|| "нет данных".to_owned(), |count| count.to_string()),
+                body.biological_genera.as_ref().filter(|genera| !genera.is_empty()).map_or_else(|| "нет данных".to_owned(), |genera| genera.join(", ")),
             );
             match exobiology_summary(body) {
                 Ok(Some(summary)) => println!("{summary}"),
                 Ok(None) => {}
                 Err(error) => println!("    Не удалось рассчитать экзобиологию: {error}"),
             }
-        }
-    }
-}
-
-fn footfall_evidence_summary(body: &Body) -> String {
-    let updated_at = body.last_updated_at.as_deref().unwrap_or("дата неизвестна");
-
-    match body.footfall_evidence() {
-        FootfallEvidence::Pre2022Update => format!(
-            "последнее обновление Spansh: {updated_at} — до 2022 года; считаем, что высадки ещё не было (эвристика)"
-        ),
-        FootfallEvidence::Since2022Update => format!(
-            "последнее обновление Spansh: {updated_at} — 2022 год или позже; высадка могла быть, First Footfall не подтверждён"
-        ),
-        FootfallEvidence::Unknown => {
-            "дата обновления Spansh неизвестна — статус высадки определить нельзя".to_owned()
         }
     }
 }
@@ -132,7 +117,7 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         format_credits(estimate.maximum_base_value_cr)
     ));
     lines.push(
-        "      First Footfall оценён эвристически по дате обновления Spansh; First Logged ×5 отдельно не подтверждается.".to_owned(),
+        "      Spansh не предоставляет достоверный статус First Footfall; бонус First Logged ×5 остаётся отдельным условным сценарием.".to_owned(),
     );
     lines.push(format!(
         "      Сценарий First Logged ×5 (если доступен для конкретного вида): 0–{} CR",
@@ -223,23 +208,6 @@ mod tests {
             biological_genera: None,
             signals_updated_at: None,
         }
-    }
-
-    #[test]
-    fn footfall_summary_explains_update_time_is_only_a_heuristic() {
-        let mut body = body("Test body", "100", "Test system");
-        body.last_updated_at = Some("2021-12-31T23:59:59Z".to_owned());
-        let old = footfall_evidence_summary(&body);
-        assert!(old.contains("до 2022 года"));
-        assert!(old.contains("высадки ещё не было"));
-
-        body.last_updated_at = Some("2022-01-01T00:00:00Z".to_owned());
-        let recent = footfall_evidence_summary(&body);
-        assert!(recent.contains("2022 год или позже"));
-        assert!(recent.contains("могла быть"));
-
-        body.last_updated_at = None;
-        assert!(footfall_evidence_summary(&body).contains("неизвестна"));
     }
 
     #[test]
