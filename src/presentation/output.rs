@@ -44,9 +44,7 @@ pub fn print_results(bodies: &[Body]) {
 }
 
 fn footfall_evidence_summary(body: &Body) -> String {
-    let Some(updated_at) = body.last_updated_at.as_deref() else {
-        return "статус неизвестен — Spansh не публикует прямой флаг высадки".to_owned();
-    };
+    let updated_at = body.last_updated_at.as_deref().unwrap_or("дата неизвестна");
 
     match body.footfall_evidence() {
         FootfallEvidence::FootfalledBeforeScan => format!(
