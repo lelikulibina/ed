@@ -77,3 +77,6 @@
 - Большие выдачи 100+ строк, units физических полей и ошибки 400/429/5xx остаются следующими проверками.
 
 - Live run `44663976650` прошёл проверку последней страницы: count=40, from=39, rows=1. Добавлен следующий smoke для радиуса 100 ly: проверить, что выдача выходит за 40 тел Sol и page 40 содержит тело другой системы с положительной дистанцией.
+
+- Live 100-ly probe passed: `count=10000`; recall page 40 contained Alpha Centauri (system ID64 `1178708478315`) at 4.377120 ly from Sol. This validates the core nearby-system discovery path.
+- Added one final live probe for production page size 100 and the last page of the 10,000-row response (expected page index 99 / from 9900).
