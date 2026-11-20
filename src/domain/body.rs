@@ -64,19 +64,45 @@ impl Body {
             surface_pressure: number_field(root, &["surface_pressure", "pressure"])
                 .or_else(|| number_field(value, &["surface_pressure", "pressure"])),
             gravity: number_field(root, &["gravity"]).or_else(|| number_field(value, &["gravity"])),
-            atmosphere: string_field(
-                root,
-                &["atmosphere_composition", "atmosphere", "atmosphere_type"],
-            )
-            .or_else(|| {
-                string_field(
-                    value,
-                    &["atmosphere_composition", "atmosphere", "atmosphere_type"],
-                )
-            })
-            .map(|atmosphere| normalize_atmosphere_label(&atmosphere)),
+            atmosphere: atmosphere_from_values(root, value),
         })
     }
+}
+
+fn atmosphere_from_values(root: &Value, value: &Value) -> Option<String> {
+    let label = string_field(root, &["atmosphere", "atmosphere_type"])
+        .or_else(|| string_field(value, &["atmosphere", "atmosphere_type"]));
+
+    if let Some(label) = label.as_deref() {
+        if !label.eq_ignore_ascii_case("No atmosphere") {
+            return Some(normalize_atmosphere_label(label));
+        }
+    }
+
+    let composition = root
+        .get("atmosphere_composition")
+        .and_then(Value::as_array)
+        .or_else(|| {
+            value
+                .get("atmosphere_composition")
+                .and_then(Value::as_array)
+        });
+    let dominant_component = composition.and_then(|components| {
+        components
+            .iter()
+            .filter_map(|component| {
+                let name = component.get("name").and_then(Value::as_str)?;
+                let share = component
+                    .get("share")
+                    .and_then(Value::as_f64)
+                    .filter(|share| share.is_finite())?;
+                Some((share, name))
+            })
+            .max_by(|left, right| left.0.total_cmp(&right.0))
+            .map(|(_, name)| normalize_atmosphere_label(name))
+    });
+
+    dominant_component.or_else(|| label.map(|label| normalize_atmosphere_label(&label)))
 }
 
 fn normalize_atmosphere_label(value: &str) -> String {
@@ -191,6 +217,21 @@ mod tests {
         assert_eq!(body.system_id64.as_deref(), Some("123"));
         assert_eq!(body.system_name.as_deref(), Some("A"));
         assert_eq!(body.distance_ly, Some(2.5));
+    }
+
+    #[test]
+    fn uses_dominant_composition_when_spansh_label_says_no_atmosphere() {
+        let value = serde_json::json!({
+            "name": "Earth",
+            "atmosphere": "No atmosphere",
+            "atmosphere_composition": [
+                {"name": "Argon", "share": 0.93},
+                {"name": "Nitrogen", "share": 77.88},
+                {"name": "Oxygen", "share": 20.89}
+            ]
+        });
+        let body = Body::from_json(&value).unwrap();
+        assert_eq!(body.atmosphere.as_deref(), Some("Nitrogen"));
     }
 
     #[test]
