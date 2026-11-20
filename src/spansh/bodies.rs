@@ -135,7 +135,10 @@ impl BodySearch {
                 // when no search_reference is supplied.
                 query.page = next_page;
                 self.client
-                    .post_json("/api/bodies/search", &query.to_payload_with_criteria(criteria))
+                    .post_json(
+                        "/api/bodies/search",
+                        &query.to_payload_with_criteria(criteria),
+                    )
                     .await?
             };
             page = parse_page(&response)?;
