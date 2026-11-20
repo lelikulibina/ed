@@ -51,6 +51,16 @@ impl SystemResolver {
             };
             if let Some(candidate) = candidate {
                 let id64 = candidate.id64.ok_or(ResolveError::InvalidResponse)?;
+                if let (Some(name), Some(coordinates)) =
+                    (candidate.name.clone(), candidate.coordinates)
+                {
+                    return Ok(ResolvedSystem {
+                        id64,
+                        name,
+                        coordinates,
+                    });
+                }
+
                 let detail = self.client.get_json(&format!("/api/system/{id64}")).await?;
                 return system_from_detail(&detail, id64, candidate.name)
                     .ok_or(ResolveError::InvalidResponse);
@@ -65,6 +75,7 @@ impl SystemResolver {
 struct Candidate {
     id64: Option<String>,
     name: Option<String>,
+    coordinates: Option<Coordinates>,
 }
 
 fn first_candidate(value: &Value) -> Option<Candidate> {
@@ -123,6 +134,7 @@ fn candidate_from_value(value: &Value) -> Option<Candidate> {
         return Some(Candidate {
             id64: None,
             name: value.as_str().map(str::to_owned),
+            coordinates: None,
         });
     }
 
@@ -134,10 +146,27 @@ fn candidate_from_value(value: &Value) -> Option<Candidate> {
         .find_map(|key| value.get(key).and_then(Value::as_str).map(str::to_owned));
 
     if id64.is_some() || name.is_some() {
-        Some(Candidate { id64, name })
+        Some(Candidate {
+            id64,
+            name,
+            coordinates: coordinates_from_value(value),
+        })
     } else {
         None
     }
+}
+
+fn coordinates_from_value(value: &Value) -> Option<Coordinates> {
+    let coordinates = value
+        .get("coords")
+        .or_else(|| value.get("coordinates"))
+        .unwrap_or(value);
+    let coordinates = Coordinates {
+        x: coordinates.get("x").and_then(Value::as_f64)?,
+        y: coordinates.get("y").and_then(Value::as_f64)?,
+        z: coordinates.get("z").and_then(Value::as_f64)?,
+    };
+    coordinates.validate().ok()
 }
 
 fn system_from_detail(
