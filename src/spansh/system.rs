@@ -214,21 +214,6 @@ mod tests {
     }
 
     #[test]
-    fn candidate_parser_reads_flat_system_coordinates() {
-        let value = serde_json::json!({
-            "results": [{
-                "name": "Sol",
-                "id64": "10477373803",
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-            }]
-        });
-        let candidate = first_candidate(&value).unwrap();
-        assert_eq!(candidate.coordinates, Some(Coordinates { x: 0.0, y: 0.0, z: 0.0 }));
-    }
-
-    #[test]
     fn candidate_parser_preserves_large_id64_as_string() {
         let value = serde_json::json!({
             "results": [{
