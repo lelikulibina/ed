@@ -1211,3 +1211,33 @@ mod tests {
                 .post_json("/api/bodies/search", &query.to_payload())
                 .await
                 .unwrap_or_else(|error| panic!("1000-ly search failed for {name}: {error}"));
+            let page = parse_page(&response).expect("body search response must parse");
+            let count = page.total_count.unwrap_or(page.last_page_size);
+            assert!(count > 0, "1000-ly search around {name} returned no bodies");
+            assert!(
+                page.bodies
+                    .iter()
+                    .all(|body| body.distance_ly.is_none_or(|distance| distance <= 1_000.0)),
+                "API returned a body outside 1000 ly around {name}"
+            );
+            eprintln!(
+                "1000-ly smoke: center={} id64={} coords=({:.3},{:.3},{:.3}), count={}, first_page_rows={}",
+                center.name,
+                center.id64,
+                center.coordinates.x,
+                center.coordinates.y,
+                center.coordinates.z,
+                count,
+                page.last_page_size
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_unknown_page_shape_instead_of_reporting_empty_results() {
+        assert!(matches!(
+            parse_page(&serde_json::json!({"unexpected": []})),
+            Err(BodySearchError::InvalidResponse)
+        ));
+    }
+}
