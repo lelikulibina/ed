@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::domain::{
-    body::Body,
+    body::{Body, FootfallEvidence},
     exobiology::{self, CandidateStatus, EstimateError},
 };
 
@@ -19,10 +19,10 @@ pub fn print_results(bodies: &[Body]) {
         println!("Система: {system_name} (ID64: {system_id})");
         for body in planets {
             println!(
-                "  • {}{}\n    Тип: {}\n    Атмосфера: {}\n    Температура: {} K\n    Давление: {}\n    Гравитация: {} g\n    Расстояние от центра поиска: {} св. л.\n",
+                "  • {}{}\n    Тип: {}\n    Атмосфера: {}\n    Температура: {} K\n    Давление: {}\n    Гравитация: {} g\n    Расстояние от центра поиска: {} св. л.\n    First Footfall: {}\n",
                 body.name,
                 if body.is_mapped == Some(true) {
-                    " [изучена]"
+                    " [картографирована]"
                 } else {
                     ""
                 },
@@ -32,12 +32,31 @@ pub fn print_results(bodies: &[Body]) {
                 display_number(body.surface_pressure),
                 display_number(body.gravity),
                 display_number(body.distance_ly),
+                footfall_evidence_summary(body),
             );
             match exobiology_summary(body) {
                 Ok(Some(summary)) => println!("{summary}"),
                 Ok(None) => {}
                 Err(error) => println!("    Не удалось рассчитать экзобиологию: {error}"),
             }
+        }
+    }
+}
+
+fn footfall_evidence_summary(body: &Body) -> String {
+    let Some(updated_at) = body.last_updated_at.as_deref() else {
+        return "статус неизвестен — Spansh не публикует прямой флаг высадки".to_owned();
+    };
+
+    match body.footfall_evidence() {
+        FootfallEvidence::PreOdysseyUpdate => format!(
+            "прямой статус неизвестен; данные Spansh обновлялись до Odyssey ({updated_at}), кандидат с повышенным приоритетом, но свободная высадка не гарантирована"
+        ),
+        FootfallEvidence::PostOdysseyUpdate => format!(
+            "прямой статус неизвестен; данные Spansh обновлялись после выхода Odyssey ({updated_at}), возможна предыдущая активность, но это не доказывает высадку"
+        ),
+        FootfallEvidence::Unknown => {
+            "статус неизвестен — дата обновления Spansh имеет неизвестный формат".to_owned()
         }
     }
 }
@@ -114,8 +133,11 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         "      Потенциальная стоимость (базовая): 0–{} CR",
         format_credits(estimate.maximum_base_value_cr)
     ));
+    lines.push(
+        "      First Footfall и First Logged — разные статусы; Spansh не подтверждает доступность бонуса ×5.".to_owned(),
+    );
     lines.push(format!(
-        "      Если доступен First Logged: 0–{} CR",
+        "      Сценарий First Logged ×5 (если доступен для конкретного вида): 0–{} CR",
         format_credits(estimate.maximum_first_logged_value_cr)
     ));
     if estimate
