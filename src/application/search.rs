@@ -9,8 +9,6 @@ pub enum SearchError {
     Resolve(#[from] crate::spansh::ResolveError),
     #[error(transparent)]
     Bodies(#[from] BodySearchError),
-    #[error("не удалось создать HTTP-клиент Spansh: {0}")]
-    Client(#[from] reqwest::Error),
 }
 
 pub struct SearchUseCase {
