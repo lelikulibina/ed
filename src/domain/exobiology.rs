@@ -435,12 +435,7 @@ mod tests {
 
     #[test]
     fn zero_biological_signals_suppress_all_species_candidates() {
-        let mut planet = body(
-            Some("Rocky body"),
-            Some("Water"),
-            Some(200.0),
-            Some(0.2),
-        );
+        let mut planet = body(Some("Rocky body"), Some("Water"), Some(200.0), Some(0.2));
         planet.biological_signal_count = Some(0);
 
         let estimate = estimate(&planet).unwrap();
