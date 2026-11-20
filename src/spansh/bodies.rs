@@ -76,11 +76,12 @@ impl BodySearch {
         for page_index in 0..self.max_pages {
             for body in page.bodies.drain(..) {
                 let identity = body.id64.clone().unwrap_or_else(|| {
-                    format!(
-                        "{}:{}",
-                        body.system_id64.as_deref().unwrap_or(""),
-                        body.name
-                    )
+                    let parent = body
+                        .system_id64
+                        .as_deref()
+                        .or(body.system_name.as_deref())
+                        .unwrap_or("");
+                    format!("{parent}:{}", body.name)
                 });
                 if !seen.insert(identity) {
                     continue;
