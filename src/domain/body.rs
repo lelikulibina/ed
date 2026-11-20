@@ -14,6 +14,10 @@ pub struct Body {
     pub surface_pressure: Option<f64>,
     pub gravity: Option<f64>,
     pub atmosphere: Option<String>,
+    pub volcanism_type: Option<String>,
+    pub biological_signal_count: Option<u32>,
+    pub biological_genera: Option<Vec<String>>,
+    pub signals_updated_at: Option<String>,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq)]
@@ -30,8 +34,9 @@ impl Body {
             return Err(BodyParseError::NotObject);
         }
         let root = value
-            .get("body")
-            .filter(|body| body.is_object())
+            .get("record")
+            .filter(|record| record.is_object())
+            .or_else(|| value.get("body").filter(|body| body.is_object()))
             .unwrap_or(value);
         let system = root
             .get("system")
@@ -51,26 +56,160 @@ impl Body {
             system_name: string_field(root, &["system_name", "systemName"])
                 .or_else(|| system.and_then(|value| string_field(value, &["name", "system_name"])))
                 .or_else(|| string_field(value, &["system_name", "systemName"])),
-            subtype: string_field(root, &["subtype", "type"])
+            subtype: string_field(root, &["subtype", "subType", "type"])
                 .or_else(|| string_field(value, &["subtype", "type"])),
             distance_ly: number_field(root, &["distance", "distance_ly"])
                 .or_else(|| number_field(value, &["distance", "distance_ly"])),
-            is_landable: bool_field(root, &["is_landable", "landable"])
+            is_landable: bool_field(root, &["is_landable", "isLandable", "landable"])
                 .or_else(|| bool_field(value, &["is_landable", "landable"])),
             is_mapped: bool_field(root, &["is_mapped", "mapped"])
                 .or_else(|| bool_field(value, &["is_mapped", "mapped"])),
-            surface_temperature: number_field(root, &["surface_temperature", "surface_temp"])
+            surface_temperature: number_field(root, &["surface_temperature", "surfaceTemperature", "surface_temp"])
                 .or_else(|| number_field(value, &["surface_temperature", "surface_temp"])),
-            surface_pressure: number_field(root, &["surface_pressure", "pressure"])
+            surface_pressure: number_field(root, &["surface_pressure", "surfacePressure", "pressure"])
                 .or_else(|| number_field(value, &["surface_pressure", "pressure"])),
             gravity: number_field(root, &["gravity"]).or_else(|| number_field(value, &["gravity"])),
             atmosphere: atmosphere_from_values(root, value),
+            volcanism_type: string_field(root, &["volcanism_type", "volcanismType"])
+                .or_else(|| string_field(value, &["volcanism_type", "volcanismType"])),
+            biological_signal_count: biological_data(root, value).0,
+            biological_genera: biological_data(root, value).1,
+            signals_updated_at: biological_data(root, value).2,
         })
     }
 }
 
+fn biological_data(
+    root: &Value,
+    value: &Value,
+) -> (Option<u32>, Option<Vec<String>>, Option<String>) {
+    let signal_data = root
+        .get("signals")
+        .or_else(|| value.get("signals"));
+    let mut biological_count = None;
+    let mut genera = None;
+    let mut updated_at = string_field(root, &["signals_updated_at", "signalsUpdatedAt"])
+        .or_else(|| string_field(value, &["signals_updated_at", "signalsUpdatedAt"]));
+
+    if let Some(signal_data) = signal_data {
+        if let Some(signals) = signal_data.as_array() {
+            biological_count = Some(
+                signals
+                    .iter()
+                    .filter(|signal| {
+                        signal
+                            .get("name")
+                            .and_then(Value::as_str)
+                            .is_some_and(|name| name.eq_ignore_ascii_case("Biological"))
+                    })
+                    .filter_map(|signal| signal.get("count").and_then(count_value))
+                    .sum(),
+            );
+        } else if signal_data.is_object() {
+            if let Some(signals) = signal_data.get("signals").and_then(Value::as_object) {
+                biological_count = Some(
+                    signals
+                        .get("$SAA_SignalType_Biological;")
+                        .and_then(count_value)
+                        .unwrap_or(0),
+                );
+            }
+            genera = signal_data
+                .get("genuses")
+                .and_then(Value::as_array)
+                .map(|values| {
+                    values
+                        .iter()
+                        .filter_map(Value::as_str)
+                        .map(normalize_genus_name)
+                        .collect()
+                });
+            updated_at = string_field(signal_data, &["updateTime"]).or(updated_at);
+        }
+    }
+
+    if genera.is_none() {
+        genera = root
+            .get("genuses")
+            .or_else(|| value.get("genuses"))
+            .and_then(Value::as_array)
+            .map(|values| {
+                values
+                    .iter()
+                    .filter_map(|entry| {
+                        entry
+                            .as_str()
+                            .or_else(|| entry.get("name").and_then(Value::as_str))
+                    })
+                    .map(normalize_genus_name)
+                    .collect()
+            });
+    }
+
+    (biological_count, genera, updated_at)
+}
+
+fn count_value(value: &Value) -> Option<u32> {
+    value
+        .as_u64()
+        .and_then(|count| u32::try_from(count).ok())
+        .or_else(|| {
+            value.as_f64().and_then(|count| {
+                (count.is_finite()
+                    && count >= 0.0
+                    && count.fract() == 0.0
+                    && count <= f64::from(u32::MAX))
+                    .then_some(count as u32)
+            })
+        })
+}
+
+fn normalize_genus_name(value: &str) -> String {
+    let trimmed = value.trim();
+    let lower = trimmed.to_ascii_lowercase();
+
+    if lower.starts_with("$codex_ent_") {
+        let token = lower.as_str();
+        let mappings = [
+            ("$codex_ent_aleoids_genus_name;", "Aleoida"),
+            ("$codex_ent_bacterial_genus_name;", "Bacterium"),
+            ("$codex_ent_cactoid_genus_name;", "Cactoida"),
+            ("$codex_ent_clypeus_genus_name;", "Clypeus"),
+            ("$codex_ent_conchas_genus_name;", "Concha"),
+            ("$codex_ent_electricae_genus_name;", "Electricae"),
+            ("$codex_ent_fonticulus_genus_name;", "Fonticulua"),
+            ("$codex_ent_fumerolas_genus_name;", "Fumerola"),
+            ("$codex_ent_fungoids_genus_name;", "Fungoida"),
+            ("$codex_ent_osseus_genus_name;", "Osseus"),
+            ("$codex_ent_recepta_genus_name;", "Recepta"),
+            ("$codex_ent_shrubs_genus_name;", "Frutexa"),
+            ("$codex_ent_stratum_genus_name;", "Stratum"),
+            ("$codex_ent_tubus_genus_name;", "Tubus"),
+            ("$codex_ent_tussocks_genus_name;", "Tussock"),
+        ];
+        if let Some((_, canonical)) = mappings.iter().find(|(symbol, _)| *symbol == token) {
+            return (*canonical).to_owned();
+        }
+        return trimmed.to_owned();
+    }
+
+    match lower.as_str() {
+        "aleoids" => "Aleoida",
+        "bacterial" => "Bacterium",
+        "cactoids" => "Cactoida",
+        "conchas" => "Concha",
+        "fonticulus" => "Fonticulua",
+        "fumerolas" => "Fumerola",
+        "fungoids" => "Fungoida",
+        "shrubs" => "Frutexa",
+        "tussocks" => "Tussock",
+        _ => trimmed,
+    }
+    .to_owned()
+}
+
 fn atmosphere_from_values(root: &Value, value: &Value) -> Option<String> {
-    let label = string_field(root, &["atmosphere", "atmosphere_type"])
+    let label = string_field(root, &["atmosphere", "atmosphere_type", "atmosphereType"])
         .or_else(|| string_field(value, &["atmosphere", "atmosphere_type"]));
 
     if let Some(label) = label.as_deref()
@@ -286,6 +425,75 @@ mod tests {
         assert!(labels.contains(&"Hot Water".to_owned()));
         assert!(labels.contains(&"Hot thick Water".to_owned()));
         assert!(!labels.contains(&"Water-rich".to_owned()));
+    }
+
+    #[test]
+    fn parses_search_body_biological_signals_genuses_and_volcanism() {
+        let body = Body::from_json(&serde_json::json!({
+            "name": "Drojia 3",
+            "subtype": "Rocky body",
+            "atmosphere": "Water",
+            "volcanism_type": "No volcanism",
+            "signals": [
+                {"name": "Human", "count": 1},
+                {"name": "Biological", "count": 3}
+            ],
+            "genuses": [{"name": "Tussocks"}, {"name": "Bacterial"}, {"name": "Clypeus"}],
+            "signals_updated_at": "2026-11-20T00:00:00Z"
+        }))
+        .unwrap();
+
+        assert_eq!(body.volcanism_type.as_deref(), Some("No volcanism"));
+        assert_eq!(body.biological_signal_count, Some(3));
+        assert_eq!(
+            body.biological_genera,
+            Some(vec![
+                "Tussock".to_owned(),
+                "Bacterium".to_owned(),
+                "Clypeus".to_owned()
+            ])
+        );
+        assert_eq!(
+            body.signals_updated_at.as_deref(),
+            Some("2026-11-20T00:00:00Z")
+        );
+    }
+
+    #[test]
+    fn parses_dump_body_detail_wrapper_and_codex_genus_tokens() {
+        let body = Body::from_json(&serde_json::json!({
+            "record": {
+                "name": "Drojia 3",
+                "subType": "Rocky body",
+                "surfaceTemperature": 425.0,
+                "surfacePressure": 0.05,
+                "isLandable": true,
+                "volcanismType": "Minor Rocky Magma",
+                "signals": {
+                    "signals": {
+                        "$SAA_SignalType_Biological;": 2,
+                        "$SAA_SignalType_Geological;": 1
+                    },
+                    "genuses": [
+                        "$Codex_Ent_Tussocks_Genus_Name;",
+                        "$Codex_Ent_Bacterial_Genus_Name;"
+                    ],
+                    "updateTime": "2026-11-20T00:00:00Z"
+                }
+            }
+        }))
+        .unwrap();
+
+        assert_eq!(body.subtype.as_deref(), Some("Rocky body"));
+        assert_eq!(body.surface_temperature, Some(425.0));
+        assert_eq!(body.surface_pressure, Some(0.05));
+        assert_eq!(body.is_landable, Some(true));
+        assert_eq!(body.volcanism_type.as_deref(), Some("Minor Rocky Magma"));
+        assert_eq!(body.biological_signal_count, Some(2));
+        assert_eq!(
+            body.biological_genera,
+            Some(vec!["Tussock".to_owned(), "Bacterium".to_owned()])
+        );
     }
 
     #[test]
