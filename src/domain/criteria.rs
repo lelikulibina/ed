@@ -7,8 +7,12 @@ pub struct NumericRange {
 }
 
 impl NumericRange {
+    pub fn new(min: f64, max: f64) -> Option<Self> {
+        (min.is_finite() && max.is_finite() && min <= max).then_some(Self { min, max })
+    }
+
     pub fn contains(self, value: Option<f64>) -> bool {
-        value.is_some_and(|value| value >= self.min && value <= self.max)
+        value.is_some_and(|value| value.is_finite() && value >= self.min && value <= self.max)
     }
 }
 
@@ -23,10 +27,32 @@ pub struct SearchCriteria {
 }
 
 impl SearchCriteria {
+    pub fn from_cli(
+        planet_type: &str,
+        atmosphere_type: &str,
+        temperature: NumericRange,
+        gravity: NumericRange,
+        pressure: NumericRange,
+        count: usize,
+    ) -> Result<Self, CriteriaError> {
+        if count == 0 {
+            return Err(CriteriaError::Count);
+        }
+
+        Ok(Self {
+            planet_type: normalize_planet_type(planet_type)?,
+            atmosphere_type: normalize_atmosphere_type(atmosphere_type)?,
+            temperature,
+            gravity,
+            pressure,
+            count,
+        })
+    }
+
     pub fn matches(&self, body: &Body) -> bool {
-        (self.planet_type.eq_ignore_ascii_case("any")
+        (self.planet_type == "any"
             || body.subtype.as_deref().is_some_and(|value| value.eq_ignore_ascii_case(&self.planet_type)))
-            && (self.atmosphere_type.eq_ignore_ascii_case("any")
+            && (self.atmosphere_type == "any"
                 || body.atmosphere.as_deref().is_some_and(|value| value.eq_ignore_ascii_case(&self.atmosphere_type)))
             && self.temperature.contains(body.surface_temperature)
             && self.gravity.contains(body.gravity)
@@ -36,19 +62,67 @@ impl SearchCriteria {
     }
 }
 
+#[derive(Debug, thiserror::Error, PartialEq)]
+pub enum CriteriaError {
+    #[error("неизвестный тип поверхности планеты: {0}")]
+    PlanetType(String),
+    #[error("неизвестный тип атмосферы: {0}")]
+    AtmosphereType(String),
+    #[error("количество результатов должно быть больше нуля")]
+    Count,
+}
+
+fn normalize_planet_type(value: &str) -> Result<String, CriteriaError> {
+    let normalized = value.trim().to_ascii_lowercase();
+    let canonical = match normalized.as_str() {
+        "" | "any" => "any",
+        "rocky body" | "rocky" | "rock" => "Rocky body",
+        "icy body" | "icy" | "ice" => "Icy body",
+        "rocky ice world" | "rocky-ice world" | "rocky ice" => "Rocky ice world",
+        "high metal content world" | "high-metal content" | "high metal" => "High metal content world",
+        _ => return Err(CriteriaError::PlanetType(value.to_owned())),
+    };
+    Ok(canonical.to_owned())
+}
+
+fn normalize_atmosphere_type(value: &str) -> Result<String, CriteriaError> {
+    let normalized = value.trim().to_ascii_lowercase();
+    let canonical = match normalized.as_str() {
+        "" | "any" => "any",
+        "ammonia" => "Ammonia",
+        "water" => "Water",
+        "carbon dioxide" | "carbon-dioxide" | "carbondioxide" => "Carbon dioxide",
+        "sulphur dioxide" | "sulfur dioxide" | "sulfurdioxide" => "Sulphur dioxide",
+        "nitrogen" => "Nitrogen",
+        "water-rich" | "water rich" => "Water-rich",
+        "methane-rich" | "methan-rich" | "methane rich" => "Methane-rich",
+        "carbon dioxide-rich" | "carbon-dioxide rich" | "carbon dioxide rich" => "Carbon dioxide-rich",
+        "methane" | "methan" => "Methane",
+        "helium" => "Helium",
+        "silicate vapour" | "silicate vapor" => "Silicate vapour",
+        "neon-rich" | "neon rich" => "Neon-rich",
+        "argon-rich" | "argon rich" => "Argon-rich",
+        "neon" => "Neon",
+        "argon" => "Argon",
+        "oxygen" => "Oxygen",
+        _ => return Err(CriteriaError::AtmosphereType(value.to_owned())),
+    };
+    Ok(canonical.to_owned())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     fn criteria() -> SearchCriteria {
-        SearchCriteria {
-            planet_type: "Earth-like world".to_owned(),
-            atmosphere_type: "Nitrogen".to_owned(),
-            temperature: NumericRange { min: 200.0, max: 300.0 },
-            gravity: NumericRange { min: 0.5, max: 1.5 },
-            pressure: NumericRange { min: 0.0, max: 2.0 },
-            count: 5,
-        }
+        SearchCriteria::from_cli(
+            "Earth-like world",
+            "Nitrogen",
+            NumericRange { min: 200.0, max: 300.0 },
+            NumericRange { min: 0.5, max: 1.5 },
+            NumericRange { min: 0.0, max: 2.0 },
+            5,
+        ).unwrap()
     }
 
     #[test]
@@ -58,23 +132,26 @@ mod tests {
         assert!(range.contains(Some(20.0)));
         assert!(!range.contains(None));
         assert!(!range.contains(Some(20.01)));
+        assert!(NumericRange::new(1.0, 0.0).is_none());
+        assert!(NumericRange::new(f64::NAN, 1.0).is_none());
+    }
+
+    #[test]
+    fn normalizes_legacy_cli_values() {
+        assert_eq!(normalize_planet_type("rocky").unwrap(), "Rocky body");
+        assert_eq!(normalize_atmosphere_type("carbon-dioxide").unwrap(), "Carbon dioxide");
+        assert_eq!(normalize_atmosphere_type("any").unwrap(), "any");
     }
 
     #[test]
     fn requires_body_to_match_all_legacy_filters() {
         let body = Body {
-            id64: Some("1".to_owned()),
-            name: "Sol 3".to_owned(),
-            system_id64: Some("2".to_owned()),
-            system_name: Some("Sol".to_owned()),
-            subtype: Some("Earth-like world".to_owned()),
-            distance_ly: Some(1.0),
-            is_landable: Some(true),
-            is_mapped: Some(false),
-            surface_temperature: Some(250.0),
-            surface_pressure: Some(1.0),
-            gravity: Some(1.0),
-            atmosphere: Some("Nitrogen".to_owned()),
+            id64: Some("1".to_owned()), name: "Sol 3".to_owned(),
+            system_id64: Some("2".to_owned()), system_name: Some("Sol".to_owned()),
+            subtype: Some("Earth-like world".to_owned()), distance_ly: Some(1.0),
+            is_landable: Some(true), is_mapped: Some(false),
+            surface_temperature: Some(250.0), surface_pressure: Some(1.0),
+            gravity: Some(1.0), atmosphere: Some("Nitrogen".to_owned()),
         };
         assert!(criteria().matches(&body));
     }
