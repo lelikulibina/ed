@@ -106,3 +106,5 @@
 - Live run `44665360265` прошёл atmosphere assertions: Venus -> Carbon dioxide (label), Earth -> Nitrogen (dominant composition), Io -> Sulphur dioxide (dominant composition). Raw `atmosphere_composition` is an array of gas name/share; `atmosphere_type` is absent in these rows.
 - Temperature values look like Kelvin and gravity like g; pressure units remain provisional (likely atm) and require a broader consistency check.
 - CI run `44665347638` caught Clippy `collapsible_if`; corrected with a let-chain. New CI is required to confirm the fix.
+
+- Добавлен последний end-to-end live assertion: на 100-ly page 0 ищется не центральная система, а реальная landable планета, удовлетворяющая всем широким числовым критериям и atmosphere=any.
