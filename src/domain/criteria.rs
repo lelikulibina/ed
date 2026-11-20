@@ -64,7 +64,7 @@ impl SearchCriteria {
             && self.gravity.contains(body.gravity)
             && self.pressure.contains(body.surface_pressure)
             && body.is_landable == Some(true)
-            && body.is_mapped == Some(false)
+            && body.is_mapped != Some(true)
     }
 }
 
@@ -189,7 +189,7 @@ mod tests {
             name: "X".to_owned(),
             system_id64: None,
             system_name: None,
-            subtype: Some("Earth-like world".to_owned()),
+            subtype: Some("Rocky body".to_owned()),
             distance_ly: None,
             is_landable: Some(true),
             is_mapped: Some(false),
@@ -198,6 +198,7 @@ mod tests {
             gravity: Some(1.0),
             atmosphere: Some("Nitrogen".to_owned()),
         };
+        assert!(criteria().matches(&body));
         body.is_mapped = Some(true);
         assert!(!criteria().matches(&body));
         body.is_mapped = Some(false);
