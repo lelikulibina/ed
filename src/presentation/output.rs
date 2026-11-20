@@ -38,7 +38,7 @@ pub fn print_results(bodies: &[Body]) {
                 body.distance_ly.unwrap_or_default()
             );
             println!(
-                "│ Биосигналы Spansh: {} | Роды: {}",
+                "│ Биосигналы Spansh: {} | Биологические группы: {}",
                 body.biological_signal_count
                     .map_or_else(|| "нет данных".to_owned(), |count| count.to_string()),
                 body.biological_genera
@@ -46,7 +46,6 @@ pub fn print_results(bodies: &[Body]) {
                     .filter(|genera| !genera.is_empty())
                     .map_or_else(|| "не указаны".to_owned(), |genera| genera.join(", "))
             );
-            println!("│ First Footfall: Spansh не предоставляет этот статус");
 
             match exobiology_summary(body) {
                 Ok(Some(summary)) => {
@@ -78,7 +77,7 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
             .filter(|genera| !genera.is_empty())
         {
             return Ok(Some(format!(
-                "Spansh указал роды {}, но подходящие виды в справочнике не найдены.",
+                "Spansh указал биологические группы {}, но подходящие виды в справочнике не найдены.",
                 genera.join(", ")
             )));
         }
@@ -91,9 +90,9 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         .as_ref()
         .is_some_and(|genera| !genera.is_empty());
     lines.push(if confirmed_genera {
-        "Возможные виды по родам, зарегистрированным Spansh:".to_owned()
+        "Возможные виды из биологических групп, указанных Spansh:".to_owned()
     } else {
-        "Предварительные кандидаты по параметрам планеты (роды не подтверждены):".to_owned()
+        "Возможные виды по параметрам планеты (биологические группы не уточнены):".to_owned()
     });
 
     let rows = estimate
@@ -110,7 +109,7 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
                     }
                 };
                 vec![
-                    genus.genus.clone(),
+                    russian_group_name(&genus.genus).to_owned(),
                     candidate.species.clone(),
                     format!("{} CR", format_credits(candidate.base_value_cr)),
                     status,
@@ -120,7 +119,7 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         .collect::<Vec<_>>();
 
     lines.extend(render_table(
-        &["Род", "Вид-кандидат", "За 3 образца", "Статус"],
+        &["Биологическая группа", "Вид", "За 3 образца", "Статус"],
         &rows,
     ));
 
@@ -195,6 +194,26 @@ fn render_table(headers: &[&str], rows: &[Vec<String>]) -> Vec<String> {
     output
 }
 
+fn russian_group_name(name: &str) -> &str {
+    match name {
+        "Aleoida" => "Алеоиды",
+        "Bacterium" => "Бактерии",
+        "Cactoida" => "Кактусоиды",
+        "Clypeus" => "Клипеусы",
+        "Concha" => "Моллюски",
+        "Fonticulua" => "Фонтикулы",
+        "Frutexa" => "Кустарники",
+        "Fumerola" => "Дымники",
+        "Fungoida" => "Фунгоиды",
+        "Osseus" => "Оссии",
+        "Recepta" => "Рецептоиды",
+        "Stratum" => "Стратум",
+        "Tubus" => "Тубусы",
+        "Tussock" => "Дерновина",
+        other => other,
+    }
+}
+
 fn format_credits(value: u64) -> String {
     let digits = value.to_string();
     let mut formatted = String::with_capacity(digits.len() + digits.len() / 3);
@@ -263,7 +282,7 @@ mod tests {
 
         let summary = exobiology_summary(&body).unwrap().unwrap();
         assert!(summary.contains("┌"));
-        assert!(summary.contains("Род"));
+        assert!(summary.contains("Биологическая группа"));
         assert!(summary.contains("Вид-кандидат"));
         assert!(summary.contains("За 3 образца"));
         assert!(summary.contains("Потенциальная базовая выручка: 0–"));
@@ -284,7 +303,7 @@ mod tests {
         body.biological_genera = Some(vec!["Osseus".to_owned(), "Tussock".to_owned()]);
 
         let summary = exobiology_summary(&body).unwrap().unwrap();
-        assert!(summary.contains("по родам, зарегистрированным Spansh"));
+        assert!(summary.contains("из биологических групп, указанных Spansh"));
         assert!(summary.contains("Osseus"));
         assert!(summary.contains("Tussock"));
         assert!(summary.contains("справочник видов неполный"));
@@ -317,7 +336,7 @@ mod tests {
     #[test]
     fn table_columns_expand_to_fit_the_longest_cell() {
         let lines = render_table(
-            &["Род", "Вид"],
+            &["Биологическая группа", "Вид"],
             &[vec!["Osseus".to_owned(), "Discus".to_owned()]],
         );
         assert!(lines[0].contains("┌"));
