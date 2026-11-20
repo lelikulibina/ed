@@ -686,8 +686,8 @@ mod tests {
                 .post_json("/api/bodies/search", &bulk_query.to_payload())
                 .await
                 .expect("100-ly page-size-100 POST must succeed");
-            let bulk_page = parse_page(&bulk_response)
-                .expect("100-ly page-size-100 response must parse");
+            let bulk_page =
+                parse_page(&bulk_response).expect("100-ly page-size-100 response must parse");
             let total_count = bulk_page
                 .total_count
                 .expect("live response must include total count");
@@ -726,17 +726,13 @@ mod tests {
                     .await
                     .expect("100-row last POST page must succeed")
             };
-            let bulk_last_page = parse_page(&last_response)
-                .expect("100-row last page response must parse");
-            assert_eq!(
-                bulk_last_page.from,
-                Some(last_index as usize * 100)
-            );
+            let bulk_last_page =
+                parse_page(&last_response).expect("100-row last page response must parse");
+            assert_eq!(bulk_last_page.from, Some(last_index as usize * 100));
             assert!(is_last_page(&bulk_last_page, last_index, 100));
             eprintln!(
                 "Spansh 100-row last page: total={total_count}, index={last_index}, from={:?}, rows={}",
-                bulk_last_page.from,
-                bulk_last_page.last_page_size
+                bulk_last_page.from, bulk_last_page.last_page_size
             );
         } else {
             query.page = 1;
