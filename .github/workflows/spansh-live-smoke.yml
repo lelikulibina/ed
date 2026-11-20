@@ -17,5 +17,5 @@ jobs:
         with:
           components: rustfmt
       - uses: Swatinem/rust-cache@v2
-      - name: Run one targeted Drojia body-search contract probe
-        run: cargo test --locked --all-targets live_drojia_water_rock_query -- --ignored --nocapture
+      - name: Run one targeted Drojia atmosphere-variant diagnostic
+        run: cargo test --locked --all-targets live_drojia_water_rock_variants -- --ignored --nocapture
