@@ -1,7 +1,6 @@
 mod application;
 mod cli;
 mod domain;
-mod journal;
 mod presentation;
 mod spansh;
 
@@ -56,19 +55,6 @@ async fn main() -> Result<()> {
 
     println!("Ищу подходящие планеты в радиусе 1000 св. л....");
     let mut results = search.execute(&center, &criteria).await?;
-    let journal_report = journal::apply_local_journal_footfall(&mut results);
-    if journal_report.directory.is_some() {
-        println!(
-            "Локальный журнал: прочитано файлов {}, найден прямой статус высадки для {} из {} планет.",
-            journal_report.files_scanned,
-            journal_report.bodies_matched,
-            results.len()
-        );
-    } else {
-        println!(
-            "Локальный журнал не найден; для нестандартного пути задайте переменную ED_JOURNAL_DIR. Использую косвенные данные Spansh."
-        );
-    }
     print_results(&results);
 
     Ok(())
