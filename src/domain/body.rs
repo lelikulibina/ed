@@ -64,8 +64,17 @@ impl Body {
             surface_pressure: number_field(root, &["surface_pressure", "pressure"])
                 .or_else(|| number_field(value, &["surface_pressure", "pressure"])),
             gravity: number_field(root, &["gravity"]).or_else(|| number_field(value, &["gravity"])),
-            atmosphere: string_field(root, &["atmosphere", "atmosphere_type"])
-                .or_else(|| string_field(value, &["atmosphere", "atmosphere_type"])),
+            atmosphere: string_field(
+                root,
+                &["atmosphere_composition", "atmosphere", "atmosphere_type"],
+            )
+            .or_else(|| {
+                string_field(
+                    value,
+                    &["atmosphere_composition", "atmosphere", "atmosphere_type"],
+                )
+            })
+            .map(|atmosphere| normalize_atmosphere_label(&atmosphere)),
         })
     }
 }
