@@ -49,14 +49,6 @@ impl SearchCriteria {
         })
     }
 
-    /// Диапазон CLI задаётся в градусах Цельсия, Spansh хранит температуру в K.
-    pub fn temperature_kelvin(&self) -> NumericRange {
-        NumericRange {
-            min: self.temperature.min + 273.15,
-            max: self.temperature.max + 273.15,
-        }
-    }
-
     pub fn matches(&self, body: &Body) -> bool {
         (self.planet_type == "any"
             || body
@@ -68,7 +60,7 @@ impl SearchCriteria {
                     .atmosphere
                     .as_deref()
                     .is_some_and(|value| value.eq_ignore_ascii_case(&self.atmosphere_type)))
-            && self.temperature_kelvin().contains(body.surface_temperature)
+            && self.temperature.contains(body.surface_temperature)
             && self.gravity.contains(body.gravity)
             && self.pressure.contains(body.surface_pressure)
             && body.is_landable == Some(true)
@@ -215,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn converts_celsius_range_to_kelvin_for_spansh_data() {
+    fn requires_body_to_match_all_legacy_filters() {
         let criteria = SearchCriteria::from_cli(
             "Rock",
             "Water",
@@ -244,7 +236,7 @@ mod tests {
             distance_ly: Some(1.0),
             is_landable: Some(true),
             is_mapped: Some(false),
-            surface_temperature: Some(523.15),
+            surface_temperature: Some(250.0),
             surface_pressure: Some(1.0),
             gravity: Some(1.0),
             atmosphere: Some("Nitrogen".to_owned()),
