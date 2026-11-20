@@ -1125,6 +1125,68 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires live network; one targeted user-requested body search"]
+    async fn live_drojia_water_rock_query() {
+        let client = SpanshClient::spansh(1).unwrap();
+        let center = super::super::system::SystemResolver::new(client.clone())
+            .resolve("Drojia ZB-Z b32-0")
+            .await
+            .expect("Drojia center system must resolve");
+
+        let criteria = SearchCriteria::from_cli(
+            "Rock",
+            "Water",
+            crate::domain::criteria::NumericRange {
+                min: 190.0,
+                max: 195.0,
+            },
+            crate::domain::criteria::NumericRange {
+                min: 0.1,
+                max: 1.0,
+            },
+            crate::domain::criteria::NumericRange {
+                min: 0.042,
+                max: 0.237,
+            },
+            15,
+        )
+        .unwrap();
+
+        let results = BodySearch::new(client)
+            .search(&center, &criteria)
+            .await
+            .expect("filtered Drojia body search must succeed");
+
+        eprintln!(
+            "Drojia query resolved center={} id64={} coords=({:.3},{:.3},{:.3}); returned {} bodies",
+            center.name,
+            center.id64,
+            center.coordinates.x,
+            center.coordinates.y,
+            center.coordinates.z,
+            results.len()
+        );
+        for body in &results {
+            eprintln!(
+                "{} | system={} | subtype={:?} | atmosphere={:?} | temp={:?} K | pressure={:?} atm | gravity={:?} g",
+                body.name,
+                body.system_name.as_deref().unwrap_or("?"),
+                body.subtype,
+                body.atmosphere,
+                body.surface_temperature,
+                body.surface_pressure,
+                body.gravity
+            );
+            assert!(criteria.matches(body), "returned body must match criteria");
+        }
+        assert!(
+            !results.is_empty(),
+            "Drojia query should return at least one matching planet"
+        );
+        assert!(results.len() <= 15, "the requested result count is 15");
+    }
+
+    #[tokio::test]
     #[ignore = "requires live network; two low-volume 1000-ly smoke searches"]
     async fn live_spansh_radius_1000_named_systems() {
         let client = SpanshClient::spansh(1).unwrap();
