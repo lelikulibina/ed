@@ -333,6 +333,23 @@ mod tests {
     }
 
     #[test]
+    fn every_profile_can_be_selected_from_the_menu() {
+        for number in 1..=7 {
+            let mut input = Cursor::new(format!("{number}\\nSol\\n\\n").into_bytes());
+            let mut output = Vec::new();
+            match run_menu(&mut input, &mut output).unwrap() {
+                MenuAction::Search { criteria, system } => {
+                    assert_eq!(system, "Sol");
+                    assert_eq!(criteria.planet_types, SEARCH_PROFILES[number - 1].planet_types);
+                    assert_eq!(criteria.atmosphere_type, SEARCH_PROFILES[number - 1].atmosphere);
+                    assert_eq!(criteria.count, 5);
+                }
+                MenuAction::Exit => panic!("profile {number} should start a search"),
+            }
+        }
+    }
+
+    #[test]
     fn profile_five_accepts_verified_water_magma_and_geyser_values() {
         let mut input = Cursor::new(b"5\nSol\n\n".to_vec());
         let mut output = Vec::new();

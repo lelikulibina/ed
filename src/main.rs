@@ -6,7 +6,7 @@ mod spansh;
 
 use anyhow::{Result, anyhow};
 use clap::{Parser, error::ErrorKind};
-use std::io;
+use std::{ffi::OsString, io};
 
 use application::search::SearchUseCase;
 use cli::{Args, parse_range_f32, parse_range_i32};
@@ -19,7 +19,8 @@ use spansh::SpanshClient;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    if std::env::args_os().len() == 1 {
+    let process_args: Vec<OsString> = std::env::args_os().collect();
+    if !has_cli_arguments(&process_args) {
         let stdin = io::stdin();
         let mut input = stdin.lock();
         let mut output = io::stdout().lock();
@@ -29,7 +30,7 @@ async fn main() -> Result<()> {
         };
     }
 
-    let args = match Args::try_parse() {
+    let args = match Args::try_parse_from(process_args) {
         Ok(args) => args,
         Err(error)
             if matches!(
@@ -44,6 +45,10 @@ async fn main() -> Result<()> {
     };
     let criteria = criteria_from_args(&args)?;
     run_search(&args.system, &criteria).await
+}
+
+fn has_cli_arguments(args: &[OsString]) -> bool {
+    args.len() > 1
 }
 
 fn criteria_from_args(args: &Args) -> Result<SearchCriteria> {
@@ -91,6 +96,12 @@ async fn run_search(system: &str, criteria: &SearchCriteria) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn no_user_arguments_select_the_menu_and_explicit_arguments_select_cli() {
+        assert!(!has_cli_arguments(&[OsString::from("ed")]));
+        assert!(has_cli_arguments(&[OsString::from("ed"), OsString::from("--help")]));
+    }
+
     #[test]
     fn legacy_arguments_keep_existing_defaults_and_help_is_recognized() {
         let args =
