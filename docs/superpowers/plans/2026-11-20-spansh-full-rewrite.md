@@ -42,6 +42,7 @@
 - [x] Фильтры subtype, atmosphere, temperature, pressure, gravity, landable.
 - [x] `is_mapped=true` исключается; `false/null` считается неотмеченным как mapped по legacy default.
 - [x] Дедупликация по body ID64; fallback по системе и имени.
+- [x] Центральная система исключается по system_id64 (fallback — имя).
 - [x] Группировка строго по system_id64.
 
 ### Задача 4 — Body search и пагинация
