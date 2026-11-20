@@ -45,6 +45,9 @@ impl Body {
 
         let name = string_field(root, &["name", "body_name"]).ok_or(BodyParseError::MissingName)?;
 
+        let (biological_signal_count, biological_genera, signals_updated_at) =
+            biological_data(root, value);
+
         Ok(Self {
             id64: id_field(root, &["id64", "body_id64", "id"]),
             name,
@@ -72,9 +75,9 @@ impl Body {
             atmosphere: atmosphere_from_values(root, value),
             volcanism_type: string_field(root, &["volcanism_type", "volcanismType"])
                 .or_else(|| string_field(value, &["volcanism_type", "volcanismType"])),
-            biological_signal_count: biological_data(root, value).0,
-            biological_genera: biological_data(root, value).1,
-            signals_updated_at: biological_data(root, value).2,
+            biological_signal_count,
+            biological_genera,
+            signals_updated_at,
         })
     }
 }
