@@ -44,11 +44,37 @@ pub fn print_results(bodies: &[Body]) {
 
 fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
     let estimate = exobiology::estimate(body)?;
+    if estimate.biological_signal_count == Some(0) {
+        return Ok(Some(
+            "    Экзобиология: биологических сигналов Spansh не обнаружил.".to_owned(),
+        ));
+    }
     if estimate.genera.is_empty() {
+        if let Some(genera) = estimate.biological_genera.as_ref().filter(|genera| !genera.is_empty()) {
+            return Ok(Some(format!(
+                "    Экзобиология: Spansh указал роды {}, но в текущем каталоге для них пока нет правил.",
+                genera.join(", ")
+            )));
+        }
         return Ok(None);
     }
 
-    let mut lines = vec!["    Экзобиология — предварительный прогноз:".to_owned()];
+    let title = if estimate
+        .biological_genera
+        .as_ref()
+        .is_some_and(|genera| !genera.is_empty())
+    {
+        "    Экзобиология — уточнение по родам Spansh:"
+    } else {
+        "    Экзобиология — предварительный прогноз:"
+    };
+    let mut lines = vec![title.to_owned()];
+    if let Some(count) = estimate.biological_signal_count {
+        lines.push(format!("      Биологических сигналов Spansh: {count}"));
+    }
+    if let Some(genera) = estimate.biological_genera.as_ref().filter(|genera| !genera.is_empty()) {
+        lines.push(format!("      Роды Spansh: {}", genera.join(", ")));
+    }
     for genus in &estimate.genera {
         let candidates = genus
             .candidates
@@ -81,10 +107,17 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         "      Если доступен First Logged: 0–{} CR",
         format_credits(estimate.maximum_first_logged_value_cr)
     ));
-    lines.push(
-        "      Биосигналы не учтены; верхняя граница предполагает наличие всех указанных родов."
-            .to_owned(),
-    );
+    if estimate.biological_genera.as_ref().is_some_and(|genera| !genera.is_empty()) {
+        lines.push("      Список родов Spansh учтён; внутри каждого рода вид пока неизвестен.".to_owned());
+    } else {
+        lines.push(
+            "      Состав родов не подтверждён; верхняя граница предполагает наличие всех указанных родов."
+                .to_owned(),
+        );
+    }
+    if !estimate.catalog_is_complete {
+        lines.push("      Каталог видов неполный: верхняя граница рассчитана только по внесённым видам.".to_owned());
+    }
     lines.push(
         "      Кандидаты совпадают только по условиям, внесённым в справочник; полный набор игровых условий ещё не моделируется."
             .to_owned(),
