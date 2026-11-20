@@ -31,7 +31,7 @@
 - `GET /body/{id64}` возвращает `{record: SearchBody}`. В `SearchBody` есть `volcanism_type`, `signals[{name,count}]`, `signal_count`, `signals_updated_at`, `genuses[{name}]` и `landmarks`.
 - Dump `Body` использует camelCase: `volcanismType`, `signals.signals` с ключом `$SAA_SignalType_Biological;`, `signals.genuses` с Codex-токенами и `signals.updateTime`.
 - В Spansh-модели не обнаружены прямые поля First Footfall или First Logged. SearchBody `updated_at` и dump Body `updateTime` — время последнего обновления записи, а не флаг высадки. `is_mapped`, `landmarks` и отсутствие сигналов также не подтверждают First Footfall.
-- В журнале/событии Scan есть `WasFootfalled` / `alreadyfirstfootfalled`; CLI читает этот флаг из локальных журналов. Это данные конкретного сканирования, а не глобальный API-статус для ещё не посещённых кандидатов. EDDI документирует этот флаг в [Body scanned event](https://github.com/EDCD/EDDI/wiki/Body-scanned-event).
+- В журнале/событии Scan есть `WasFootfalled` / `alreadyfirstfootfalled`; CLI читает этот флаг из локальных журналов. Это данные конкретного сканирования, а не глобальный API-статус для ещё не посещённых кандидатов. Старые журналы могут не содержать этого поля, поэтому отсутствие флага не считается `false`. EDDI документирует этот флаг в [Body scanned event](https://github.com/EDCD/EDDI/wiki/Body-scanned-event).
 - First Footfall относится к планете, а First Logged — к конкретному виду на планете. Высадка другим командиром не доказывает, что бонус First Logged уже забран по всем видам. Spansh не сообщает статус продажи/первого логирования; ×5 остаётся условным сценарием. Дополнительно: [Frontier FAQ](https://store.steampowered.com/news/posts/?appids=359320&enddate=1614874210&feed=steam_community_announcements) описывает First Footfall как планетарный статус, отображаемый в System Map; обсуждение [First Footfall vs First Logged](https://steamcommunity.com/app/359320/discussions/0/693121295397729546/) подчёркивает различие этих событий.
 - `parents` доступны в модели тела, но полноценный контекст главной звезды требует связать цепочку родителей с телами из system dump; пока не используется, так как текущая выборка видов не требует star rules.
 - Поиск планет и его фильтры не менялись.
@@ -42,7 +42,7 @@
 
 ## Проверки
 
-- Rust CI на коммите `c947656` завершился успешно: `cargo fmt -- --check`, Clippy и `cargo test --locked --all-targets`.
+- Rust CI на коммите `3418e48` завершился успешно: `cargo fmt -- --check`, Clippy и `cargo test --locked --all-targets`.
 - Результат тестов: 68 unit-тестов пройдены, 4 ignored; 5 integration-тестов пройдены; ошибок нет.
 - Тесты построены на формах JSON из официальной OpenAPI-схемы; live API запрос не выполнялся, workflow Spansh Live Contract Smoke был пропущен.
 - Добавлены тесты для разбора `updated_at` / `updateTime`, классификации возраста данных относительно Odyssey, чтения последнего `WasFootfalled` из локального журнала и вывода прямого/косвенного статуса.
