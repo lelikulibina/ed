@@ -71,3 +71,7 @@
 
 - Full live smoke run `44663487447` прошёл: system resolver получил Sol из live search result; body POST и recall page 1 успешно обработаны; Mercury поля распарсены. `is_mapped=null` теперь соответствует legacy default false.
 - Добавлен дополнительный live check прямого чтения recall page 39 для выдачи с `count=40`, чтобы подтвердить последнюю страницу и окончание по `from+rows>=count`.
+
+- Live run `44663976650` прошёл: resolver Sol, body search, recall page 1 и recall page 39. Последняя страница вернула `count=40/from=39/rows=1`; `is_last_page` определил конец корректно.
+- CI run `44663966404`: Format, Clippy и Tests passed после добавления live last-page probe.
+- Большие выдачи 100+ строк, units физических полей и ошибки 400/429/5xx остаются следующими проверками.
