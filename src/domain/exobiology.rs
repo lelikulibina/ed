@@ -138,7 +138,8 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
         match body.surface_temperature {
             Some(actual) => {
                 let inclusive = entry["temperature_min_inclusive"].as_bool().unwrap_or(true);
-                if (if inclusive { actual < minimum } else { actual <= minimum }) {
+                let outside_range = if inclusive { actual < minimum } else { actual <= minimum };
+                if outside_range {
                     return None;
                 }
             }
@@ -150,7 +151,8 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
         match body.surface_temperature {
             Some(actual) => {
                 let inclusive = entry["temperature_max_inclusive"].as_bool().unwrap_or(true);
-                if (if inclusive { actual > maximum } else { actual >= maximum }) {
+                let outside_range = if inclusive { actual > maximum } else { actual >= maximum };
+                if outside_range {
                     return None;
                 }
             }
