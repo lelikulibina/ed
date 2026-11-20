@@ -1,4 +1,85 @@
-use crate::domain::criteria::{NumericRange, SearchCriteria};
+use crate::domain::criteria::{CriteriaError, NumericRange, SearchCriteria};
+
+#[derive(Debug, Clone, Copy)]
+pub struct SearchPreset {
+    pub number: u8,
+    pub name: &'static str,
+    pub surface_types: &'static [&'static str],
+    pub atmosphere: &'static str,
+    pub temperature: NumericRange,
+    pub pressure: NumericRange,
+    pub expensive_species: u8,
+    pub potential_value_cr: u64,
+}
+
+impl SearchPreset {
+    pub fn criteria(
+        &self,
+        count: usize,
+        exclude_with_bio_signals: bool,
+    ) -> Result<SearchCriteria, CriteriaError> {
+        let mut criteria = SearchCriteria::from_cli(
+            self.surface_types.first().copied().unwrap_or("any"),
+            self.atmosphere,
+            self.temperature,
+            NumericRange { min: 0.1, max: 1.0 },
+            self.pressure,
+            count,
+        )?;
+        criteria.planet_types = self.surface_types.iter().map(|value| (*value).to_owned()).collect();
+        criteria.planet_type = self.surface_types.first().copied().unwrap_or("any").to_owned();
+        Ok(criteria.with_bio_signal_exclusion(exclude_with_bio_signals))
+    }
+}
+
+const fn range(min: f64, max: f64) -> NumericRange {
+    NumericRange { min, max }
+}
+
+pub const PRESETS: [SearchPreset; 7] = [
+    SearchPreset {
+        number: 1, name: "CO₂ / Rocky · 190–195 K",
+        surface_types: &["Rocky body"], atmosphere: "Carbon dioxide",
+        temperature: range(190.0, 195.0), pressure: range(0.042, 0.237),
+        expensive_species: 9, potential_value_cr: 363_000_000,
+    },
+    SearchPreset {
+        number: 2, name: "CO₂ / Rocky · 180–190 K",
+        surface_types: &["Rocky body"], atmosphere: "Carbon dioxide",
+        temperature: range(180.0, 190.0), pressure: range(0.042, 0.275),
+        expensive_species: 7, potential_value_cr: 166_000_000,
+    },
+    SearchPreset {
+        number: 3, name: "Water / Rocky + High metal",
+        surface_types: &["Rocky body", "High metal content world"], atmosphere: "Water",
+        temperature: range(395.0, 450.0), pressure: range(0.040, 0.063),
+        expensive_species: 6, potential_value_cr: 279_000_000,
+    },
+    SearchPreset {
+        number: 4, name: "Ammonia / Rocky · 165–175 K",
+        surface_types: &["Rocky body"], atmosphere: "Ammonia",
+        temperature: range(165.0, 175.0), pressure: range(0.040, 0.340),
+        expensive_species: 4, potential_value_cr: 94_000_000,
+    },
+    SearchPreset {
+        number: 5, name: "Argon / Icy · 50–150 K",
+        surface_types: &["Icy body"], atmosphere: "Argon",
+        temperature: range(50.0, 150.0), pressure: range(0.167, 0.272),
+        expensive_species: 3, potential_value_cr: 65_000_000,
+    },
+    SearchPreset {
+        number: 6, name: "SO₂ / Rocky · 132–195 K",
+        surface_types: &["Rocky body"], atmosphere: "Sulphur dioxide",
+        temperature: range(132.0, 195.0), pressure: range(0.044, 0.275),
+        expensive_species: 2, potential_value_cr: 141_000_000,
+    },
+    SearchPreset {
+        number: 7, name: "Oxygen / Icy · 145–270 K",
+        surface_types: &["Icy body"], atmosphere: "Oxygen",
+        temperature: range(145.0, 270.0), pressure: range(0.238, 0.275),
+        expensive_species: 2, potential_value_cr: 111_000_000,
+    },
+];
 
 #[cfg(test)]
 mod tests {
@@ -29,12 +110,9 @@ mod tests {
     }
 
     #[test]
-    fn profile_three_surface_types_are_alternatives_and_volcanism_is_not_filtered() {
+    fn profile_three_surface_types_are_alternatives_and_gravity_keeps_default() {
         let criteria = PRESETS[2].criteria(5, false).unwrap();
-        assert_eq!(
-            criteria.planet_types,
-            vec!["Rocky body".to_owned(), "High metal content world".to_owned()]
-        );
+        assert_eq!(criteria.planet_types, vec!["Rocky body", "High metal content world"]);
         assert_eq!(criteria.gravity, NumericRange { min: 0.1, max: 1.0 });
         assert_eq!(criteria.count, 5);
     }
@@ -43,5 +121,13 @@ mod tests {
     fn profiles_preserve_bio_signal_exclusion_as_a_separate_option() {
         let criteria = PRESETS[0].criteria(5, true).unwrap();
         assert!(criteria.exclude_with_bio_signals);
+    }
+
+    #[test]
+    fn volcanism_is_not_a_search_criterion_without_reliable_source_data() {
+        for preset in PRESETS {
+            let criteria = preset.criteria(5, false).unwrap();
+            assert!(!criteria.matches_volcanism());
+        }
     }
 }
