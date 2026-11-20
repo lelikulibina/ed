@@ -1,4 +1,5 @@
 mod parser;
+#[allow(dead_code)]
 mod spansh;
 
 use parser::{
