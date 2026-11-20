@@ -117,3 +117,6 @@
 - CI run `44666537004` обнаружил только rustfmt diff; исправлено. CI для последнего SHA `b897773d260240dba0fb5364835880afbbeef44e` выполняется.
 
 - Последний rustfmt review потребовал убрать пустые строки между unit tests в `client.rs` и `system.rs`; поправлено в SHA `07670204c88c8efc3da11c8874b340bb20a26cbd`. Предыдущие CI падения были только на Format и до Clippy/Tests не доходили; ожидаем новый полный прогон.
+
+- CI `44666723736` подтвердил Format=pass, затем обнаружил два Clippy `collapsible_if` в новой логике пропуска name-only кандидатов. Оба исправлены let-chain в SHA `b9500b37c27a45a1fbca080c4ed4832590ad9df3`; новый Rust CI запущен.
+- Live smoke run `44666765601` запущен на коммите с обновлённым resolver; ожидается завершение contract probe.
