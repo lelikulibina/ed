@@ -75,3 +75,17 @@ fn genus_preferences_are_not_encoded_as_hard_planet_type_filters() {
         );
     }
 }
+
+#[test]
+fn volcanism_requirement_uses_the_official_spansh_enum_value() {
+    let catalog = catalog();
+    let species = catalog["species"].as_array().expect("species array");
+    let cerbrus = species
+        .iter()
+        .find(|entry| entry["genus"] == "Bacterium" && entry["species"] == "Cerbrus")
+        .expect("Bacterium Cerbrus");
+    assert_eq!(
+        cerbrus["volcanism"],
+        serde_json::json!(["No volcanism"])
+    );
+}
