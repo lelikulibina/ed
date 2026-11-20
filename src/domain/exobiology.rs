@@ -227,7 +227,9 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
     if entry["requires_geological_signals"].as_bool() == Some(true) {
         match body.geological_signal_count {
             Some(0) => return None,
-            Some(_) => unknown_conditions.push("конкретные геологические объекты/фумаролы".to_owned()),
+            Some(_) => {
+                unknown_conditions.push("конкретные геологические объекты/фумаролы".to_owned())
+            }
             None => unknown_conditions.push("геологические сигналы".to_owned()),
         }
     }
@@ -496,11 +498,17 @@ mod tests {
         .unwrap();
         assert!(co2_192.genera.iter().any(|genus| {
             genus.genus == "Aleoida"
-                && genus.candidates.iter().any(|candidate| candidate.species == "Gravis")
+                && genus
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.species == "Gravis")
         }));
         assert!(co2_192.genera.iter().any(|genus| {
             genus.genus == "Stratum"
-                && genus.candidates.iter().any(|candidate| candidate.species == "Cucumisis")
+                && genus
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.species == "Cucumisis")
         }));
 
         let ammonia_170 = estimate(&body(
@@ -512,11 +520,17 @@ mod tests {
         .unwrap();
         assert!(ammonia_170.genera.iter().any(|genus| {
             genus.genus == "Frutexa"
-                && genus.candidates.iter().any(|candidate| candidate.species == "Flammasis")
+                && genus
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.species == "Flammasis")
         }));
         assert!(ammonia_170.genera.iter().any(|genus| {
             genus.genus == "Aleoida"
-                && genus.candidates.iter().any(|candidate| candidate.species == "Spica")
+                && genus
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.species == "Spica")
         }));
 
         let oxygen_icy = estimate(&body(
@@ -528,7 +542,10 @@ mod tests {
         .unwrap();
         assert!(oxygen_icy.genera.iter().any(|genus| {
             genus.genus == "Fonticulua"
-                && genus.candidates.iter().any(|candidate| candidate.species == "Fluctus")
+                && genus
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.species == "Fluctus")
         }));
 
         let sulphur_dioxide = estimate(&body(
@@ -540,7 +557,10 @@ mod tests {
         .unwrap();
         assert!(sulphur_dioxide.genera.iter().any(|genus| {
             genus.genus == "Tussock"
-                && genus.candidates.iter().any(|candidate| candidate.species == "Stigmasis")
+                && genus
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.species == "Stigmasis")
         }));
         assert!(sulphur_dioxide.genera.iter().any(|genus| {
             genus.genus == "Recepta"
@@ -573,8 +593,18 @@ mod tests {
             .find(|candidate| candidate.species == "Aquatis")
             .unwrap();
         assert_eq!(aquatis.status, CandidateStatus::NeedsVerification);
-        assert!(aquatis.unknown_conditions.iter().any(|value| value.contains("фумаролы")));
-        assert!(aquatis.unknown_conditions.iter().any(|value| value.contains("рельефа")));
+        assert!(
+            aquatis
+                .unknown_conditions
+                .iter()
+                .any(|value| value.contains("фумаролы"))
+        );
+        assert!(
+            aquatis
+                .unknown_conditions
+                .iter()
+                .any(|value| value.contains("рельефа"))
+        );
 
         planet.geological_signal_count = Some(0);
         assert!(!estimate(&planet)
