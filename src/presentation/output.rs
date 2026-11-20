@@ -138,7 +138,7 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
     }
     notes.push("вероятности появления видов не рассчитаны");
     notes.push("учтены только условия, внесённые в справочник");
-    notes.push("внутри одного рода учитывается один вид, а не сумма всех кандидатов");
+    notes.push("внутри одной биологической группы учитывается один вид, а не сумма всех кандидатов");
     lines.push(format!("Примечание: {}.", notes.join("; ")));
 
     Ok(Some(lines.join("\n")))
@@ -283,6 +283,8 @@ mod tests {
         let summary = exobiology_summary(&body).unwrap().unwrap();
         assert!(summary.contains("┌"));
         assert!(summary.contains("Биологическая группа"));
+        assert!(summary.contains("Оссии"));
+        assert!(!summary.contains("First Footfall"));
         assert!(summary.contains("Вид-кандидат"));
         assert!(summary.contains("За 3 образца"));
         assert!(summary.contains("Потенциальная базовая выручка: 0–"));
