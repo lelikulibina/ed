@@ -421,14 +421,16 @@ mod tests {
         assert_eq!(body.footfall_evidence(), FootfallEvidence::PreOdysseyUpdate);
 
         body.last_updated_at = Some("2026-11-20T10:00:00Z".to_owned());
-        assert_eq!(body.footfall_evidence(), FootfallEvidence::PostOdysseyUpdate);
+        assert_eq!(
+            body.footfall_evidence(),
+            FootfallEvidence::PostOdysseyUpdate
+        );
 
         body.last_updated_at = None;
         assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
         body.last_updated_at = Some("not-a-date".to_owned());
         assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
     }
-
 
     #[test]
     fn parses_body_without_losing_large_ids_or_nullable_fields() {
