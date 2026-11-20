@@ -417,8 +417,20 @@ mod tests {
 
         assert_eq!(system.id64, "42");
         assert_eq!(system.name, "Sol");
-        assert_eq!(system.coordinates, Coordinates { x: 1.0, y: 2.0, z: 3.0 });
-        assert!(server.await.unwrap().starts_with("GET /api/search/systems?q=Sol "));
+        assert_eq!(
+            system.coordinates,
+            Coordinates {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0
+            }
+        );
+        assert!(
+            server
+                .await
+                .unwrap()
+                .starts_with("GET /api/search/systems?q=Sol ")
+        );
     }
 
     #[tokio::test]
