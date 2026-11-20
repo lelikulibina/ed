@@ -97,3 +97,5 @@
 - Live Sol planet inspection confirmed temperature/pressure/gravity values: Venus 735 K / 93.1895 pressure / 0.9044 g; Earth 288 K / 0.9991 pressure / 0.9991 g. A broader sample of Sol pages 2-10 is being inspected to normalize atmosphere labels and confirm landability fields.
 
 - Sol page sample shows pressure values 93.19 (Venus), 0.999 (Earth), 2.303 (Mars), gravity ~0.90/0.999/0.377 and temperatures 735/288/261. Pressure appears atm and gravity g, but broader data consistency still needs review. Added raw atmosphere field inspection to distinguish `atmosphere` from `atmosphere_type`.
+
+- Live raw body row keys include `atmosphere_composition` and numeric `atmosphere_type`; current parser was reading only descriptive `atmosphere`. Added a probe to inspect composition values so local CLI atmosphere filters can use the correct field.
