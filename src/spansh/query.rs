@@ -61,10 +61,10 @@ impl BodySearchQuery {
             .as_object_mut()
             .expect("base query always contains an object of filters");
 
-        if criteria.planet_type != "any" {
+        if !criteria.planet_types.is_empty() {
             filters.insert(
                 "subtype".to_owned(),
-                json!({ "value": [criteria.planet_type] }),
+                json!({ "value": criteria.planet_types }),
             );
         }
         if criteria.atmosphere_type != "any" {
