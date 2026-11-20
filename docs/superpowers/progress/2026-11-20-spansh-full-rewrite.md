@@ -20,7 +20,7 @@
 - Task 2: resolver, exact-match selection, right-component fallback and mock-server tests present; CI RED→GREEN observed for exact-match regression.
 - Task 3: Body DTO, nested parent-system parsing, nullable fields and criteria evaluator present; not complete until CI test suite is green.
 - Task 4: body search, radius check, recall pagination, deduplication, synthetic fixtures and mock-server test present; CI suite passed before the latest request-throttling change.
-- Task 5: application use case, CLI wiring and grouped output present; not complete until CI test suite is green.
+- Task 5: application use case, CLI wiring, grouped output and a full resolver -> bodies -> criteria mock integration test present; latest CI for the new integration test is pending.
 - Task 6: legacy parser deleted and unused dependencies removed; static reference audit still required.
 - Task 7: final locked CI and read-only review pending.
 
@@ -32,5 +32,7 @@
 - Added `exact_candidate` to prefer a case-insensitive exact name before fallback; the corrected mock test also asserts the selected ID64 is used for the detail endpoint.
 - CI run 44661515323 (commit `907c49e8840b6ace4aa752fdec354c2ae1951995`): Format, Clippy and all tests passed, including the exact-name regression and paginated body-search mock server.
 - CI run 44661608960 (commit `618cb9c0c15e3fc3ffb7d5062e0640051da009de`): Format, Clippy and all tests passed; generated Cargo.lock was committed as `af5da70e7179bfe1b961956196445b2369ef1951`.
+- CI run 44661698868 (commit `c09c9b3142786ed0b06cc660fdaa131ef2f694d6`): Format, Clippy and all tests passed with `--locked`; confirms the committed lockfile is consistent.
 - Temporary CI formatting/artifact/auto-commit steps have been removed; CI now checks the committed lockfile with `--locked`.
-- Added a one-request-per-second interval to the Spansh HTTP client; final CI after this change is pending.
+- Added a one-request-per-second interval to the Spansh HTTP client; CI run 44661798487 passed for this change.
+- Added a full application mock integration test. CI run 44661832288 failed only at Format due to rustfmt layout in the new test; the formatting diff was applied. The latest CI runs for the formatted integration test and sibling-envelope DTO parser are pending.
