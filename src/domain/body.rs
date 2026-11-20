@@ -16,6 +16,7 @@ pub struct Body {
     pub atmosphere: Option<String>,
     pub volcanism_type: Option<String>,
     pub biological_signal_count: Option<u32>,
+    pub geological_signal_count: Option<u32>,
     pub biological_genera: Option<Vec<String>>,
     pub signals_updated_at: Option<String>,
 }
@@ -45,8 +46,12 @@ impl Body {
 
         let name = string_field(root, &["name", "body_name"]).ok_or(BodyParseError::MissingName)?;
 
-        let (biological_signal_count, biological_genera, signals_updated_at) =
-            biological_data(root, value);
+        let (
+            biological_signal_count,
+            geological_signal_count,
+            biological_genera,
+            signals_updated_at,
+        ) = biological_data(root, value);
 
         Ok(Self {
             id64: id_field(root, &["id64", "body_id64", "id"]),
@@ -82,6 +87,7 @@ impl Body {
             volcanism_type: string_field(root, &["volcanism_type", "volcanismType"])
                 .or_else(|| string_field(value, &["volcanism_type", "volcanismType"])),
             biological_signal_count,
+            geological_signal_count,
             biological_genera,
             signals_updated_at,
         })
@@ -91,32 +97,29 @@ impl Body {
 fn biological_data(
     root: &Value,
     value: &Value,
-) -> (Option<u32>, Option<Vec<String>>, Option<String>) {
+) -> (Option<u32>, Option<u32>, Option<Vec<String>>, Option<String>) {
     let signal_data = root.get("signals").or_else(|| value.get("signals"));
     let mut biological_count = None;
+    let mut geological_count = None;
     let mut genera = None;
     let mut updated_at = string_field(root, &["signals_updated_at", "signalsUpdatedAt"])
         .or_else(|| string_field(value, &["signals_updated_at", "signalsUpdatedAt"]));
 
     if let Some(signal_data) = signal_data {
         if let Some(signals) = signal_data.as_array() {
-            biological_count = Some(
-                signals
-                    .iter()
-                    .filter(|signal| {
-                        signal
-                            .get("name")
-                            .and_then(Value::as_str)
-                            .is_some_and(|name| name.eq_ignore_ascii_case("Biological"))
-                    })
-                    .filter_map(|signal| signal.get("count").and_then(count_value))
-                    .sum(),
-            );
+            biological_count = Some(sum_signal_count(signals, "Biological"));
+            geological_count = Some(sum_signal_count(signals, "Geological"));
         } else if signal_data.is_object() {
             if let Some(signals) = signal_data.get("signals").and_then(Value::as_object) {
                 biological_count = Some(
                     signals
                         .get("$SAA_SignalType_Biological;")
+                        .and_then(count_value)
+                        .unwrap_or(0),
+                );
+                geological_count = Some(
+                    signals
+                        .get("$SAA_SignalType_Geological;")
                         .and_then(count_value)
                         .unwrap_or(0),
                 );
@@ -153,7 +156,20 @@ fn biological_data(
             });
     }
 
-    (biological_count, genera, updated_at)
+    (biological_count, geological_count, genera, updated_at)
+}
+
+fn sum_signal_count(signals: &[Value], signal_name: &str) -> u32 {
+    signals
+        .iter()
+        .filter(|signal| {
+            signal
+                .get("name")
+                .and_then(Value::as_str)
+                .is_some_and(|name| name.eq_ignore_ascii_case(signal_name))
+        })
+        .filter_map(|signal| signal.get("count").and_then(count_value))
+        .sum()
 }
 
 fn count_value(value: &Value) -> Option<u32> {
@@ -452,6 +468,7 @@ mod tests {
 
         assert_eq!(body.volcanism_type.as_deref(), Some("No volcanism"));
         assert_eq!(body.biological_signal_count, Some(3));
+        assert_eq!(body.geological_signal_count, Some(0));
         assert_eq!(
             body.biological_genera,
             Some(vec![
@@ -498,6 +515,7 @@ mod tests {
         assert_eq!(body.system_id64.as_deref(), Some("456"));
         assert_eq!(body.volcanism_type.as_deref(), Some("No volcanism"));
         assert_eq!(body.biological_signal_count, Some(3));
+        assert_eq!(body.geological_signal_count, Some(1));
         assert_eq!(
             body.biological_genera,
             Some(vec!["Bacterium".to_owned(), "Tussock".to_owned()])
@@ -535,6 +553,7 @@ mod tests {
         assert_eq!(body.is_landable, Some(true));
         assert_eq!(body.volcanism_type.as_deref(), Some("Minor Rocky Magma"));
         assert_eq!(body.biological_signal_count, Some(2));
+        assert_eq!(body.geological_signal_count, Some(1));
         assert_eq!(
             body.biological_genera,
             Some(vec!["Tussock".to_owned(), "Bacterium".to_owned()])
