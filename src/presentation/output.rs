@@ -50,7 +50,11 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         ));
     }
     if estimate.genera.is_empty() {
-        if let Some(genera) = estimate.biological_genera.as_ref().filter(|genera| !genera.is_empty()) {
+        if let Some(genera) = estimate
+            .biological_genera
+            .as_ref()
+            .filter(|genera| !genera.is_empty())
+        {
             return Ok(Some(format!(
                 "    Экзобиология: Spansh указал роды {}, но по текущим параметрам в справочнике не найдено подходящих видов.",
                 genera.join(", ")
@@ -72,7 +76,11 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
     if let Some(count) = estimate.biological_signal_count {
         lines.push(format!("      Биологических сигналов Spansh: {count}"));
     }
-    if let Some(genera) = estimate.biological_genera.as_ref().filter(|genera| !genera.is_empty()) {
+    if let Some(genera) = estimate
+        .biological_genera
+        .as_ref()
+        .filter(|genera| !genera.is_empty())
+    {
         lines.push(format!("      Роды Spansh: {}", genera.join(", ")));
     }
     for genus in &estimate.genera {
@@ -107,8 +115,14 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         "      Если доступен First Logged: 0–{} CR",
         format_credits(estimate.maximum_first_logged_value_cr)
     ));
-    if estimate.biological_genera.as_ref().is_some_and(|genera| !genera.is_empty()) {
-        lines.push("      Список родов Spansh учтён; внутри каждого рода вид пока неизвестен.".to_owned());
+    if estimate
+        .biological_genera
+        .as_ref()
+        .is_some_and(|genera| !genera.is_empty())
+    {
+        lines.push(
+            "      Список родов Spansh учтён; внутри каждого рода вид пока неизвестен.".to_owned(),
+        );
     } else {
         lines.push(
             "      Состав родов не подтверждён; верхняя граница предполагает наличие всех указанных родов."
@@ -116,7 +130,10 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         );
     }
     if !estimate.catalog_is_complete {
-        lines.push("      Каталог видов неполный: верхняя граница рассчитана только по внесённым видам.".to_owned());
+        lines.push(
+            "      Каталог видов неполный: верхняя граница рассчитана только по внесённым видам."
+                .to_owned(),
+        );
     }
     lines.push(
         "      Кандидаты совпадают только по условиям, внесённым в справочник; полный набор игровых условий ещё не моделируется."
