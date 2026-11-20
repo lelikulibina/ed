@@ -91,6 +91,10 @@ impl BodySearch {
                 break;
             }
 
+            if page_index + 1 >= self.max_pages {
+                return Err(BodySearchError::PageLimit(self.max_pages));
+            }
+
             let Some(search_guid) = guid.as_deref() else {
                 // Without a documented cursor/GUID, don't fabricate a next
                 // page request. Treat a short page as terminal; a full page
