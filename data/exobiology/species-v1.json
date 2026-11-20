@@ -15,36 +15,81 @@
       "genus": "Osseus",
       "species": "Discus",
       "base_value_cr": 12934900,
-      "planet_types": ["Rocky body", "High metal content world"],
-      "atmospheres": ["Water", "Water-rich"]
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Water",
+        "Water-rich"
+      ]
     },
     {
       "genus": "Tussock",
       "species": "Virgam",
       "base_value_cr": 14313700,
-      "planet_types": ["Rocky body"],
-      "atmospheres": ["Water", "Water-rich"]
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Water",
+        "Water-rich"
+      ]
     },
     {
       "genus": "Tussock",
       "species": "Stigmasis",
       "base_value_cr": 19010800,
-      "planet_types": ["Rocky body"],
-      "atmospheres": ["Sulphur dioxide"]
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Sulphur dioxide"
+      ]
     },
     {
       "genus": "Cactoida",
       "species": "Vermis",
       "base_value_cr": 16202800,
-      "planet_types": ["Rocky body", "High metal content world"],
-      "atmospheres": ["Water"]
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Water"
+      ]
     },
     {
       "genus": "Clypeus",
       "species": "Margaritus",
       "base_value_cr": 11873200,
-      "planet_types": ["Rocky body", "High metal content world"],
-      "atmospheres": ["Water", "Carbon dioxide", "Carbon dioxide-rich"],
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Water",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 190,
+      "temperature_min_inclusive": false,
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false
+    },
+    {
+      "genus": "Clypeus",
+      "species": "Lacrimam",
+      "base_value_cr": 8418000,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Water",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
       "temperature_min_k": 190,
       "temperature_min_inclusive": false,
       "gravity_max_g": 0.27,
@@ -54,8 +99,13 @@
       "genus": "Recepta",
       "species": "Deltahedronix",
       "base_value_cr": 16202800,
-      "planet_types": ["Rocky body", "High metal content world"],
-      "atmospheres": ["Sulphur dioxide"],
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Sulphur dioxide"
+      ],
       "gravity_max_g": 0.27,
       "gravity_max_inclusive": false
     },
@@ -64,8 +114,13 @@
       "species": "Cerbrus",
       "base_value_cr": 1689800,
       "planet_types": [],
-      "atmospheres": ["Water", "Sulphur dioxide"],
-      "volcanism": ["None"]
+      "atmospheres": [
+        "Water",
+        "Sulphur dioxide"
+      ],
+      "volcanism": [
+        "None"
+      ]
     }
   ]
 }
