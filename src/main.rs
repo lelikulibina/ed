@@ -42,6 +42,12 @@ async fn main() -> Result<()> {
 
     println!("Разрешаю центральную систему «{}»...", args.system);
     let center = search.resolve_center(&args.system).await?;
+    if !center.name.eq_ignore_ascii_case(args.system.trim()) {
+        println!(
+            "ВНИМАНИЕ: точное совпадение «{}» не найдено в Spansh. Используется ближайшее совпадение из ответа API: «{}».",
+            args.system, center.name
+        );
+    }
     println!(
         "Центр поиска: {} (ID64: {}), координаты: ({:.3}, {:.3}, {:.3})",
         center.name, center.id64, center.coordinates.x, center.coordinates.y, center.coordinates.z
