@@ -109,6 +109,52 @@ mod tests {
     }
 
     #[test]
+    fn payload_pushes_all_body_criteria_to_spansh() {
+        use crate::domain::criteria::{NumericRange, SearchCriteria};
+
+        let query = BodySearchQuery::new(
+            Coordinates {
+                x: 55.7,
+                y: 17.5,
+                z: 27.1,
+            },
+            1_000.0,
+            100,
+        )
+        .unwrap();
+        let criteria = SearchCriteria::from_cli(
+            "Rock",
+            "Water",
+            NumericRange {
+                min: 190.0,
+                max: 195.0,
+            },
+            NumericRange {
+                min: 0.1,
+                max: 1.0,
+            },
+            NumericRange {
+                min: 0.042,
+                max: 0.237,
+            },
+            15,
+        )
+        .unwrap();
+
+        let payload = query.to_payload_with_criteria(&criteria);
+        assert_eq!(payload["filters"]["distance"]["max"], 1_000.0);
+        assert_eq!(payload["filters"]["subtype"]["value"], serde_json::json!(["Rocky body"]));
+        assert_eq!(payload["filters"]["atmosphere"]["value"], serde_json::json!(["Water"]));
+        assert_eq!(payload["filters"]["surface_temperature"]["comparison"], "<=>");
+        assert_eq!(payload["filters"]["surface_temperature"]["value"], serde_json::json!([190.0, 195.0]));
+        assert_eq!(payload["filters"]["surface_pressure"]["value"], serde_json::json!([0.042, 0.237]));
+        assert_eq!(payload["filters"]["gravity"]["value"], serde_json::json!([0.1, 1.0]));
+        assert_eq!(payload["filters"]["is_landable"]["value"], true);
+        assert_eq!(payload["page"], 0);
+        assert_eq!(payload["size"], 100);
+    }
+
+    #[test]
     fn rejects_non_finite_coordinates_and_invalid_radius() {
         assert_eq!(
             Coordinates {
