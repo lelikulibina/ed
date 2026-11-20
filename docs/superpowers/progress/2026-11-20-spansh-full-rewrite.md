@@ -161,3 +161,13 @@
 - Minor (deferred): фактическая форма ответа нового autocomplete endpoint после переключения resolver не перепроверялась live; повторный вызов отложен во избежание лишней нагрузки на Spansh. Mock contract tests остаются зелёными.
 - Внешний review subagent недоступен; выполнен self-review автором. Он слабее независимой проверки и не заменяет review перед merge.
 - Ветка на момент сравнения была на 4 коммита позади обновившегося `main`; rebase/merge не выполнялся, чтобы не затягивать несвязанные изменения и не менять базовую ветку без запроса пользователя.
+## Исправление пустых результатов и выдачи 10 000 (2026-11-20)
+
+- RED: добавлен regression test `full_page_at_reported_10000_count_is_not_treated_as_final`; CI run `44672910614` на SHA `02ba4a0b3cafdd70a39c7442e67ec94de39d3103` показал ожидаемый провал: `is_last_page` завершал страницу 99 при `count=10000`.
+- GREEN: `is_last_page` теперь считает `count >= 10000` потенциальным cap, игнорирует metadata count/has_more и проверяет следующую страницу; фактическая пустая страница завершает поиск. `MAX_PAGES` увеличен со 100 до 1000. CI run `44673066841` на SHA `6698b82b50ef08df218b42179e393098446a16bc`: Format, Clippy, Tests PASS.
+- Изучен контракт фильтров Spansh через исследование сайта и field catalogue. Подтверждены поля body: `subtype`, `atmosphere`, `surface_temperature`, `surface_pressure`, `gravity`, `is_landable`; синтаксис group/numeric/boolean фильтров подтверждён примерами рабочих запросов.
+- RED: добавлен regression test, требующий отправлять все параметры планеты на сервер. CI run `44673275252` на SHA `36fec9d2f11a396f521ec6af3800702876a44b00` упал на Clippy compile step из-за отсутствующего `to_payload_with_criteria` — тестовая функциональность ещё не реализована.
+- GREEN: реализован `BodySearchQuery::to_payload_with_criteria`; production BodySearch использует его и для первой страницы, и для POST fallback после recall error/без search reference. Локальные критерии остаются дополнительной проверкой. В payload передаются subtype/atmosphere (если не `any`), три numeric range и `is_landable=true`.
+- CI run `44673573143` на SHA `8686764dac2c0d3b566ef359eceee61fb963605f`: Format PASS, Clippy PASS, Tests PASS — 45 passed, 0 failed, 2 ignored.
+- Live smoke не запускался: автоматический workflow был пропущен по gate. Live-запрос с пользовательскими параметрами не выполнялся, чтобы не создавать лишнюю нагрузку на Spansh.
+- Ограничение: запросы после page 99 пока подтверждены только mock-логикой; hard cap на стороне Spansh всё ещё возможен. Для запроса `Drojia ZB-Z b32-0` нужен один целевой live запуск после завершения локальных/CI проверок.
