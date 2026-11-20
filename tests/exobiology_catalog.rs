@@ -84,8 +84,5 @@ fn volcanism_requirement_uses_the_official_spansh_enum_value() {
         .iter()
         .find(|entry| entry["genus"] == "Bacterium" && entry["species"] == "Cerbrus")
         .expect("Bacterium Cerbrus");
-    assert_eq!(
-        cerbrus["volcanism"],
-        serde_json::json!(["No volcanism"])
-    );
+    assert_eq!(cerbrus["volcanism"], serde_json::json!(["No volcanism"]));
 }
