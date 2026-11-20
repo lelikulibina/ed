@@ -624,6 +624,69 @@ mod tests {
     }
 
     #[test]
+    fn conditional_temperature_rules_only_apply_to_their_atmospheres() {
+        let ammonia_hmc = estimate(&body(
+            Some("High metal content world"),
+            Some("Ammonia"),
+            Some(200.0),
+            Some(0.2),
+        ))
+        .unwrap();
+        assert!(ammonia_hmc.genera.iter().any(|genus| {
+            genus.genus == "Frutexa"
+                && genus
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.species == "Metallicum")
+        }));
+
+        let co2_hmc = estimate(&body(
+            Some("High metal content world"),
+            Some("Carbon dioxide"),
+            Some(200.0),
+            Some(0.2),
+        ))
+        .unwrap();
+        assert!(!co2_hmc.genera.iter().any(|genus| {
+            genus.genus == "Frutexa"
+                && genus
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.species == "Metallicum")
+        }));
+
+        let water_150 = estimate(&body(
+            Some("Rocky body"),
+            Some("Water"),
+            Some(150.0),
+            Some(0.2),
+        ))
+        .unwrap();
+        assert!(water_150.genera.iter().any(|genus| {
+            genus.genus == "Stratum"
+                && genus
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.species == "Paleas")
+        }));
+
+        let ammonia_150 = estimate(&body(
+            Some("Rocky body"),
+            Some("Ammonia"),
+            Some(150.0),
+            Some(0.2),
+        ))
+        .unwrap();
+        assert!(!ammonia_150.genera.iter().any(|genus| {
+            genus.genus == "Stratum"
+                && genus
+                    .candidates
+                    .iter()
+                    .any(|candidate| candidate.species == "Paleas")
+        }));
+    }
+
+    #[test]
     fn first_logged_is_reported_as_a_separate_five_times_scenario() {
         let estimate = estimate(&body(
             Some("Rocky body"),
