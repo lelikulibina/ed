@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::domain::{
     body::Body,
-    exobiology::{self, CandidateStatus, EstimateError, ExobiologyEstimate},
+    exobiology::{self, CandidateStatus, EstimateError},
 };
 
 pub fn print_results(bodies: &[Body]) {
@@ -29,7 +29,7 @@ pub fn print_results(bodies: &[Body]) {
                 }
             );
             println!(
-                "│ {} | {} | {} K | {} atm | {} g | {:.3} св. л.",
+                "│ {} | {} | {} K | {} atm | {} g | {} св. л.",
                 body.subtype.as_deref().unwrap_or("тип неизвестен"),
                 body.atmosphere.as_deref().unwrap_or("атмосфера неизвестна"),
                 display_number(body.surface_temperature),
