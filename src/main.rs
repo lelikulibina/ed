@@ -64,6 +64,10 @@ async fn main() -> Result<()> {
             journal_report.bodies_matched,
             results.len()
         );
+    } else {
+        println!(
+            "Локальный журнал не найден; для нестандартного пути задайте переменную ED_JOURNAL_DIR. Использую косвенные данные Spansh."
+        );
     }
     print_results(&results);
 
