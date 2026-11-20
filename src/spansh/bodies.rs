@@ -628,8 +628,18 @@ mod tests {
                     parse_page(&page_response).expect("nearby Sol planet page must parse");
                 if let Some(body) = planet_page.bodies.first() {
                     match page_index {
-                        2 => assert_eq!(body.atmosphere.as_deref(), Some("Carbon dioxide")),
-                        3 => assert_eq!(body.atmosphere.as_deref(), Some("Nitrogen")),
+                        2 => {
+                            assert_eq!(body.atmosphere.as_deref(), Some("Carbon dioxide"));
+                            assert!(body.surface_temperature.is_some_and(|value| (700.0..800.0).contains(&value)));
+                            assert!(body.surface_pressure.is_some_and(|value| (90.0..100.0).contains(&value)));
+                            assert!(body.gravity.is_some_and(|value| (0.8..1.0).contains(&value)));
+                        }
+                        3 => {
+                            assert_eq!(body.atmosphere.as_deref(), Some("Nitrogen"));
+                            assert!(body.surface_temperature.is_some_and(|value| (270.0..300.0).contains(&value)));
+                            assert!(body.surface_pressure.is_some_and(|value| (0.9..1.1).contains(&value)));
+                            assert!(body.gravity.is_some_and(|value| (0.9..1.1).contains(&value)));
+                        }
                         7 => assert_eq!(body.atmosphere.as_deref(), Some("Sulphur dioxide")),
                         _ => {}
                     }
