@@ -207,4 +207,50 @@ mod tests {
         assert!(value["ok"].as_bool().unwrap());
         server.await.unwrap();
     }
+
+    #[tokio::test]
+    async fn retries_rate_limit_responses_and_returns_successful_json() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(respond(
+            listener,
+            vec![
+                "HTTP/1.1 429 Too Many Requests\r\ncontent-length: 0\r\nconnection: close\r\n\r\n",
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 11\r\nconnection: close\r\n\r\n{\"ok\":true}",
+            ],
+        ));
+
+        let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        client.retry_delay = Duration::from_millis(1);
+        client.request_interval = Duration::from_millis(1);
+        let value = client.get_json("/fixture").await.unwrap();
+        assert!(value["ok"].as_bool().unwrap());
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn does_not_retry_non_retryable_client_errors() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(respond(
+            listener,
+            vec![
+                "HTTP/1.1 400 Bad Request\r\ncontent-length: 0\r\nconnection: close\r\n\r\n",
+            ],
+        ));
+
+        let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        client.retry_delay = Duration::from_millis(1);
+        client.request_interval = Duration::from_millis(1);
+        let error = client.get_json("/fixture").await.unwrap_err();
+        assert!(matches!(
+            error,
+            SpanshError::Status {
+                status: StatusCode::BAD_REQUEST,
+                ..
+            }
+        ));
+        server.await.unwrap();
+    }
+
 }
