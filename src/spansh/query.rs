@@ -9,7 +9,10 @@ pub struct Coordinates {
 
 impl Coordinates {
     pub fn validate(self) -> Result<Self, QueryError> {
-        if [self.x, self.y, self.z].iter().all(|value| value.is_finite()) {
+        if [self.x, self.y, self.z]
+            .iter()
+            .all(|value| value.is_finite())
+        {
             Ok(self)
         } else {
             Err(QueryError::InvalidCoordinates)
@@ -113,7 +116,11 @@ mod tests {
     #[test]
     fn payload_contains_reference_coordinates_and_radius() {
         let query = BodySearchQuery::new(
-            Coordinates { x: 55.7, y: 17.5, z: 27.1 },
+            Coordinates {
+                x: 55.7,
+                y: 17.5,
+                z: 27.1,
+            },
             50.0,
             100,
         )
@@ -124,7 +131,10 @@ mod tests {
         let payload = query.to_payload();
         assert_eq!(payload["reference_coords"]["x"], 55.7);
         assert_eq!(payload["filters"]["distance"]["max"], 50.0);
-        assert_eq!(payload["filters"]["subtype"]["value"][0], "Earth-like world");
+        assert_eq!(
+            payload["filters"]["subtype"]["value"][0],
+            "Earth-like world"
+        );
         assert!(payload["filters"]["is_landable"]["value"].as_bool().unwrap());
         assert_eq!(payload["page"], 0);
         assert_eq!(payload["size"], 100);
@@ -133,11 +143,24 @@ mod tests {
     #[test]
     fn rejects_non_finite_coordinates_and_invalid_radius() {
         assert_eq!(
-            Coordinates { x: f64::NAN, y: 0.0, z: 0.0 }.validate(),
+            Coordinates {
+                x: f64::NAN,
+                y: 0.0,
+                z: 0.0
+            }
+            .validate(),
             Err(QueryError::InvalidCoordinates)
         );
         assert_eq!(
-            BodySearchQuery::new(Coordinates { x: 0.0, y: 0.0, z: 0.0 }, 0.0, 10),
+            BodySearchQuery::new(
+                Coordinates {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0
+                },
+                0.0,
+                10
+            ),
             Err(QueryError::InvalidRadius)
         );
     }
