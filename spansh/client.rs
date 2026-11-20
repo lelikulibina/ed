@@ -76,7 +76,7 @@ impl SpanshClient {
                     }
                 }
                 Err(error) => {
-                    if !error.is_timeout() && !error.is_connect() && !error.is_request() {
+                    if !error.is_timeout() && !error.is_connect() {
                         return Err(SpanshError::Http(error));
                     }
                     if attempt + 1 == self.max_attempts {
@@ -111,13 +111,51 @@ pub enum SpanshError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::TcpListener,
+    };
+
+    async fn respond(listener: TcpListener, responses: Vec<&'static str>) {
+        for response in responses {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = [0_u8; 2048];
+            let _ = socket.read(&mut request).await.unwrap();
+            socket.write_all(response.as_bytes()).await.unwrap();
+        }
+    }
 
     #[tokio::test]
-    async fn client_uses_configured_base_url_and_returns_json() {
-        // The base URL is injectable so transport behavior can be tested against
-        // a local mock server without depending on spansh.co.uk.
-        let client = SpanshClient::new("http://127.0.0.1:1", 2).unwrap();
-        let result = client.get_json("/health").await;
-        assert!(result.is_err());
+    async fn get_json_decodes_response_from_injected_endpoint() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(respond(
+            listener,
+            vec!["HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 11\r\nconnection: close\r\n\r\n{\"ok\":true}"],
+        ));
+
+        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let value = client.get_json("/fixture").await.unwrap();
+        assert_eq!(value["ok"], true);
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn retries_server_errors_but_returns_successful_json() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(respond(
+            listener,
+            vec![
+                "HTTP/1.1 503 Service Unavailable\r\ncontent-length: 0\r\nconnection: close\r\n\r\n",
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 11\r\nconnection: close\r\n\r\n{\"ok\":true}",
+            ],
+        ));
+
+        let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        client.retry_delay = Duration::from_millis(1);
+        let value = client.get_json("/fixture").await.unwrap();
+        assert_eq!(value["ok"], true);
+        server.await.unwrap();
     }
 }
