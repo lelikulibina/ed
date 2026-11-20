@@ -11,6 +11,7 @@ use parser::{
 };
 
 use anyhow::{Result, anyhow};
+use clap::Parser;
 use futures::stream::{self, StreamExt};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashSet;
