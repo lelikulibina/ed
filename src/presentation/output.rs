@@ -250,6 +250,12 @@ mod tests {
 
         body.last_updated_at = None;
         assert!(footfall_evidence_summary(&body).contains("статус неизвестен"));
+
+        body.journal_was_footfalled = Some(true);
+        body.journal_scan_timestamp = Some("2026-01-01T00:00:00Z".to_owned());
+        assert!(footfall_evidence_summary(&body).contains("WasFootfalled=true"));
+        body.journal_was_footfalled = Some(false);
+        assert!(footfall_evidence_summary(&body).contains("WasFootfalled=false"));
     }
 
     #[test]
