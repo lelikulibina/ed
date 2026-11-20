@@ -16,7 +16,7 @@ pub fn print_results(bodies: &[Body]) {
         println!("Система: {system_name} (ID64: {system_id})");
         for body in planets {
             println!(
-                "  • {}{}\n    Тип: {}\n    Атмосфера: {}\n    Температура: {} K\n    Давление: {}\n    Гравитация: {} g\n    Расстояние от центра поиска: {} св. л.\n",
+                "  • {}{}\n    Тип: {}\n    Атмосфера: {}\n    Температура: {} °C\n    Давление: {}\n    Гравитация: {} g\n    Расстояние от центра поиска: {} св. л.\n",
                 body.name,
                 if body.is_mapped == Some(true) {
                     " [изучена]"
@@ -25,7 +25,7 @@ pub fn print_results(bodies: &[Body]) {
                 },
                 body.subtype.as_deref().unwrap_or("неизвестно"),
                 body.atmosphere.as_deref().unwrap_or("неизвестно"),
-                display_number(body.surface_temperature),
+                display_temperature_celsius(body.surface_temperature),
                 display_number(body.surface_pressure),
                 display_number(body.gravity),
                 display_number(body.distance_ly),
@@ -45,6 +45,12 @@ fn group_by_system(bodies: &[Body]) -> BTreeMap<String, Vec<&Body>> {
         systems.entry(system_id).or_default().push(body);
     }
     systems
+}
+
+fn display_temperature_celsius(value_kelvin: Option<f64>) -> String {
+    value_kelvin
+        .map(|kelvin| format!("{:.3}", kelvin - 273.15))
+        .unwrap_or_else(|| "нет данных".to_owned())
 }
 
 fn display_number(value: Option<f64>) -> String {
