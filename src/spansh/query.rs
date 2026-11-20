@@ -80,7 +80,10 @@ impl BodySearchQuery {
 
         filters.insert(
             "surface_temperature".to_owned(),
-            numeric_range_filter(\n                criteria.temperature_kelvin().min,\n                criteria.temperature_kelvin().max,\n            ),
+            numeric_range_filter(
+                criteria.temperature_kelvin().min,
+                criteria.temperature_kelvin().max,
+            ),
         );
         filters.insert(
             "surface_pressure".to_owned(),
