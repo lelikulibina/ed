@@ -12,6 +12,9 @@ pub struct Body {
     pub is_mapped: Option<bool>,
     /// Last known body record update from Spansh; not a First Footfall timestamp.
     pub last_updated_at: Option<String>,
+    /// Direct Scan.WasFootfalled value from the commander's local journal, when available.
+    pub journal_was_footfalled: Option<bool>,
+    pub journal_scan_timestamp: Option<String>,
     pub surface_temperature: Option<f64>,
     pub surface_pressure: Option<f64>,
     pub gravity: Option<f64>,
@@ -25,6 +28,10 @@ pub struct Body {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FootfallEvidence {
+    /// The journal scan reported that someone had landed before that scan.
+    FootfalledBeforeScan,
+    /// The journal scan reported that nobody had landed before that scan.
+    UnfootfalledAtScan,
     /// The latest Spansh body update predates the Odyssey release.
     /// This is a lead only, not proof that First Footfall is available.
     PreOdysseyUpdate,
@@ -46,6 +53,11 @@ impl Body {
     /// is a useful discovery lead, while a later update is only evidence of
     /// post-launch activity and must not be treated as proof of a landing.
     pub fn footfall_evidence(&self) -> FootfallEvidence {
+        match self.journal_was_footfalled {
+            Some(true) => return FootfallEvidence::FootfalledBeforeScan,
+            Some(false) => return FootfallEvidence::UnfootfalledAtScan,
+            None => {}
+        }
         let Some(timestamp) = self.last_updated_at.as_deref() else {
             return FootfallEvidence::Unknown;
         };
@@ -113,6 +125,8 @@ impl Body {
                 .or_else(|| bool_field(value, &["is_mapped", "mapped"])),
             last_updated_at: string_field(root, &["updated_at", "updateTime"])
                 .or_else(|| string_field(value, &["updated_at", "updateTime"])),
+            journal_was_footfalled: None,
+            journal_scan_timestamp: None,
             surface_temperature: number_field(
                 root,
                 &["surface_temperature", "surfaceTemperature", "surface_temp"],
