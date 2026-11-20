@@ -172,7 +172,11 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
         match body.gravity {
             Some(actual) => {
                 let inclusive = entry["gravity_max_inclusive"].as_bool().unwrap_or(true);
-                let outside_range = if inclusive { actual > maximum } else { actual >= maximum };
+                let outside_range = if inclusive {
+                    actual > maximum
+                } else {
+                    actual >= maximum
+                };
                 if outside_range {
                     return None;
                 }
