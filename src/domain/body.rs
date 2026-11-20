@@ -409,7 +409,10 @@ mod tests {
         assert_eq!(body.surface_pressure, Some(0.12));
         assert_eq!(body.gravity, Some(0.98));
         assert_eq!(body.is_mapped, Some(false));
-        assert_eq!(body.last_updated_at.as_deref(), Some("2021-05-18T23:59:59Z"));
+        assert_eq!(
+            body.last_updated_at.as_deref(),
+            Some("2021-05-18T23:59:59Z")
+        );
         assert_eq!(body.atmosphere.as_deref(), Some("Carbon dioxide"));
     }
 
@@ -429,7 +432,10 @@ mod tests {
         assert_eq!(body.id64.as_deref(), Some("9007199254740993"));
         assert_eq!(body.system_id64.as_deref(), Some("123"));
         assert_eq!(body.system_name.as_deref(), Some("A"));
-        assert_eq!(body.last_updated_at.as_deref(), Some("2026-11-20T00:00:00Z"));
+        assert_eq!(
+            body.last_updated_at.as_deref(),
+            Some("2026-11-20T00:00:00Z")
+        );
         assert_eq!(body.distance_ly, Some(2.5));
     }
 
@@ -491,7 +497,10 @@ mod tests {
         .unwrap();
 
         assert_eq!(body.volcanism_type.as_deref(), Some("No volcanism"));
-        assert_eq!(body.last_updated_at.as_deref(), Some("2026-11-20T00:01:00Z"));
+        assert_eq!(
+            body.last_updated_at.as_deref(),
+            Some("2026-11-20T00:01:00Z")
+        );
         assert_eq!(body.biological_signal_count, Some(3));
         assert_eq!(body.geological_signal_count, Some(0));
         assert_eq!(
