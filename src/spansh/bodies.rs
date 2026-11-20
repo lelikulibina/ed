@@ -78,7 +78,9 @@ impl BodySearch {
                     continue;
                 }
 
-                if criteria.matches(&body) {
+                if body.distance_ly.is_some_and(|distance| distance <= self.radius_ly)
+                    && criteria.matches(&body)
+                {
                     results.push(body);
                     if results.len() >= criteria.count {
                         return Ok(results);
