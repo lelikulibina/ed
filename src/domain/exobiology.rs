@@ -200,6 +200,10 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
         }
     }
 
+    if !conditional_temperature_rules_match(entry, body, &mut unknown_conditions) {
+        return None;
+    }
+
     if let Some(maximum) = entry["gravity_max_g"].as_f64() {
         match body.gravity {
             Some(actual) => {
