@@ -1,4 +1,5 @@
 mod cli;
+#[allow(dead_code)]
 mod domain;
 mod parser;
 #[allow(dead_code)]
