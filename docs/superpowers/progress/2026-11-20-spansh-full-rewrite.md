@@ -46,3 +46,5 @@
 - Recall pagination has not yet been live-confirmed.
 
 - Live pagination probe 44662286671 (second version) used page size 1: page 0 returned Sol (ID64 `10477373803`); direct POST with `page=1` returned a different body (ID64 `36028807496337771`). This is evidence for direct POST page pagination when no search reference is present; metadata values are being inspected in the next probe.
+
+- The second live response exposed `count=40`, `from=0`, `size=1`, and `search_reference` containing a UUID. Direct POST with `page=1` returned `from=1` and a different body ID64. The `search_reference` field is now recognized as the recall identifier; the next live probe verifies the recall GET route.
