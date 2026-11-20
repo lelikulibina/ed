@@ -155,6 +155,7 @@ mod tests {
         assert!(summary.contains("Потенциальная стоимость (базовая): 0–"));
         assert!(summary.contains("Если доступен First Logged: 0–"));
         assert!(summary.contains("Вероятности появления видов не рассчитаны"));
+        assert!(summary.contains("Кандидаты совпадают только по условиям"));
         assert!(summary.contains("нужна проверка: тип вулканизма"));
     }
 
