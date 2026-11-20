@@ -51,7 +51,7 @@ impl SearchCriteria {
         })
     }
 
-    pub fn with_exclude_with_bio_signals(mut self, exclude: bool) -> Self {
+    pub fn with_bio_signal_exclusion(mut self, exclude: bool) -> Self {
         self.exclude_with_bio_signals = exclude;
         self
     }
@@ -249,7 +249,7 @@ mod tests {
 
     #[test]
     fn exclude_with_bio_signals_filters_positive_signal_count_and_known_genera() {
-        let mut criteria = criteria().with_exclude_with_bio_signals(true);
+        let mut criteria = criteria().with_bio_signal_exclusion(true);
         let mut body = Body {
             id64: None,
             name: "Bio world".to_owned(),
