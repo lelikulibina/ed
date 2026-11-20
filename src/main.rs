@@ -47,7 +47,7 @@ async fn main() -> Result<()> {
         center.name, center.id64, center.coordinates.x, center.coordinates.y, center.coordinates.z
     );
 
-    println!("Ищу подходящие планеты в радиусе 100 св. л....");
+    println!("Ищу подходящие планеты в радиусе 1000 св. л....");
     let results = search.execute(&center, &criteria).await?;
     print_results(&results);
 
