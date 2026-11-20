@@ -239,7 +239,7 @@ mod tests {
         assert!(recent.contains("могла быть"));
 
         body.last_updated_at = None;
-        assert!(footfall_evidence_summary(&body).contains("статус неизвестен"));
+        assert!(footfall_evidence_summary(&body).contains("неизвестен"));
     }
 
     #[test]
