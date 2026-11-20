@@ -59,12 +59,13 @@ Workflow: `.github/workflows/spansh-live-smoke.yml`; запускается вр
 - Resolver успешно разрешил Sol и получил координаты `(0,0,0)`.
 - `POST /api/bodies/search` с радиусом 1 ly и размером страницы 1 вернул `count=40`, `from=0`, `size=1`, `search_reference` UUID и body rows.
 - `GET /api/bodies/search/recall/{search_reference}/1` вернул Mercury на следующей странице.
+- `GET /api/bodies/search/recall/{search_reference}/39` вернул последнюю строку: `count=40`, `from=39`, одна строка; проверка `from + rows >= count` определила конец выдачи.
 - Отдельный direct POST с `page=1` также вернул следующую запись с `from=1` и другим ID64.
 - Живой Mercury result содержал `id64`, `system_id64`, `subtype`, `distance`, `is_landable=true`, `is_mapped=null`, `surface_temperature`, `surface_pressure`, `gravity`, `atmosphere`. Это подтвердило форму полей, но не единицы измерения для всех типов тел.
 
 ## Что ещё не подтверждено
 
-- Последняя страница на большой выдаче и точная семантика count/from для всех размеров страницы.
+- Выдача на 40 строк проверена от первой до последней страницы; поведение на больших выдачах (100+ строк) и точная семантика count/from для всех размеров страницы ещё не подтверждены.
 - Максимальный page size и максимальное количество страниц.
 - Единицы surface_temperature/surface_pressure/gravity и все enum values subtype/atmosphere.
 - Distance semantics на разных центральных системах и при большом радиусе.
