@@ -223,6 +223,25 @@ mod tests {
     }
 
     #[test]
+    fn payload_sends_multiple_surface_types_as_or_values() {
+        use crate::domain::criteria::NumericRange;
+
+        let query = BodySearchQuery::new(
+            Coordinates { x: 1.0, y: 2.0, z: 3.0 },
+            1_000.0,
+            100,
+        ).unwrap();
+        let criteria = crate::application::presets::PRESETS[2].criteria(5, false).unwrap();
+        let payload = query.to_payload_with_criteria(&criteria);
+
+        assert_eq!(
+            payload["filters"]["subtype"]["value"],
+            serde_json::json!(["Rocky body", "High metal content world"])
+        );
+        assert_eq!(criteria.temperature, NumericRange { min: 395.0, max: 450.0 });
+    }
+
+    #[test]
     fn rejects_non_finite_coordinates_and_invalid_radius() {
         assert_eq!(
             Coordinates {
