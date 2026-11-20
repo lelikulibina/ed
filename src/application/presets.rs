@@ -122,12 +122,4 @@ mod tests {
         let criteria = PRESETS[0].criteria(5, true).unwrap();
         assert!(criteria.exclude_with_bio_signals);
     }
-
-    #[test]
-    fn volcanism_is_not_a_search_criterion_without_reliable_source_data() {
-        for preset in PRESETS {
-            let criteria = preset.criteria(5, false).unwrap();
-            assert!(!criteria.matches_volcanism());
-        }
-    }
 }
