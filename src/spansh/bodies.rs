@@ -1125,64 +1125,58 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "requires live network; one targeted diagnostic query"]
+    #[ignore = "requires live network; one targeted user-requested search"]
     async fn live_drojia_water_rock_query() {
         let client = SpanshClient::spansh(1).unwrap();
         let center = super::super::system::SystemResolver::new(client.clone())
             .resolve("Drojia ZB-Z b32-0")
             .await
             .expect("Drojia center system must resolve");
-        let query = BodySearchQuery::new(center.coordinates, 1_000.0, 1).unwrap();
-        let stages = [
-            (
-                "subtype+atmosphere+temperature",
-                serde_json::json!({
-                    "subtype": { "value": ["Rocky body"] },
-                    "atmosphere": { "value": ["Water"] },
-                    "surface_temperature": { "comparison": "<=>", "value": [190.0, 195.0] }
-                }),
-            ),
-            (
-                "+pressure",
-                serde_json::json!({
-                    "subtype": { "value": ["Rocky body"] },
-                    "atmosphere": { "value": ["Water"] },
-                    "surface_temperature": { "comparison": "<=>", "value": [190.0, 195.0] },
-                    "surface_pressure": { "comparison": "<=>", "value": [0.042, 0.237] }
-                }),
-            ),
-            (
-                "+gravity (full physical query)",
-                serde_json::json!({
-                    "subtype": { "value": ["Rocky body"] },
-                    "atmosphere": { "value": ["Water"] },
-                    "surface_temperature": { "comparison": "<=>", "value": [190.0, 195.0] },
-                    "surface_pressure": { "comparison": "<=>", "value": [0.042, 0.237] },
-                    "gravity": { "comparison": "<=>", "value": [0.1, 1.0] }
-                }),
-            ),
-        ];
+        let criteria = SearchCriteria::from_cli(
+            "Rock",
+            "Water",
+            crate::domain::criteria::NumericRange {
+                min: 190.0,
+                max: 195.0,
+            },
+            crate::domain::criteria::NumericRange { min: 0.1, max: 1.0 },
+            crate::domain::criteria::NumericRange {
+                min: 0.042,
+                max: 0.237,
+            },
+            15,
+        )
+        .unwrap();
 
-        for (label, filters) in stages {
-            let mut payload = query.to_payload();
-            payload["filters"] = filters;
-            let response = client
-                .post_json("/api/bodies/search", &payload)
-                .await
-                .unwrap_or_else(|error| panic!("Drojia stage {label} failed: {error}"));
-            let page = parse_page(&response).expect("Drojia stage response must parse");
+        let results = BodySearch::new(client)
+            .search(&center, &criteria)
+            .await
+            .expect("filtered Drojia body search must succeed");
+        eprintln!(
+            "Drojia resolved as {} (ID64={}), returned {} matching bodies",
+            center.name,
+            center.id64,
+            results.len()
+        );
+        for body in &results {
             eprintln!(
-                "Drojia numeric stage {label}: count={:?}, first={:?}",
-                page.total_count,
-                page.bodies.first().map(|body| (
-                    &body.name,
-                    body.surface_temperature,
-                    body.surface_pressure,
-                    body.gravity
-                ))
+                "{} | system={} | subtype={:?} | atmosphere={:?} | temp={:?} K | pressure={:?} atm | gravity={:?} g | landable={:?}",
+                body.name,
+                body.system_name.as_deref().unwrap_or("?"),
+                body.subtype,
+                body.atmosphere,
+                body.surface_temperature,
+                body.surface_pressure,
+                body.gravity,
+                body.is_landable
             );
+            assert!(criteria.matches(body), "each result must satisfy every criterion");
         }
-        eprintln!("Drojia center resolved as {} (ID64={})", center.name, center.id64);
+        assert!(
+            !results.is_empty(),
+            "the exact Drojia query must return matching planets"
+        );
+        assert!(results.len() <= 15);
     }
 
     #[tokio::test]
