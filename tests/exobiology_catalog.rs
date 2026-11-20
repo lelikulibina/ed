@@ -51,5 +51,10 @@ fn catalog_has_no_duplicate_species_and_records_genus_constraints() {
         .iter()
         .find(|entry| entry["genus"] == "Osseus" && entry["species"] == "Discus")
         .expect("Osseus Discus");
-    assert!(osseus_discus["atmospheres"].as_array().unwrap().contains(&Value::String("Water-rich".into())));
+    assert!(
+        osseus_discus["atmospheres"]
+            .as_array()
+            .unwrap()
+            .contains(&Value::String("Water-rich".into()))
+    );
 }
