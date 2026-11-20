@@ -1238,7 +1238,11 @@ mod tests {
             .expect("Drojia center system must resolve");
         eprintln!(
             "WATER_DIAGNOSTIC center={} id64={} coords=({},{},{})",
-            center.name, center.id64, center.coordinates.x, center.coordinates.y, center.coordinates.z
+            center.name,
+            center.id64,
+            center.coordinates.x,
+            center.coordinates.y,
+            center.coordinates.z
         );
 
         let base = serde_json::json!({
@@ -1257,14 +1261,23 @@ mod tests {
         variants_payload["filters"]["atmosphere"] = serde_json::json!({
             "value": crate::domain::body::atmosphere_filter_labels("Water")
         });
-        let variants = client.post_json("/api/bodies/search", &variants_payload).await.unwrap();
+        let variants = client
+            .post_json("/api/bodies/search", &variants_payload)
+            .await
+            .unwrap();
         eprintln!(
             "WATER_DIAGNOSTIC variants labels={:?} count={:?} rows={}",
             variants_payload["filters"]["atmosphere"]["value"],
             variants.get("count"),
             parse_page(&variants).unwrap().last_page_size
         );
-        for row in variants.get("results").and_then(Value::as_array).into_iter().flatten().take(15) {
+        for row in variants
+            .get("results")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .take(15)
+        {
             let parsed = Body::from_json(row).ok();
             eprintln!(
                 "WATER_ROW raw={:?} composition={:?} parsed={:?} subtype={:?} landable={:?} mapped={:?} temp={:?} pressure={:?} gravity={:?} system={:?}",
@@ -1284,13 +1297,19 @@ mod tests {
         for label in ["Water", "Water-rich"] {
             let mut payload = base.clone();
             payload["filters"]["atmosphere"] = serde_json::json!({ "value": [label] });
-            let response = client.post_json("/api/bodies/search", &payload).await.unwrap();
+            let response = client
+                .post_json("/api/bodies/search", &payload)
+                .await
+                .unwrap();
             eprintln!(
                 "WATER_DIAGNOSTIC exact_label={} count={:?} rows={} first={:?}",
                 label,
                 response.get("count"),
                 parse_page(&response).unwrap().last_page_size,
-                response.get("results").and_then(Value::as_array).and_then(|rows| rows.first())
+                response
+                    .get("results")
+                    .and_then(Value::as_array)
+                    .and_then(|rows| rows.first())
             );
         }
 
@@ -1317,14 +1336,20 @@ mod tests {
                     "z": center.coordinates.z
                 }
             });
-            let response = client.post_json("/api/bodies/search", &payload).await.unwrap();
+            let response = client
+                .post_json("/api/bodies/search", &payload)
+                .await
+                .unwrap();
             eprintln!(
                 "WATER_DIAGNOSTIC individual_label={} count={:?}",
                 label,
                 response.get("count")
             );
             payload["filters"]["is_landable"] = serde_json::json!({ "value": true });
-            let landable = client.post_json("/api/bodies/search", &payload).await.unwrap();
+            let landable = client
+                .post_json("/api/bodies/search", &payload)
+                .await
+                .unwrap();
             eprintln!(
                 "WATER_DIAGNOSTIC individual_label={} plus_landable_count={:?}",
                 label,
@@ -1347,7 +1372,10 @@ mod tests {
                 "z": center.coordinates.z
             }
         });
-        let water_landable = client.post_json("/api/bodies/search", &water_landable_payload).await.unwrap();
+        let water_landable = client
+            .post_json("/api/bodies/search", &water_landable_payload)
+            .await
+            .unwrap();
         eprintln!(
             "WATER_DIAGNOSTIC exact_Water_plus_landable_count={:?}",
             water_landable.get("count")
