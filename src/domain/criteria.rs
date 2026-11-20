@@ -111,7 +111,7 @@ impl SearchCriteria {
         (self.planet_types.iter().any(|kind| kind == "any")
             || body.subtype.as_deref().is_some_and(|value| {
                 self.planet_types.iter().any(|kind| value.eq_ignore_ascii_case(kind))
-            })
+            }))
             && (self.atmosphere_type == "any"
                 || body
                     .atmosphere

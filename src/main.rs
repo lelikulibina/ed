@@ -6,7 +6,7 @@ mod spansh;
 
 use anyhow::{Result, anyhow};
 use clap::{error::ErrorKind, Parser};
-use std::io::{self, BufRead};
+use std::io;
 
 use application::search::SearchUseCase;
 use cli::{Args, parse_range_f32, parse_range_i32};
