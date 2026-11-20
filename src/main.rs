@@ -54,7 +54,7 @@ async fn main() -> Result<()> {
     );
 
     println!("Ищу подходящие планеты в радиусе 1000 св. л....");
-    let mut results = search.execute(&center, &criteria).await?;
+    let results = search.execute(&center, &criteria).await?;
     print_results(&results);
 
     Ok(())
