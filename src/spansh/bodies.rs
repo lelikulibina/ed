@@ -125,7 +125,7 @@ impl BodySearch {
                         // unavailable. Direct POST pagination is live-confirmed.
                         query.page = next_page;
                         self.client
-                            .post_json("/api/bodies/search", &query.to_payload())
+                            .post_json("/api/bodies/search", &query.to_payload_with_criteria(criteria))
                             .await?
                     }
                     Err(error) => return Err(error.into()),
@@ -135,7 +135,7 @@ impl BodySearch {
                 // when no search_reference is supplied.
                 query.page = next_page;
                 self.client
-                    .post_json("/api/bodies/search", &query.to_payload())
+                    .post_json("/api/bodies/search", &query.to_payload_with_criteria(criteria))
                     .await?
             };
             page = parse_page(&response)?;
@@ -812,7 +812,7 @@ mod tests {
         let mut query = BodySearchQuery::new(center.coordinates, 1.0, 1).unwrap();
 
         let response = client
-            .post_json("/api/bodies/search", &query.to_payload())
+            .post_json("/api/bodies/search", &query.to_payload_with_criteria(criteria))
             .await
             .expect("Spansh body-search POST must succeed");
         let page = parse_page(&response)
@@ -1082,7 +1082,7 @@ mod tests {
         } else {
             query.page = 1;
             let response = client
-                .post_json("/api/bodies/search", &query.to_payload())
+                .post_json("/api/bodies/search", &query.to_payload_with_criteria(criteria))
                 .await
                 .expect("page=1 body-search POST must succeed when no recall reference exists");
             let next = parse_page(&response)
@@ -1125,7 +1125,7 @@ mod tests {
             );
             let query = BodySearchQuery::new(center.coordinates, 1_000.0, 100).unwrap();
             let response = client
-                .post_json("/api/bodies/search", &query.to_payload())
+                .post_json("/api/bodies/search", &query.to_payload_with_criteria(criteria))
                 .await
                 .unwrap_or_else(|error| panic!("1000-ly search failed for {name}: {error}"));
             let page = parse_page(&response).expect("body search response must parse");
