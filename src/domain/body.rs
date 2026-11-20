@@ -10,6 +10,8 @@ pub struct Body {
     pub distance_ly: Option<f64>,
     pub is_landable: Option<bool>,
     pub is_mapped: Option<bool>,
+    /// Last known body record update from Spansh; not a First Footfall timestamp.
+    pub last_updated_at: Option<String>,
     pub surface_temperature: Option<f64>,
     pub surface_pressure: Option<f64>,
     pub gravity: Option<f64>,
@@ -19,6 +21,16 @@ pub struct Body {
     pub geological_signal_count: Option<u32>,
     pub biological_genera: Option<Vec<String>>,
     pub signals_updated_at: Option<String>,
+}
+
+#[derive(Debug, thiserror::Error, PartialEq)]
+pub enum FootfallEvidence {
+    /// The latest Spansh body update predates the Odyssey release.
+    /// This is a lead only, not proof that First Footfall is available.
+    PreOdysseyUpdate,
+    /// The body record changed after Odyssey; this does not prove a landing occurred.
+    PostOdysseyUpdate,
+    Unknown,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq)]
@@ -72,6 +84,8 @@ impl Body {
                 .or_else(|| bool_field(value, &["is_landable", "landable"])),
             is_mapped: bool_field(root, &["is_mapped", "mapped"])
                 .or_else(|| bool_field(value, &["is_mapped", "mapped"])),
+            last_updated_at: string_field(root, &["updated_at", "updateTime"])
+                .or_else(|| string_field(value, &["updated_at", "updateTime"])),
             surface_temperature: number_field(
                 root,
                 &["surface_temperature", "surfaceTemperature", "surface_temp"],
