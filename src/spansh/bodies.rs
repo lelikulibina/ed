@@ -621,13 +621,11 @@ mod tests {
 
             for page_index in [2_u32, 3, 4] {
                 let page_response = client
-                    .get_json(&format!(
-                        "/api/bodies/search/recall/{guid}/{page_index}"
-                    ))
+                    .get_json(&format!("/api/bodies/search/recall/{guid}/{page_index}"))
                     .await
                     .expect("nearby Sol planet page must be retrievable");
-                let planet_page = parse_page(&page_response)
-                    .expect("nearby Sol planet page must parse");
+                let planet_page =
+                    parse_page(&page_response).expect("nearby Sol planet page must parse");
                 eprintln!(
                     "Sol recall page {page_index}: {:?}",
                     planet_page.bodies.first().map(|body| (
