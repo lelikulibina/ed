@@ -44,3 +44,5 @@
 - POST `/api/bodies/search` with Sol coordinates `(0,0,0)`, radius 1 ly and page size 5 returned HTTP 2xx and five parseable body rows.
 - The response did not expose a GUID/search reference recognized by the current parser. This does not prove pagination is absent; the next probe checks the top-level response keys and direct POST with `page=1`.
 - Recall pagination has not yet been live-confirmed.
+
+- Live pagination probe 44662286671 (second version) used page size 1: page 0 returned Sol (ID64 `10477373803`); direct POST with `page=1` returned a different body (ID64 `36028807496337771`). This is evidence for direct POST page pagination when no search reference is present; metadata values are being inspected in the next probe.
