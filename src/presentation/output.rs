@@ -132,7 +132,7 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         format_credits(estimate.maximum_base_value_cr)
     ));
     lines.push(
-        "      First Footfall — признак высадки на планету; First Logged ×5 подтверждается только при сдаче конкретного вида в Vista Genomics.".to_owned(),
+        "      First Footfall оценён эвристически по дате обновления Spansh; First Logged ×5 отдельно не подтверждается.".to_owned(),
     );
     lines.push(format!(
         "      Сценарий First Logged ×5 (если доступен для конкретного вида): 0–{} CR",
@@ -240,7 +240,6 @@ mod tests {
 
         body.last_updated_at = None;
         assert!(footfall_evidence_summary(&body).contains("статус неизвестен"));
-
     }
 
     #[test]
