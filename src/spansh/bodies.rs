@@ -635,6 +635,52 @@ mod tests {
                 "Spansh 100-ly page 40: system={:?}, ID64={:?}, distance={:?}",
                 neighbor.system_name, neighbor.system_id64, neighbor.distance_ly
             );
+
+            let bulk_query = BodySearchQuery::new(center.coordinates, 100.0, 100).unwrap();
+            let bulk_response = client
+                .post_json("/api/bodies/search", &bulk_query.to_payload())
+                .await
+                .expect("100-ly page-size-100 POST must succeed");
+            let bulk_page = parse_page(&bulk_response)
+                .expect("100-ly page-size-100 response must parse");
+            let total_count = bulk_page
+                .total_count
+                .expect("live response must include total count");
+            assert_eq!(bulk_page.from, Some(0));
+            assert_eq!(bulk_page.last_page_size, 100);
+            assert!(
+                total_count <= 10_000,
+                "current 100-page safety limit must cover the provider result cap"
+            );
+
+            let last_index = u32::try_from((total_count - 1) / 100).unwrap();
+            let last_response = if let Some(reference) = find_guid(&bulk_response) {
+                client
+                    .get_json(&format!(
+                        "/api/bodies/search/recall/{reference}/{last_index}"
+                    ))
+                    .await
+                    .expect("100-row last recall page must succeed")
+            } else {
+                let mut last_query = bulk_query;
+                last_query.page = last_index;
+                client
+                    .post_json("/api/bodies/search", &last_query.to_payload())
+                    .await
+                    .expect("100-row last POST page must succeed")
+            };
+            let bulk_last_page = parse_page(&last_response)
+                .expect("100-row last page response must parse");
+            assert_eq!(
+                bulk_last_page.from,
+                Some(last_index as usize * 100)
+            );
+            assert!(is_last_page(&bulk_last_page, last_index, 100));
+            eprintln!(
+                "Spansh 100-row last page: total={total_count}, index={last_index}, from={:?}, rows={}",
+                bulk_last_page.from,
+                bulk_last_page.last_page_size
+            );
         } else {
             query.page = 1;
             let response = client
