@@ -49,14 +49,22 @@ fn footfall_evidence_summary(body: &Body) -> String {
     };
 
     match body.footfall_evidence() {
+        FootfallEvidence::FootfalledBeforeScan => format!(
+            "журнал Scan.WasFootfalled=true ({}) — кто-то высадился до этого сканирования",
+            body.journal_scan_timestamp.as_deref().unwrap_or("дата неизвестна")
+        ),
+        FootfallEvidence::UnfootfalledAtScan => format!(
+            "журнал Scan.WasFootfalled=false ({}) — до этого сканирования высадки не было; хороший признак для бонуса, но не гарантия First Logged",
+            body.journal_scan_timestamp.as_deref().unwrap_or("дата неизвестна")
+        ),
         FootfallEvidence::PreOdysseyUpdate => format!(
-            "прямой статус неизвестен; данные Spansh обновлялись до Odyssey ({updated_at}), возможная цель для проверки в игре, но свободная высадка не гарантирована"
+            "прямой статус неизвестен; данные Spansh обновлялись до Odyssey ({updated_at}), потенциально перспективная планета, но свободная высадка не гарантирована"
         ),
         FootfallEvidence::PostOdysseyUpdate => format!(
             "прямой статус неизвестен; данные Spansh обновлялись после выхода Odyssey ({updated_at}), возможна предыдущая активность, но это не доказывает высадку"
         ),
         FootfallEvidence::Unknown => {
-            "статус неизвестен — дата обновления Spansh имеет неизвестный формат".to_owned()
+            "статус неизвестен — Spansh не публикует прямой флаг высадки".to_owned()
         }
     }
 }
@@ -134,7 +142,7 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
         format_credits(estimate.maximum_base_value_cr)
     ));
     lines.push(
-        "      First Footfall и First Logged — разные статусы; Spansh не подтверждает доступность бонуса ×5.".to_owned(),
+        "      First Footfall — признак высадки на планету; First Logged ×5 подтверждается только при сдаче конкретного вида в Vista Genomics.".to_owned(),
     );
     lines.push(format!(
         "      Сценарий First Logged ×5 (если доступен для конкретного вида): 0–{} CR",
