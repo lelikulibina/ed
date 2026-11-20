@@ -60,16 +60,28 @@ fn draw_preset(preset: &SearchPreset) {
     println!("║                         ED: PLANET SEARCH                            ║");
     println!("╚══════════════════════════════════════════════════════════════════════╝\x1B[0m");
     println!();
-    println!("  \x1B[1;37mПРОФИЛЬ {:02}: {}\x1B[0m", preset.number, preset.name);
+    println!(
+        "  \x1B[1;37mПРОФИЛЬ {:02}: {}\x1B[0m",
+        preset.number, preset.name
+    );
     println!("  Тип поверхности : {}", preset.surface_types.join(" ИЛИ "));
     println!("  Атмосфера        : {}", preset.atmosphere);
-    println!("  Температура      : {:.0}–{:.0} K", preset.temperature.min, preset.temperature.max);
-    println!("  Давление         : {:.3}–{:.3} atm", preset.pressure.min, preset.pressure.max);
+    println!(
+        "  Температура      : {:.0}–{:.0} K",
+        preset.temperature.min, preset.temperature.max
+    );
+    println!(
+        "  Давление         : {:.3}–{:.3} atm",
+        preset.pressure.min, preset.pressure.max
+    );
     println!("  Гравитация       : 0.1–1.0 g (стандартный диапазон)");
     println!("  Вулканизм        : не фильтруется");
     println!();
-    println!("  \x1B[90mСправочно: до {} дорогих видов, потенциал {:>3} млн CR\x1B[0m",
-        preset.expensive_species, preset.potential_value_cr / 1_000_000);
+    println!(
+        "  \x1B[90mСправочно: до {} дорогих видов, потенциал {:>3} млн CR\x1B[0m",
+        preset.expensive_species,
+        preset.potential_value_cr / 1_000_000
+    );
     println!();
 }
 
@@ -82,16 +94,24 @@ fn configure_search(criteria: SearchCriteria) -> Result<TuiSelection> {
     let count = if count.trim().is_empty() {
         5
     } else {
-        count.trim().parse::<usize>().context("Количество результатов должно быть целым числом")?
+        count
+            .trim()
+            .parse::<usize>()
+            .context("Количество результатов должно быть целым числом")?
     };
     if count == 0 {
         return Err(anyhow!("Количество результатов должно быть больше нуля"));
     }
     let exclude = prompt("Исключать тела с зарегистрированными биосигналами? [н]")?;
-    let exclude = matches!(exclude.trim().to_ascii_lowercase().as_str(), "д" | "да" | "y" | "yes");
+    let exclude = matches!(
+        exclude.trim().to_ascii_lowercase().as_str(),
+        "д" | "да" | "y" | "yes"
+    );
     Ok(TuiSelection {
         system: system.trim().to_owned(),
-        criteria: criteria.with_bio_signal_exclusion(exclude).with_count(count)?,
+        criteria: criteria
+            .with_bio_signal_exclusion(exclude)
+            .with_count(count)?,
     })
 }
 
@@ -107,21 +127,52 @@ fn run_manual_setup() -> Result<TuiSelection> {
     let gravity = prompt("Гравитация g [0.1-1.0]")?;
     let pressure = prompt("Давление atm [0-10]")?;
     let count = prompt("Количество результатов [5]")?;
-    let temperature = parse_range_i32(if temperature.trim().is_empty() { "0-5000" } else { temperature.trim() })?;
-    let gravity = parse_range_f32(if gravity.trim().is_empty() { "0.1-1.0" } else { gravity.trim() })?;
-    let pressure = parse_range_f32(if pressure.trim().is_empty() { "0-10" } else { pressure.trim() })?;
-    let count = if count.trim().is_empty() { 5 } else { count.trim().parse::<usize>()? };
+    let temperature = parse_range_i32(if temperature.trim().is_empty() {
+        "0-5000"
+    } else {
+        temperature.trim()
+    })?;
+    let gravity = parse_range_f32(if gravity.trim().is_empty() {
+        "0.1-1.0"
+    } else {
+        gravity.trim()
+    })?;
+    let pressure = parse_range_f32(if pressure.trim().is_empty() {
+        "0-10"
+    } else {
+        pressure.trim()
+    })?;
+    let count = if count.trim().is_empty() {
+        5
+    } else {
+        count.trim().parse::<usize>()?
+    };
     let exclude = prompt("Исключать тела с зарегистрированными биосигналами? [н]")?;
     let exclude = matches!(exclude.trim().to_ascii_lowercase().as_str(), "д" | "да" | "y" | "yes");
     let criteria = SearchCriteria::from_cli(
-        if planet.trim().is_empty() { "any" } else { planet.trim() },
-        if atmosphere.trim().is_empty() { "any" } else { atmosphere.trim() },
-        NumericRange::new(f64::from(temperature.0), f64::from(temperature.1)).ok_or_else(|| anyhow!("Некорректная температура"))?,
-        NumericRange::new(f64::from(gravity.0), f64::from(gravity.1)).ok_or_else(|| anyhow!("Некорректная гравитация"))?,
-        NumericRange::new(f64::from(pressure.0), f64::from(pressure.1)).ok_or_else(|| anyhow!("Некорректное давление"))?,
+        if planet.trim().is_empty() {
+            "any"
+        } else {
+            planet.trim()
+        },
+        if atmosphere.trim().is_empty() {
+            "any"
+        } else {
+            atmosphere.trim()
+        },
+        NumericRange::new(f64::from(temperature.0), f64::from(temperature.1))
+            .ok_or_else(|| anyhow!("Некорректная температура"))?,
+        NumericRange::new(f64::from(gravity.0), f64::from(gravity.1))
+            .ok_or_else(|| anyhow!("Некорректная гравитация"))?,
+        NumericRange::new(f64::from(pressure.0), f64::from(pressure.1))
+            .ok_or_else(|| anyhow!("Некорректное давление"))?,
         count,
-    )?.with_bio_signal_exclusion(exclude);
-    Ok(TuiSelection { system: system.trim().to_owned(), criteria })
+    )?
+    .with_bio_signal_exclusion(exclude);
+    Ok(TuiSelection {
+        system: system.trim().to_owned(),
+        criteria,
+    })
 }
 
 fn prompt(label: &str) -> Result<String> {
@@ -138,7 +189,10 @@ fn pause() -> Result<()> {
 }
 
 fn parse_menu_choice(value: &str) -> Result<u8> {
-    value.trim().parse::<u8>().map_err(|_| anyhow!("Введите число от 1 до 9"))
+    value
+        .trim()
+        .parse::<u8>()
+        .map_err(|_| anyhow!("Введите число от 1 до 9"))
 }
 
 #[cfg(test)]
