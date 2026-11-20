@@ -175,7 +175,7 @@ fn parse_page(value: &Value) -> Result<ParsedPage, BodySearchError> {
 }
 
 fn find_guid(value: &Value) -> Option<String> {
-    ["guid", "search_guid", "search_id", "id"]
+    ["guid", "search_guid", "search_id", "search_reference", "id"]
         .iter()
         .find_map(|key| value.get(key).and_then(Value::as_str).map(str::to_owned))
         .or_else(|| {
