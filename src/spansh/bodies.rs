@@ -589,6 +589,57 @@ mod tests {
                 last_page.last_page_size,
                 is_last_page(&last_page, 39, 1)
             );
+
+            let mut wide_query =
+                BodySearchQuery::new(center.coordinates, 100.0, 1).unwrap();
+            let wide_response = client
+                .post_json("/api/bodies/search", &wide_query.to_payload())
+                .await
+                .expect("100-ly body-search POST must succeed");
+            let wide_page = parse_page(&wide_response)
+                .expect("100-ly response must match a supported page envelope");
+            let wide_count = wide_page.total_count.unwrap_or(wide_page.last_page_size);
+            eprintln!("Spansh 100-ly search: count={wide_count}");
+
+            assert!(
+                wide_count > 40,
+                "100-ly search should include bodies beyond Sol's 40-body system"
+            );
+            let neighbor_response = if let Some(reference) = find_guid(&wide_response) {
+                client
+                    .get_json(&format!(
+                        "/api/bodies/search/recall/{reference}/40"
+                    ))
+                    .await
+                    .expect("100-ly recall page 40 must succeed")
+            } else {
+                wide_query.page = 40;
+                client
+                    .post_json("/api/bodies/search", &wide_query.to_payload())
+                    .await
+                    .expect("100-ly page=40 POST must succeed")
+            };
+            let neighbor_page = parse_page(&neighbor_response)
+                .expect("100-ly page 40 must match a supported page envelope");
+            let neighbor = neighbor_page
+                .bodies
+                .first()
+                .expect("page 40 should contain a body from another system");
+            assert_ne!(
+                neighbor.system_id64.as_deref(),
+                Some(center.id64.as_str()),
+                "page 40 must move beyond the central system"
+            );
+            assert!(
+                neighbor.distance_ly.is_some_and(|distance| distance > 0.0),
+                "neighboring-system body should have positive distance from Sol"
+            );
+            eprintln!(
+                "Spansh 100-ly page 40: system={:?}, ID64={:?}, distance={:?}",
+                neighbor.system_name,
+                neighbor.system_id64,
+                neighbor.distance_ly
+            );
         } else {
             query.page = 1;
             let response = client
