@@ -163,7 +163,6 @@ mod tests {
         assert_eq!(normalize_atmosphere_type("any").unwrap(), "any");
     }
 
-
     #[test]
     fn accepts_every_legacy_planet_and_atmosphere_value() {
         for value in [
