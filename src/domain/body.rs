@@ -113,6 +113,23 @@ mod tests {
     }
 
     #[test]
+    fn parses_nested_parent_system_fields() {
+        let body = Body::from_json(&serde_json::json!({
+            "body": {
+                "name": "A 1",
+                "id64": "9007199254740993",
+                "subtype": "Rocky body",
+                "system": {"id64": "123", "name": "A"},
+                "distance": 2.5
+            }
+        })).unwrap();
+        assert_eq!(body.id64.as_deref(), Some("9007199254740993"));
+        assert_eq!(body.system_id64.as_deref(), Some("123"));
+        assert_eq!(body.system_name.as_deref(), Some("A"));
+        assert_eq!(body.distance_ly, Some(2.5));
+    }
+
+    #[test]
     fn rejects_non_object_and_missing_name() {
         assert_eq!(Body::from_json(&serde_json::json!([])), Err(BodyParseError::NotObject));
         assert_eq!(Body::from_json(&serde_json::json!({"id64":"1"})), Err(BodyParseError::MissingName));
