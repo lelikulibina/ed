@@ -246,6 +246,11 @@ mod tests {
     }
 
     #[test]
+    fn default_search_radius_is_1000_light_years() {
+        assert_eq!(DEFAULT_RADIUS_LY, 1_000.0);
+    }
+
+    #[test]
     fn identifies_center_system_by_id64_and_falls_back_to_name() {
         let center = ResolvedSystem {
             id64: "42".to_owned(),
@@ -1071,6 +1076,40 @@ mod tests {
             if let (Some(first_id), Some(next_id)) = (first_id, next_id) {
                 assert_ne!(first_id, next_id, "page=1 must advance beyond page=0");
             }
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "requires live network; two low-volume 1000-ly smoke searches"]
+    async fn live_spansh_radius_1000_named_systems() {
+        let client = SpanshClient::spansh(1).unwrap();
+        for name in ["Thraikuae NS-U e2-2", "Boeft QX-B d951"] {
+            let center = super::super::system::SystemResolver::new(client.clone())
+                .resolve(name)
+                .await
+                .unwrap_or_else(|error| panic!("cannot resolve {name}: {error}"));
+            let query = BodySearchQuery::new(center.coordinates, 1_000.0, 100).unwrap();
+            let response = client
+                .post_json("/api/bodies/search", &query.to_payload())
+                .await
+                .unwrap_or_else(|error| panic!("1000-ly search failed for {name}: {error}"));
+            let page = parse_page(&response).expect("body search response must parse");
+            let count = page.total_count.unwrap_or(page.last_page_size);
+            assert!(count > 0, "1000-ly search around {name} returned no bodies");
+            assert!(
+                page.bodies.iter().all(|body| body.distance_ly.is_none_or(|distance| distance <= 1_000.0)),
+                "API returned a body outside 1000 ly around {name}"
+            );
+            eprintln!(
+                "1000-ly smoke: center={} id64={} coords=({:.3},{:.3},{:.3}), count={}, first_page_rows={}",
+                center.name,
+                center.id64,
+                center.coordinates.x,
+                center.coordinates.y,
+                center.coordinates.z,
+                count,
+                page.last_page_size
+            );
         }
     }
 
