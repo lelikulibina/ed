@@ -143,5 +143,5 @@
 
 - Реализованы все пять задач; интерактивный режим запускается без аргументов, legacy CLI и обработка `--help`/`--version` сохранены.
 - Вулканизм проверяется по точным токенизированным значениям: `No volcanism`, `Water Magma`, `Water Geysers` с необязательным `Minor`/`Major`. Пятый профиль трактует водную магму и водные гейзеры как альтернативные допустимые классы.
-- Ручной ввод повторно запрашивает недопустимые значения; EOF на этапах меню завершает его штатно.
-- Полная проверка GitHub Actions: `cargo fmt -- --check`, `cargo clippy --all-targets --all-features -- -D warnings`, 79 unit tests passed, 4 ignored, 5 integration tests passed.
+- Ручной ввод повторно запрашивает недопустимые значения; поддерживаются все канонические типы атмосферы из CLI; EOF на этапах меню завершает его штатно.
+- Полная проверка GitHub Actions: `cargo fmt -- --check`, `cargo clippy --all-targets --all-features -- -D warnings`, 80 unit tests passed, 4 ignored, 5 integration tests passed.
