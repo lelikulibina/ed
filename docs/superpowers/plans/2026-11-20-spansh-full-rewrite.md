@@ -98,7 +98,8 @@
 - Радиус по умолчанию — 1000 св. л. (временная константа; старый CLI не имел radius-флага).
 - Spansh HTTP client: concurrency=1, минимум 1 секунда между началами запросов.
 - Live подтверждены Sol coordinates `(0,0,0)`, body search, response metadata `count/from/size`, `search_reference`, recall page 1 и direct POST page 1.
-- Формат body-фильтров подтверждён исследованием Spansh API: enum/group — `{value:[...]}`, numeric — `{comparison:"<=>",value:[min,max]}`, boolean — `{value:true}`. Live-запрос с этими критериями ещё не выполнялся.
-- Продолжение за 10 000 реализовано на уровне клиента, но требует одного аккуратного live contract probe: реальная выдача после page 99 пока не подтверждена.
+- Формат body-фильтров подтверждён исследованием Spansh API: enum/group — `{value:[...]}`, numeric — `{comparison:"<=>",value:[min,max]}`, boolean — `{value:true}`.
+- Live-проверка Drojia подтвердила, что нормализованные Water variants дают 125 landable Rocky bodies. Полный пользовательский диапазон даёт 0; вероятное расхождение теперь в числовых критериях/ожидаемых данных, а не в парсинге или фильтре атмосферы.
+- Продолжение за 10 000 реализовано на уровне клиента, но реальная выдача после page 99 пока не подтверждена.
 
 **Подробности:** `docs/architecture/spansh-redesign.md` и `docs/testing/spansh-test-plan.md`.
