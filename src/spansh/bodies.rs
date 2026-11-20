@@ -1294,6 +1294,64 @@ mod tests {
             );
         }
 
+        for label in [
+            "Thin Water",
+            "Thick Water",
+            "Hot Water",
+            "Hot thin Water",
+            "Hot thick Water",
+            "Suitable for water-based life",
+            "Thick Suitable for water-based life",
+        ] {
+            let mut payload = serde_json::json!({
+                "filters": {
+                    "distance": { "min": 0, "max": 1000 },
+                    "atmosphere": { "value": [label] }
+                },
+                "sort": [{ "distance": { "direction": "asc" } }],
+                "size": 100,
+                "page": 0,
+                "reference_coords": {
+                    "x": center.coordinates.x,
+                    "y": center.coordinates.y,
+                    "z": center.coordinates.z
+                }
+            });
+            let response = client.post_json("/api/bodies/search", &payload).await.unwrap();
+            eprintln!(
+                "WATER_DIAGNOSTIC individual_label={} count={:?}",
+                label,
+                response.get("count")
+            );
+            payload["filters"]["is_landable"] = serde_json::json!({ "value": true });
+            let landable = client.post_json("/api/bodies/search", &payload).await.unwrap();
+            eprintln!(
+                "WATER_DIAGNOSTIC individual_label={} plus_landable_count={:?}",
+                label,
+                landable.get("count")
+            );
+        }
+
+        let mut water_landable_payload = serde_json::json!({
+            "filters": {
+                "distance": { "min": 0, "max": 1000 },
+                "atmosphere": { "value": ["Water"] },
+                "is_landable": { "value": true }
+            },
+            "sort": [{ "distance": { "direction": "asc" } }],
+            "size": 100,
+            "page": 0,
+            "reference_coords": {
+                "x": center.coordinates.x,
+                "y": center.coordinates.y,
+                "z": center.coordinates.z
+            }
+        });
+        let water_landable = client.post_json("/api/bodies/search", &water_landable_payload).await.unwrap();
+        eprintln!(
+            "WATER_DIAGNOSTIC exact_Water_plus_landable_count={:?}",
+            water_landable.get("count")
+        );
         assert!(variants.get("results").and_then(Value::as_array).is_some());
     }
 
