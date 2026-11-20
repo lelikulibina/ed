@@ -32,8 +32,12 @@ pub fn print_results(bodies: &[Body]) {
                 display_number(body.surface_pressure),
                 display_number(body.gravity),
                 display_number(body.distance_ly),
-                body.biological_signal_count.map_or_else(|| "нет данных".to_owned(), |count| count.to_string()),
-                body.biological_genera.as_ref().filter(|genera| !genera.is_empty()).map_or_else(|| "нет данных".to_owned(), |genera| genera.join(", ")),
+                body.biological_signal_count
+                    .map_or_else(|| "нет данных".to_owned(), |count| count.to_string()),
+                body.biological_genera
+                    .as_ref()
+                    .filter(|genera| !genera.is_empty())
+                    .map_or_else(|| "нет данных".to_owned(), |genera| genera.join(", ")),
             );
             match exobiology_summary(body) {
                 Ok(Some(summary)) => println!("{summary}"),
