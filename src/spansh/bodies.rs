@@ -458,6 +458,34 @@ mod tests {
     #[ignore = "requires live network; low-volume Spansh contract and pagination probe"]
     async fn live_spansh_body_search_contract() {
         let client = SpanshClient::spansh(1).unwrap();
+        let system_search = client
+            .get_json("/api/search/systems?q=Sol")
+            .await
+            .expect("system search endpoint must respond");
+        let search_keys = system_search
+            .as_object()
+            .map(|object| object.keys().cloned().collect::<Vec<_>>().join(", "))
+            .unwrap_or_else(|| "non-object response".to_owned());
+        let search_preview = ["systems", "results", "values", "data"]
+            .iter()
+            .find_map(|key| {
+                system_search.get(key).and_then(Value::as_array).map(|items| {
+                    items.iter().take(3).cloned().collect::<Vec<_>>()
+                })
+            })
+            .or_else(|| {
+                system_search.as_array().map(|items| {
+                    items.iter().take(3).cloned().collect::<Vec<_>>()
+                })
+            });
+        eprintln!("Live system search: keys=[{search_keys}], preview={search_preview:?}");
+
+        let system_detail = client
+            .get_json("/api/system/10477373803")
+            .await
+            .expect("system detail endpoint must respond");
+        eprintln!("Live system detail: {system_detail}");
+
         let center = super::super::system::SystemResolver::new(client.clone())
             .resolve("Sol")
             .await
