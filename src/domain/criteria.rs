@@ -219,7 +219,10 @@ mod tests {
         let criteria = SearchCriteria::from_cli(
             "Rock",
             "Water",
-            NumericRange { min: 190.0, max: 195.0 },
+            NumericRange {
+                min: 190.0,
+                max: 195.0,
+            },
             NumericRange { min: 0.1, max: 1.0 },
             NumericRange { min: 0.0, max: 1.0 },
             5,
