@@ -626,8 +626,15 @@ mod tests {
                     .expect("nearby Sol planet page must be retrievable");
                 let planet_page =
                     parse_page(&page_response).expect("nearby Sol planet page must parse");
+                let raw_body = page_response
+                    .get("results")
+                    .and_then(Value::as_array)
+                    .and_then(|items| items.first());
+                let raw_keys = raw_body
+                    .and_then(Value::as_object)
+                    .map(|object| object.keys().cloned().collect::<Vec<_>>().join(", "));
                 eprintln!(
-                    "Sol recall page {page_index}: {:?}",
+                    "Sol recall page {page_index}: parsed={:?}, raw_keys={raw_keys:?}, atmosphere={:?}, atmosphere_type={:?}",
                     planet_page.bodies.first().map(|body| (
                         &body.name,
                         &body.subtype,
@@ -637,7 +644,9 @@ mod tests {
                         body.surface_pressure,
                         body.gravity,
                         &body.atmosphere
-                    ))
+                    )),
+                    raw_body.and_then(|body| body.get("atmosphere")),
+                    raw_body.and_then(|body| body.get("atmosphere_type"))
                 );
             }
 
