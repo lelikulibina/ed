@@ -634,7 +634,7 @@ mod tests {
                     .and_then(Value::as_object)
                     .map(|object| object.keys().cloned().collect::<Vec<_>>().join(", "));
                 eprintln!(
-                    "Sol recall page {page_index}: parsed={:?}, raw_keys={raw_keys:?}, atmosphere={:?}, atmosphere_type={:?}",
+                    "Sol recall page {page_index}: parsed={:?}, raw_keys={raw_keys:?}, atmosphere={:?}, atmosphere_composition={:?}, atmosphere_type={:?}",
                     planet_page.bodies.first().map(|body| (
                         &body.name,
                         &body.subtype,
@@ -646,6 +646,7 @@ mod tests {
                         &body.atmosphere
                     )),
                     raw_body.and_then(|body| body.get("atmosphere")),
+                    raw_body.and_then(|body| body.get("atmosphere_composition")),
                     raw_body.and_then(|body| body.get("atmosphere_type"))
                 );
             }
