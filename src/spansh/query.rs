@@ -52,7 +52,10 @@ impl BodySearchQuery {
 
     /// Формирует запрос с серверными фильтрами Spansh. Локальная проверка
     /// остаётся в BodySearch как защита от расхождений API и нормализации.
-    pub fn to_payload_with_criteria(&self, criteria: &crate::domain::criteria::SearchCriteria) -> Value {
+    pub fn to_payload_with_criteria(
+        &self,
+        criteria: &crate::domain::criteria::SearchCriteria,
+    ) -> Value {
         let mut payload = self.to_payload();
         let filters = payload["filters"]
             .as_object_mut()
