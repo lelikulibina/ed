@@ -116,7 +116,7 @@ mod tests {
 
     fn criteria() -> SearchCriteria {
         SearchCriteria::from_cli(
-            "Earth-like world",
+            "Rocky body",
             "Nitrogen",
             NumericRange { min: 200.0, max: 300.0 },
             NumericRange { min: 0.5, max: 1.5 },
@@ -148,7 +148,7 @@ mod tests {
         let body = Body {
             id64: Some("1".to_owned()), name: "Sol 3".to_owned(),
             system_id64: Some("2".to_owned()), system_name: Some("Sol".to_owned()),
-            subtype: Some("Earth-like world".to_owned()), distance_ly: Some(1.0),
+            subtype: Some("Rocky body".to_owned()), distance_ly: Some(1.0),
             is_landable: Some(true), is_mapped: Some(false),
             surface_temperature: Some(250.0), surface_pressure: Some(1.0),
             gravity: Some(1.0), atmosphere: Some("Nitrogen".to_owned()),
