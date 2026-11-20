@@ -301,6 +301,7 @@ mod tests {
             distance_ly: Some(0.0),
             is_landable: Some(true),
             is_mapped: None,
+            last_updated_at: None,
             surface_temperature: None,
             surface_pressure: None,
             gravity: None,
