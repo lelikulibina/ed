@@ -65,8 +65,9 @@ CLI / Args
 
 ### Подтверждено live smoke-тестами
 
-- `GET /api/systems/field_values/system_names?q=Sol` возвращает объект с `count`, `query`, `results`; элемент результата содержит `id64`, `name`, плоские `x/y/z`.
-- `GET /api/system/{id64}` возвращает данные системы внутри `record`; внутри есть `id64`, `name`, `x/y/z`.
+- Ранее проверенный `GET /api/search/systems?q=...` возвращал список кандидатов, но мог не содержать точного совпадения и возвращать близкие по имени системы.
+- Resolver переведён на `GET /api/systems/field_values/system_names?q=...`, чтобы использовать индекс автодополнения. Фактическая форма ответа этого endpoint и наличие в нём ID64/координат пока требуют отдельного подтверждения; повторный live-запрос намеренно не выполняется без необходимости.
+- `GET /api/system/{id64}` возвращает данные системы внутри `record`; внутри есть `id64`, `name`, `x/y/z` (подтверждено на предыдущем resolver endpoint).
 - `POST /api/bodies/search` принимает payload с `filters.distance`, `sort`, `size`, `page`, `reference_coords`.
 - Ответ body search содержит `count`, `from`, `results`, `search`, `search_reference`, `size`.
 - `search_reference` — UUID; `GET /api/bodies/search/recall/{reference}/1` вернул следующую страницу. Для выдачи `count=40` запрос страницы 39 вернул `from=39` и одну строку; условие `from + rows >= count` корректно распознало последнюю страницу.
