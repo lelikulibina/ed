@@ -387,11 +387,15 @@ mod tests {
         let criteria = SearchCriteria::from_types(
             &["any", "Rocky body"],
             "Nitrogen",
-            NumericRange { min: 200.0, max: 300.0 },
+            NumericRange {
+                min: 200.0,
+                max: 300.0,
+            },
             NumericRange { min: 0.5, max: 1.5 },
             NumericRange { min: 0.0, max: 2.0 },
             5,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(criteria.planet_types, vec!["any"]);
     }
 
