@@ -87,9 +87,10 @@ impl BodySearch {
                     continue;
                 }
 
-                if body
-                    .distance_ly
-                    .is_some_and(|distance| (0.0..=self.radius_ly).contains(&distance))
+                if !is_center_system(&body, center)
+                    && body
+                        .distance_ly
+                        .is_some_and(|distance| (0.0..=self.radius_ly).contains(&distance))
                     && criteria.matches(&body)
                 {
                     results.push(body);
@@ -139,6 +140,16 @@ struct ParsedPage {
     last_page_size: usize,
     total_count: Option<usize>,
     from: Option<usize>,
+}
+
+fn is_center_system(body: &Body, center: &ResolvedSystem) -> bool {
+    match body.system_id64.as_deref().filter(|id64| !id64.is_empty()) {
+        Some(id64) => id64 == center.id64,
+        None => body
+            .system_name
+            .as_deref()
+            .is_some_and(|name| name.trim().eq_ignore_ascii_case(center.name.trim())),
+    }
 }
 
 fn is_last_page(page: &ParsedPage, page_index: u32, page_size: u16) -> bool {
