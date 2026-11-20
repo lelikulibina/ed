@@ -385,14 +385,19 @@ mod tests {
                         break;
                     }
                     bytes.extend_from_slice(&chunk[..read]);
-                    if let Some(header_end) = bytes.windows(4).position(|window| window == b"\r\n\r\n") {
+                    if let Some(header_end) =
+                        bytes.windows(4).position(|window| window == b"\r\n\r\n")
+                    {
                         let headers = String::from_utf8_lossy(&bytes[..header_end]);
-                        let content_length = headers.lines().find_map(|line| {
-                            let (key, value) = line.split_once(':')?;
-                            key.eq_ignore_ascii_case("content-length")
-                                .then(|| value.trim().parse::<usize>().ok())
-                                .flatten()
-                        }).unwrap_or(0);
+                        let content_length = headers
+                            .lines()
+                            .find_map(|line| {
+                                let (key, value) = line.split_once(':')?;
+                                key.eq_ignore_ascii_case("content-length")
+                                    .then(|| value.trim().parse::<usize>().ok())
+                                    .flatten()
+                            })
+                            .unwrap_or(0);
                         if bytes.len() >= header_end + 4 + content_length {
                             break;
                         }
@@ -413,16 +418,24 @@ mod tests {
         let center = ResolvedSystem {
             id64: "42".to_owned(),
             name: "Sol".to_owned(),
-            coordinates: super::super::query::Coordinates { x: 1.0, y: 2.0, z: 3.0 },
+            coordinates: super::super::query::Coordinates {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0,
+            },
         };
         let criteria = SearchCriteria::from_cli(
             "rocky body",
             "nitrogen",
-            crate::domain::criteria::NumericRange { min: 200.0, max: 300.0 },
+            crate::domain::criteria::NumericRange {
+                min: 200.0,
+                max: 300.0,
+            },
             crate::domain::criteria::NumericRange { min: 0.5, max: 1.5 },
             crate::domain::criteria::NumericRange { min: 0.0, max: 2.0 },
             1,
-        ).unwrap();
+        )
+        .unwrap();
 
         let results = BodySearch::new(client)
             .with_limits(100.0, 1, 3)
