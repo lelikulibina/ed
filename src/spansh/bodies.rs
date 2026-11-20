@@ -472,8 +472,7 @@ mod tests {
             center.coordinates.z
         );
 
-        let mut query =
-            BodySearchQuery::new(center.coordinates, 1.0, 1).unwrap();
+        let mut query = BodySearchQuery::new(center.coordinates, 1.0, 1).unwrap();
 
         let response = client
             .post_json("/api/bodies/search", &query.to_payload())
