@@ -234,6 +234,24 @@ mod tests {
     }
 
     #[test]
+    fn detail_parser_accepts_spansh_record_envelope() {
+        let detail = serde_json::json!({
+            "record": {
+                "name": "Sol",
+                "id64": "42",
+                "x": 1.0,
+                "y": 2.0,
+                "z": 3.0
+            }
+        });
+
+        let system = system_from_detail(&detail, "0".to_owned(), None).unwrap();
+        assert_eq!(system.name, "Sol");
+        assert_eq!(system.id64, "42");
+        assert_eq!(system.coordinates, Coordinates { x: 1.0, y: 2.0, z: 3.0 });
+    }
+
+    #[test]
     fn detail_parser_accepts_nested_coords() {
         let detail = serde_json::json!({
             "system": {
