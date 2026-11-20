@@ -80,11 +80,11 @@ pub(crate) struct Args {
     pub(crate) count: usize,
 
     #[arg(
-        long = "exclude-biological",
+        long = "exclude-with-bio-signals",
         default_value_t = false,
-        help = "Исключать планеты, для которых Spansh сообщает биологические сигналы или обнаруженные роды"
+        help = "Исключать планеты, у которых Spansh зарегистрировал хотя бы один биологический сигнал или указал биологические группы"
     )]
-    pub(crate) exclude_biological: bool,
+    pub(crate) exclude_with_bio_signals: bool,
 }
 
 pub(crate) fn parse_range_f32(s: &str) -> Result<(f32, f32)> {
@@ -129,11 +129,11 @@ mod tests {
         assert_eq!(args.gravity, "0.1-1.0");
         assert_eq!(args.pressure, "0.0-10.0");
         assert_eq!(args.count, 5);
-        assert!(!args.exclude_biological);
+        assert!(!args.exclude_with_bio_signals);
     }
 
     #[test]
-    fn parses_exclude_biological_flag() {
+    fn parses_exclude_with_bio_signals_flag() {
         let args = Args::try_parse_from([
             "ed_planet_search",
             "-S",
@@ -142,10 +142,10 @@ mod tests {
             "any",
             "-A",
             "any",
-            "--exclude-biological",
+            "--exclude-with-bio-signals",
         ])
         .unwrap();
-        assert!(args.exclude_biological);
+        assert!(args.exclude_with_bio_signals);
     }
 
     #[test]
