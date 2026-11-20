@@ -12,9 +12,6 @@ pub struct Body {
     pub is_mapped: Option<bool>,
     /// Last known body record update from Spansh; not a First Footfall timestamp.
     pub last_updated_at: Option<String>,
-    /// Direct Scan.WasFootfalled value from the commander's local journal, when available.
-    pub journal_was_footfalled: Option<bool>,
-    pub journal_scan_timestamp: Option<String>,
     pub surface_temperature: Option<f64>,
     pub surface_pressure: Option<f64>,
     pub gravity: Option<f64>,
@@ -28,15 +25,10 @@ pub struct Body {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FootfallEvidence {
-    /// The journal scan reported that someone had landed before that scan.
-    FootfalledBeforeScan,
-    /// The journal scan reported that nobody had landed before that scan.
-    UnfootfalledAtScan,
-    /// The latest Spansh body update predates the Odyssey release.
-    /// This is a lead only, not proof that First Footfall is available.
-    PreOdysseyUpdate,
-    /// The body record changed after Odyssey; this does not prove a landing occurred.
-    PostOdysseyUpdate,
+    /// The latest Spansh update is before 2022; treat the body as not yet footfalled.
+    Pre2022Update,
+    /// The latest Spansh update is in 2022 or later; a landing may have happened.
+    Since2022Update,
     Unknown,
 }
 
@@ -49,15 +41,9 @@ pub enum BodyParseError {
 }
 
 impl Body {
-    /// Spansh does not expose a First Footfall flag. A pre-Odyssey body update
-    /// is a useful discovery lead, while a later update is only evidence of
-    /// post-launch activity and must not be treated as proof of a landing.
+    /// Spansh does not expose a direct First Footfall flag. Per the search heuristic,
+    /// a body whose last update predates 2022 is treated as not yet footfalled.
     pub fn footfall_evidence(&self) -> FootfallEvidence {
-        match self.journal_was_footfalled {
-            Some(true) => return FootfallEvidence::FootfalledBeforeScan,
-            Some(false) => return FootfallEvidence::UnfootfalledAtScan,
-            None => {}
-        }
         let Some(timestamp) = self.last_updated_at.as_deref() else {
             return FootfallEvidence::Unknown;
         };
@@ -74,10 +60,10 @@ impl Body {
         {
             return FootfallEvidence::Unknown;
         }
-        if date < "2021-05-19" {
-            FootfallEvidence::PreOdysseyUpdate
+        if date < "2022-01-01" {
+            FootfallEvidence::Pre2022Update
         } else {
-            FootfallEvidence::PostOdysseyUpdate
+            FootfallEvidence::Since2022Update
         }
     }
 
@@ -125,8 +111,6 @@ impl Body {
                 .or_else(|| bool_field(value, &["is_mapped", "mapped"])),
             last_updated_at: string_field(root, &["updated_at", "updateTime"])
                 .or_else(|| string_field(value, &["updated_at", "updateTime"])),
-            journal_was_footfalled: None,
-            journal_scan_timestamp: None,
             surface_temperature: number_field(
                 root,
                 &["surface_temperature", "surfaceTemperature", "surface_temp"],
@@ -426,18 +410,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn classifies_spansh_update_age_without_claiming_actual_footfall_status() {
+    fn treats_pre_2022_updates_as_not_footfalled() {
         let mut body = Body::from_json(&serde_json::json!({
             "name": "Old body",
-            "updated_at": "2021-05-18T23:59:59Z"
+            "updated_at": "2021-12-31T23:59:59Z"
         }))
         .unwrap();
-        assert_eq!(body.footfall_evidence(), FootfallEvidence::PreOdysseyUpdate);
+        assert_eq!(body.footfall_evidence(), FootfallEvidence::Pre2022Update);
 
         body.last_updated_at = Some("2026-11-20T10:00:00Z".to_owned());
         assert_eq!(
             body.footfall_evidence(),
-            FootfallEvidence::PostOdysseyUpdate
+            FootfallEvidence::Since2022Update
         );
 
         body.last_updated_at = None;
@@ -445,16 +429,6 @@ mod tests {
         body.last_updated_at = Some("not-a-date".to_owned());
         assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
 
-        body.journal_was_footfalled = Some(true);
-        assert_eq!(
-            body.footfall_evidence(),
-            FootfallEvidence::FootfalledBeforeScan
-        );
-        body.journal_was_footfalled = Some(false);
-        assert_eq!(
-            body.footfall_evidence(),
-            FootfallEvidence::UnfootfalledAtScan
-        );
     }
 
     #[test]
