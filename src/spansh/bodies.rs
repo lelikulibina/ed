@@ -1171,7 +1171,10 @@ mod tests {
                 body.surface_pressure,
                 body.gravity
             );
-            assert!(criteria.matches(body), "each result must satisfy every criterion");
+            assert!(
+                criteria.matches(body),
+                "each result must satisfy every criterion"
+            );
         }
         assert!(
             results.len() <= 15,
