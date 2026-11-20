@@ -1,9 +1,6 @@
 use crate::parser::core::ParserCore;
 use anyhow::Result;
 use scraper::Selector;
-use anyhow::Result;
-use scraper::Selector;
-use crate::parser::core::ParserCore;
 
 #[derive(Debug, Clone)]
 pub struct PlanetInfo {
