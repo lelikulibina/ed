@@ -365,8 +365,8 @@ mod tests {
                 .get_json(&format!("/api/bodies/search/recall/{guid}/1"))
                 .await
                 .expect("recall page request must succeed");
-            let next = parse_page(&recall)
-                .expect("recall response must match a supported page envelope");
+            let next =
+                parse_page(&recall).expect("recall response must match a supported page envelope");
             eprintln!("Spansh recall page: {} rows", next.bodies.len());
         } else {
             query.page = 1;
