@@ -17,17 +17,20 @@
 ## Task status
 
 - Task 1: implementation present; CLI compatibility and domain tests added; not complete until CI test suite is green.
-- Task 2: resolver and fallback mock-server test present; not complete until CI test suite is green.
+- Task 2: resolver, exact-match selection, right-component fallback and mock-server tests present; CI RED→GREEN observed for exact-match regression.
 - Task 3: Body DTO, nested parent-system parsing, nullable fields and criteria evaluator present; not complete until CI test suite is green.
-- Task 4: body search, radius check, recall pagination, deduplication, fixtures and mock-server test present; not complete until CI test suite is green.
+- Task 4: body search, radius check, recall pagination, deduplication, synthetic fixtures and mock-server test present; CI suite passed before the latest request-throttling change.
 - Task 5: application use case, CLI wiring and grouped output present; not complete until CI test suite is green.
 - Task 6: legacy parser deleted and unused dependencies removed; static reference audit still required.
-- Task 7: pending.
+- Task 7: final locked CI and read-only review pending.
 
 ## Verification log
 
-- CI run 44660914953 (commit `ca406acb107db79e244934513d022d2135f10eaf`): failed at Format. Root cause from logs: malformed Rust string escaping in a test assertion.
-- Test assertion was rewritten to parse the serialized request body as JSON.
-- CI run 44660983695 (commit `ea541e746cca4e0b924da682c39b09d9d610a2b5`): failed at Format only; rustfmt diff identified formatting changes across application, CLI, domain, Spansh query/resolver and body-search modules. Clippy and tests were skipped.
-- A temporary CI artifact step now captures rustfmt-normalized `src/` so the exact formatted files can be copied back to the branch; remove this diagnostic step after formatting is committed.
-- TDD RED→GREEN has not yet been demonstrated for the current feature tests. Do not claim tests pass until the latest full CI run provides that evidence.
+- CI run 44660914953 (commit `ca406acb107db79e244934513d022d2135f10eaf`): failed at Format. Root cause: malformed Rust string escaping in a test assertion; rewritten to parse request JSON.
+- CI run 44661179563 (commit `d014441ede84ff642cac7580d0ce7397821fb2c3`): Format and Clippy passed; test failed because the mock HTTP server used double-escaped CRLF and closed before returning a valid response. Corrected the HTTP framing literals.
+- CI run 44661355250 (commit `2da7435975a0c3c7e8249f8e02f0a4a2592518d1`): 21 tests passed; exact-name regression failed as expected (`Sol Alpha` selected ahead of `Sol`). This was the RED proof for exact-match selection.
+- Added `exact_candidate` to prefer a case-insensitive exact name before fallback; the corrected mock test also asserts the selected ID64 is used for the detail endpoint.
+- CI run 44661515323 (commit `907c49e8840b6ace4aa752fdec354c2ae1951995`): Format, Clippy and all tests passed, including the exact-name regression and paginated body-search mock server.
+- CI run 44661608960 (commit `618cb9c0c15e3fc3ffb7d5062e0640051da009de`): Format, Clippy and all tests passed; generated Cargo.lock was committed as `af5da70e7179bfe1b961956196445b2369ef1951`.
+- Temporary CI formatting/artifact/auto-commit steps have been removed; CI now checks the committed lockfile with `--locked`.
+- Added a one-request-per-second interval to the Spansh HTTP client; final CI after this change is pending.
