@@ -68,3 +68,6 @@
 - На основании live `is_mapped=null` критерий изменён: исключается только `Some(true)`; null трактуется как false по legacy default. Добавлен тест; CI run `44663617171` прошёл.
 - CI run `44663793602`: Format, Clippy и все тесты прошли после последней правки live smoke logging.
 - Live smoke workflow ограничен 10 минутами и теперь явно gated: запускается по workflow_dispatch или commit marker `[spansh-live-smoke]`; обычные commits пропускают live job.
+
+- Full live smoke run `44663487447` прошёл: system resolver получил Sol из live search result; body POST и recall page 1 успешно обработаны; Mercury поля распарсены. `is_mapped=null` теперь соответствует legacy default false.
+- Добавлен дополнительный live check прямого чтения recall page 39 для выдачи с `count=40`, чтобы подтвердить последнюю страницу и окончание по `from+rows>=count`.
