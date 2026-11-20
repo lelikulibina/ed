@@ -32,13 +32,6 @@ pub fn run_menu<R: BufRead, W: Write>(reader: &mut R, writer: &mut W) -> io::Res
             Ok(n @ 1..=7) => {
                 let profile = &SEARCH_PROFILES[n - 1];
                 display_profile(writer, profile)?;
-                if !profile.volcanism.is_supported() {
-                    writeln!(
-                        writer,
-                        "ВНИМАНИЕ: формат volcanism_type в доступных данных не подтверждает условие «водная магма и гейзеры». Этот профиль пока нельзя выполнить корректно; поиск не запущен."
-                    )?;
-                    continue;
-                }
                 let Some(system) = prompt_nonempty(reader, writer, "Центральная система: ")?
                 else {
                     return Ok(MenuAction::Exit);
@@ -335,17 +328,15 @@ mod tests {
     }
 
     #[test]
-    fn profile_five_is_not_executed_without_verified_volcanism_contract() {
-        let mut input = Cursor::new(b"5\n9\n".to_vec());
+    fn profile_five_accepts_verified_water_magma_and_geyser_values() {
+        let mut input = Cursor::new(b"5\\nSol\\n\\n".to_vec());
         let mut output = Vec::new();
-        assert!(matches!(
-            run_menu(&mut input, &mut output).unwrap(),
-            MenuAction::Exit
-        ));
-        assert!(
-            String::from_utf8(output)
-                .unwrap()
-                .contains("не подтверждает условие")
-        );
-    }
-}
+        match run_menu(&mut input, &mut output).unwrap() {
+            MenuAction::Search { criteria, system } => {
+                assert_eq!(system, "Sol");
+                assert_eq!(criteria.count, 5);
+                assert_eq!(criteria.volcanism, crate::domain::criteria::VolcanismFilter::WaterMagmaAndGeysers);
+            }
+            MenuAction::Exit => panic!("expected profile search"),
+        }
+    }}

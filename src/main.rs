@@ -68,12 +68,6 @@ fn criteria_from_args(args: &Args) -> Result<SearchCriteria> {
 }
 
 async fn run_search(system: &str, criteria: &SearchCriteria) -> Result<()> {
-    if !criteria.volcanism.is_supported() {
-        return Err(anyhow!(
-            "Условие вулканизма «{}» пока нельзя надёжно проверить по данным Spansh; поиск не запущен.",
-            criteria.volcanism.description()
-        ));
-    }
     let client = SpanshClient::spansh(1)?;
     let search = SearchUseCase::new(client);
     println!("Разрешаю центральную систему «{}»...", system);

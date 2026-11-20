@@ -31,10 +31,6 @@ impl VolcanismFilter {
             Self::WaterMagmaAndGeysers => "водная магма и гейзеры",
         }
     }
-
-    pub fn is_supported(self) -> bool {
-        !matches!(self, Self::WaterMagmaAndGeysers)
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -147,8 +143,20 @@ fn volcanism_matches(filter: VolcanismFilter, value: Option<&str>) -> bool {
         VolcanismFilter::None => {
             value.is_some_and(|v| v.trim().eq_ignore_ascii_case("No volcanism"))
         }
-        // No verified fixture/API contract proves both properties; fail closed.
-        VolcanismFilter::WaterMagmaAndGeysers => false,
+        // Elite Dangerous uses Water Magma and Water Geysers as separate
+        // volcanism classes, each optionally prefixed with Minor or Major.
+        // The profile accepts either water-based class.
+        VolcanismFilter::WaterMagmaAndGeysers => value.is_some_and(|value| {
+            matches!(
+                value.trim().to_ascii_lowercase().split_whitespace().collect::<Vec<_>>().as_slice(),
+                ["water", "magma"]
+                    | ["minor", "water", "magma"]
+                    | ["major", "water", "magma"]
+                    | ["water", "geysers"]
+                    | ["minor", "water", "geysers"]
+                    | ["major", "water", "geysers"]
+            )
+        }),
     }
 }
 
