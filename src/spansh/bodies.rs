@@ -88,7 +88,7 @@ impl BodySearch {
 
                 if body
                     .distance_ly
-                    .is_some_and(|distance| distance <= self.radius_ly)
+                    .is_some_and(|distance| (0.0..=self.radius_ly).contains(&distance))
                     && criteria.matches(&body)
                 {
                     results.push(body);
