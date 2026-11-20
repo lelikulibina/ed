@@ -117,7 +117,7 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
     let mut unknown_conditions = Vec::new();
 
     if !match_string_constraint(
-        entry["planet_types"].as_array(),
+        entry["planet_types"].as_array().map(Vec::as_slice),
         body.subtype.as_deref(),
         "тип планеты",
         &mut unknown_conditions,
@@ -126,7 +126,7 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
     }
 
     if !match_string_constraint(
-        entry["atmospheres"].as_array(),
+        entry["atmospheres"].as_array().map(Vec::as_slice),
         body.atmosphere.as_deref(),
         "атмосфера",
         &mut unknown_conditions,
@@ -195,7 +195,7 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
 }
 
 fn match_string_constraint(
-    allowed: Option<&Vec<Value>>,
+    allowed: Option<&[Value]>,
     actual: Option<&str>,
     missing_label: &str,
     unknown_conditions: &mut Vec<String>,
