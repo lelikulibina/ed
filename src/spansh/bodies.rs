@@ -556,7 +556,7 @@ mod tests {
             let next =
                 parse_page(&recall).expect("recall response must match a supported page envelope");
             eprintln!(
-                "Spansh recall page: {} rows, first body={:?}",
+                "Spansh recall page 1: {} rows, first body={:?}",
                 next.bodies.len(),
                 next.bodies.first().map(|body| (
                     &body.name,
@@ -572,6 +572,22 @@ mod tests {
                     body.gravity,
                     &body.atmosphere
                 ))
+            );
+
+            let last_response = client
+                .get_json(&format!("/api/bodies/search/recall/{guid}/39"))
+                .await
+                .expect("last recall page request must succeed");
+            let last_page = parse_page(&last_response)
+                .expect("last recall page must match a supported page envelope");
+            assert_eq!(last_page.from, Some(39));
+            assert!(is_last_page(&last_page, 39, 1));
+            eprintln!(
+                "Spansh recall page 39: count={:?}, from={:?}, rows={}, exhausted={}",
+                last_page.total_count,
+                last_page.from,
+                last_page.last_page_size,
+                is_last_page(&last_page, 39, 1)
             );
         } else {
             query.page = 1;
