@@ -134,7 +134,7 @@ mod tests {
         assert_eq!(results[0].system_name.as_deref(), Some("Nearby System"));
 
         let requests = server.await.unwrap();
-        assert!(requests[0].starts_with("GET /api/search/systems?q=Sol "));
+        assert!(requests[0].starts_with("GET /api/systems/field_values/system_names?q=Sol "));
         assert!(requests[1].starts_with("GET /api/system/42 "));
         assert!(requests[2].starts_with("POST /api/bodies/search "));
     }
