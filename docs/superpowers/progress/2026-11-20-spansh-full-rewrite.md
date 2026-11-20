@@ -111,3 +111,7 @@
 
 - Live run `44665588127` прошёл end-to-end filter assertion: на 100-ly выдаче найден landable Rocky body `2045 PC2` в Alpha Centauri (4.37712 ly), temperature 85.062 K, pressure 0, gravity 0.0868 g, atmosphere No atmosphere; body прошёл широкие локальные критерии и центральная Sol была исключена.
 - CI run `44665588162`: Format, Clippy и Tests passed after atmosphere composition normalization and live assertion changes.
+
+- Дополнительный review resolver выявил edge case: при prefix fallback первым мог прийти autocomplete/name-only элемент без ID64, из-за чего поиск завершался InvalidResponse, не рассматривая следующие кандидаты. Resolver теперь пропускает записи без ID64; добавлены unit tests для exact и fallback candidate selection.
+- Добавлен mock test на исчерпание четырёх попыток при постоянном HTTP 503; ожидается явная SpanshError::Status, а не пустой результат.
+- CI run `44666537004` обнаружил только rustfmt diff; исправлено. CI для последнего SHA `b897773d260240dba0fb5364835880afbbeef44e` выполняется.
