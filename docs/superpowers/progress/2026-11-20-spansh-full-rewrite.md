@@ -184,3 +184,4 @@
 - Полный запрос пользователя после расширения вариантов всё ещё возвращает 0. Проверка точных числовых диапазонов также не нашла результатов. Это не дефект пагинации: по текущим данным Spansh в радиусе есть 125 landable Rocky/Water-кандидатов, но они не проходят заданные температуру/гравитацию. Диапазоны автоматически не ослаблять.
 - CI run `44674991217` на SHA `dd5c084bc12fb7de3ae2cf319c078412a971e3c3`: Format PASS, Clippy PASS, Tests PASS — 46 passed, 0 failed, 3 ignored.
 - Live diagnostic run `44674659064` на SHA `d1719e427ff12efc63ce599553b020500f1fcb72` успешно получил 125 записей; workflow намеренно проверяет один целевой Drojia probe, а не запускает прежние два общих smoke-поиска.
+- Final CI after code/comment review: run `44675109989` on SHA `3c7459ab4572fa24afa2beb5e54b485faf544085` — Format PASS, Clippy PASS, Tests PASS (46 passed, 0 failed, 3 ignored).
