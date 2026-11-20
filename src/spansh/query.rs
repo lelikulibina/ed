@@ -227,18 +227,31 @@ mod tests {
         use crate::domain::criteria::NumericRange;
 
         let query = BodySearchQuery::new(
-            Coordinates { x: 1.0, y: 2.0, z: 3.0 },
+            Coordinates {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0,
+            },
             1_000.0,
             100,
-        ).unwrap();
-        let criteria = crate::application::presets::PRESETS[2].criteria(5, false).unwrap();
+        )
+        .unwrap();
+        let criteria = crate::application::presets::PRESETS[2]
+            .criteria(5, false)
+            .unwrap();
         let payload = query.to_payload_with_criteria(&criteria);
 
         assert_eq!(
             payload["filters"]["subtype"]["value"],
             serde_json::json!(["Rocky body", "High metal content world"])
         );
-        assert_eq!(criteria.temperature, NumericRange { min: 395.0, max: 450.0 });
+        assert_eq!(
+            criteria.temperature,
+            NumericRange {
+                min: 395.0,
+                max: 450.0
+            }
+        );
     }
 
     #[test]
