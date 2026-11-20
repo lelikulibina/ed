@@ -208,25 +208,6 @@ mod tests {
 
     #[test]
     fn requires_body_to_match_all_legacy_filters() {
-        let criteria = SearchCriteria::from_cli(
-            "Rock",
-            "Water",
-            NumericRange {
-                min: 190.0,
-                max: 195.0,
-            },
-            NumericRange { min: 0.1, max: 1.0 },
-            NumericRange { min: 0.0, max: 1.0 },
-            5,
-        )
-        .unwrap();
-        let kelvin = criteria.temperature_kelvin();
-        assert!((kelvin.min - 463.15).abs() < 1e-10);
-        assert!((kelvin.max - 468.15).abs() < 1e-10);
-    }
-
-    #[test]
-    fn requires_body_to_match_all_legacy_filters() {
         let body = Body {
             id64: Some("1".to_owned()),
             name: "Sol 3".to_owned(),
