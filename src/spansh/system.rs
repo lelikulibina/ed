@@ -207,6 +207,54 @@ mod tests {
         assert_eq!(system.coordinates, Coordinates { x: 1.0, y: 2.0, z: 3.0 });
     }
 
+    #[tokio::test]
+    async fn resolver_drops_trailing_components_and_loads_system_details() {
+        use tokio::{
+            io::{AsyncReadExt, AsyncWriteExt},
+            net::TcpListener,
+        };
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let responses = [
+            r#"{"results":[]}"#,
+            r#"{"results":[{"name":"Col 285 Sector BQ-Y","id64":"9223372036854775807"}]}"#,
+            r#"{"name":"Col 285 Sector BQ-Y","id64":"9223372036854775807","coords":{"x":10.0,"y":20.0,"z":30.0}}"#,
+        ];
+        let server = tokio::spawn(async move {
+            let mut requests = Vec::new();
+            for body in responses {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                let mut request = [0_u8; 4096];
+                let size = socket.read(&mut request).await.unwrap();
+                requests.push(String::from_utf8_lossy(&request[..size]).to_string());
+                let response = format!(
+                    "HTTP/1.1 200 OK\\r\\ncontent-type: application/json\\r\\ncontent-length: {}\\r\\nconnection: close\\r\\n\\r\\n{}",
+                    body.len(),
+                    body
+                );
+                socket.write_all(response.as_bytes()).await.unwrap();
+            }
+            requests
+        });
+
+        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let resolver = SystemResolver::new(client);
+        let system = resolver
+            .resolve("Col 285 Sector BQ-Y d40")
+            .await
+            .unwrap();
+
+        assert_eq!(system.name, "Col 285 Sector BQ-Y");
+        assert_eq!(system.id64, "9223372036854775807");
+        assert_eq!(system.coordinates, Coordinates { x: 10.0, y: 20.0, z: 30.0 });
+
+        let requests = server.await.unwrap();
+        assert!(requests[0].starts_with("GET /api/search/systems?q=Col%20285%20Sector%20BQ-Y%20d40 "));
+        assert!(requests[1].starts_with("GET /api/search/systems?q=Col%20285%20Sector%20BQ-Y "));
+        assert!(requests[2].starts_with("GET /api/system/9223372036854775807 "));
+    }
+
     #[test]
     fn query_component_is_percent_encoded() {
         assert_eq!(encode_query_component("Col 285 Sector BQ-Y d40"), "Col%20285%20Sector%20BQ-Y%20d40");
