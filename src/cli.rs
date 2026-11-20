@@ -51,7 +51,7 @@ pub(crate) struct Args {
         short = 't',
         long,
         default_value = "0-5000",
-        help = "Диапазон температуры поверхности планеты (int). Формат: min-max"
+        help = "Диапазон температуры поверхности планеты в °C. Формат: min-max"
     )]
     pub(crate) temperature: String,
 
