@@ -329,7 +329,7 @@ mod tests {
 
     #[test]
     fn profile_five_accepts_verified_water_magma_and_geyser_values() {
-        let mut input = Cursor::new(b"5\\nSol\\n\\n".to_vec());
+        let mut input = Cursor::new(b"5\nSol\n\n".to_vec());
         let mut output = Vec::new();
         match run_menu(&mut input, &mut output).unwrap() {
             MenuAction::Search { criteria, system } => {
@@ -339,4 +339,4 @@ mod tests {
             }
             MenuAction::Exit => panic!("expected profile search"),
         }
-    }}
+    }
