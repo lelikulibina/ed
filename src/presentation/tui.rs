@@ -18,7 +18,15 @@ pub fn run_tui() -> Result<Option<TuiSelection>> {
         draw_menu(0);
         println!();
         let choice = prompt("Выберите профиль [1–9]")?;
-        match parse_menu_choice(&choice)? {
+        let choice = match parse_menu_choice(&choice) {
+            Ok(choice) => choice,
+            Err(_) => {
+                println!("Введите число от 1 до 9.");
+                pause()?;
+                continue;
+            }
+        };
+        match choice {
             9 => return Ok(None),
             8 => return run_manual_setup().map(Some),
             number @ 1..=7 => {
