@@ -341,7 +341,12 @@ mod tests {
             .unwrap_or_else(|| "non-object response".to_owned());
         let first_body = page.bodies.first();
         eprintln!(
-            "Spansh page 0: top-level keys=[{response_keys}], rows={}, guid={:?}, first body={:?}",
+            "Spansh page 0: keys=[{response_keys}], count={:?}, from={:?}, size={:?}, search={:?}, search_reference={:?}, rows={}, guid={:?}, first body={:?}",
+            response.get("count"),
+            response.get("from"),
+            response.get("size"),
+            response.get("search"),
+            response.get("search_reference"),
             page.bodies.len(),
             find_guid(&response),
             first_body.map(|body| (
@@ -377,10 +382,17 @@ mod tests {
             let next = parse_page(&response)
                 .expect("page=1 response must match a supported page envelope");
             let next_id = next.bodies.first().and_then(|body| body.id64.as_deref());
+            let first_id = page.bodies.first().and_then(|body| body.id64.as_deref());
             eprintln!(
-                "Spansh page=1: {} rows, first body ID64={next_id:?}",
+                "Spansh page=1: count={:?}, from={:?}, size={:?}, {} rows, first body ID64={next_id:?}",
+                response.get("count"),
+                response.get("from"),
+                response.get("size"),
                 next.bodies.len()
             );
+            if let (Some(first_id), Some(next_id)) = (first_id, next_id) {
+                assert_ne!(first_id, next_id, "page=1 must advance beyond page=0");
+            }
         }
     }
 
