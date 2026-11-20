@@ -257,6 +257,39 @@ mod tests {
     }
 
     #[test]
+    fn alternative_surface_types_match_either_allowed_type() {
+        let mut criteria = criteria();
+        criteria.planet_types = vec![
+            "Rocky body".to_owned(),
+            "High metal content world".to_owned(),
+        ];
+
+        let mut body = Body {
+            id64: None,
+            name: "High metal world".to_owned(),
+            system_id64: None,
+            system_name: None,
+            subtype: Some("High metal content world".to_owned()),
+            distance_ly: None,
+            is_landable: Some(true),
+            is_mapped: Some(false),
+            last_updated_at: None,
+            surface_temperature: Some(250.0),
+            surface_pressure: Some(1.0),
+            gravity: Some(1.0),
+            atmosphere: Some("Nitrogen".to_owned()),
+            volcanism_type: None,
+            biological_signal_count: None,
+            geological_signal_count: None,
+            biological_genera: None,
+            signals_updated_at: None,
+        };
+        assert!(criteria.matches(&body));
+        body.subtype = Some("Icy body".to_owned());
+        assert!(!criteria.matches(&body));
+    }
+
+    #[test]
     fn exclude_with_bio_signals_filters_positive_signal_count_and_known_genera() {
         let mut criteria = criteria().with_bio_signal_exclusion(true);
         let mut body = Body {
