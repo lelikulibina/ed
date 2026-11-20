@@ -1132,18 +1132,6 @@ mod tests {
             .resolve("Drojia ZB-Z b32-0")
             .await
             .expect("Drojia center system must resolve");
-
-        let subtype_values = client
-            .get_json("/api/bodies/field_values/subtype")
-            .await
-            .expect("Spansh subtype field values must respond");
-        let atmosphere_values = client
-            .get_json("/api/bodies/field_values/atmosphere")
-            .await
-            .expect("Spansh atmosphere field values must respond");
-        eprintln!("Spansh subtype values: {subtype_values}");
-        eprintln!("Spansh atmosphere values: {atmosphere_values}");
-
         let criteria = SearchCriteria::from_cli(
             "Rock",
             "Water",
@@ -1159,43 +1147,45 @@ mod tests {
             15,
         )
         .unwrap();
-        let query = BodySearchQuery::new(center.coordinates, 1_000.0, 100).unwrap();
-        let payload = query.to_payload_with_criteria(&criteria);
-        eprintln!("Drojia Spansh request payload: {payload}");
+        let query = BodySearchQuery::new(center.coordinates, 1_000.0, 1).unwrap();
+        let base_payload = query.to_payload_with_criteria(&criteria);
 
-        let response = client
-            .post_json("/api/bodies/search", &payload)
-            .await
-            .expect("filtered Drojia body search request must succeed");
-        let page = parse_page(&response).expect("filtered body response must parse");
-        eprintln!(
-            "Drojia response metadata: count={:?}, from={:?}, size={:?}, rows={}",
-            page.total_count,
-            page.from,
-            response.get("size"),
-            page.last_page_size
-        );
-        for body in page.bodies.iter().take(10) {
+        let stages: [(&str, &[&str]); 4] = [
+            ("subtype+atmosphere+landable", &["surface_temperature", "surface_pressure", "gravity"]),
+            ("+temperature", &["surface_pressure", "gravity"]),
+            ("+pressure", &["gravity"]),
+            ("+gravity (full query)", &[]),
+        ];
+        for (label, omitted_filters) in stages {
+            let mut payload = base_payload.clone();
+            let filters = payload["filters"].as_object_mut().unwrap();
+            for filter in omitted_filters {
+                filters.remove(*filter);
+            }
+
+            let response = client
+                .post_json("/api/bodies/search", &payload)
+                .await
+                .unwrap_or_else(|error| panic!("Drojia stage {label} failed: {error}"));
+            let page = parse_page(&response).expect("Drojia stage response must parse");
             eprintln!(
-                "{} | system={} | subtype={:?} | atmosphere={:?} | temp={:?} K | pressure={:?} atm | gravity={:?} g | landable={:?} | distance={:?}",
-                body.name,
-                body.system_name.as_deref().unwrap_or("?"),
-                body.subtype,
-                body.atmosphere,
-                body.surface_temperature,
-                body.surface_pressure,
-                body.gravity,
-                body.is_landable,
-                body.distance_ly
+                "Drojia stage {label}: count={:?}, rows={}, first={:?}",
+                page.total_count,
+                page.last_page_size,
+                page.bodies.first().map(|body| (
+                    &body.name,
+                    &body.subtype,
+                    &body.atmosphere,
+                    body.surface_temperature,
+                    body.surface_pressure,
+                    body.gravity,
+                    body.is_landable
+                ))
             );
         }
-        let local_matches = page
-            .bodies
-            .iter()
-            .filter(|body| criteria.matches(body))
-            .count();
+
         eprintln!(
-            "Drojia resolved center={} id64={} coords=({:.3},{:.3},{:.3}); first-page local matches={local_matches}",
+            "Drojia center resolved as {} (ID64={}) at ({:.3},{:.3},{:.3})",
             center.name,
             center.id64,
             center.coordinates.x,
