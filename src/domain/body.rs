@@ -67,10 +67,16 @@ impl Body {
                 .or_else(|| bool_field(value, &["is_landable", "landable"])),
             is_mapped: bool_field(root, &["is_mapped", "mapped"])
                 .or_else(|| bool_field(value, &["is_mapped", "mapped"])),
-            surface_temperature: number_field(root, &["surface_temperature", "surfaceTemperature", "surface_temp"])
-                .or_else(|| number_field(value, &["surface_temperature", "surface_temp"])),
-            surface_pressure: number_field(root, &["surface_pressure", "surfacePressure", "pressure"])
-                .or_else(|| number_field(value, &["surface_pressure", "pressure"])),
+            surface_temperature: number_field(
+                root,
+                &["surface_temperature", "surfaceTemperature", "surface_temp"],
+            )
+            .or_else(|| number_field(value, &["surface_temperature", "surface_temp"])),
+            surface_pressure: number_field(
+                root,
+                &["surface_pressure", "surfacePressure", "pressure"],
+            )
+            .or_else(|| number_field(value, &["surface_pressure", "pressure"])),
             gravity: number_field(root, &["gravity"]).or_else(|| number_field(value, &["gravity"])),
             atmosphere: atmosphere_from_values(root, value),
             volcanism_type: string_field(root, &["volcanism_type", "volcanismType"])
@@ -86,9 +92,7 @@ fn biological_data(
     root: &Value,
     value: &Value,
 ) -> (Option<u32>, Option<Vec<String>>, Option<String>) {
-    let signal_data = root
-        .get("signals")
-        .or_else(|| value.get("signals"));
+    let signal_data = root.get("signals").or_else(|| value.get("signals"));
     let mut biological_count = None;
     let mut genera = None;
     let mut updated_at = string_field(root, &["signals_updated_at", "signalsUpdatedAt"])
@@ -162,7 +166,7 @@ fn count_value(value: &Value) -> Option<u32> {
                     && count >= 0.0
                     && count.fract() == 0.0
                     && count <= f64::from(u32::MAX))
-                    .then_some(count as u32)
+                .then_some(count as u32)
             })
         })
 }
