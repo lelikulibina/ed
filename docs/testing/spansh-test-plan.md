@@ -85,3 +85,12 @@ Workflow: `.github/workflows/spansh-live-smoke.yml`; запускается вр
 - `cargo clippy --locked --all-targets --all-features -- -D warnings`
 - `cargo test --locked --all-targets`
 - Все обычные тесты локальные и не требуют интернета.
+
+
+## Целевой live smoke на радиусе 1000 св. лет
+
+Запускается отдельным тестом `live_spansh_radius_1000_named_systems`:
+- `Thraikuae NS-U e2-2`;
+- `Boeft QX-B d951`.
+
+На каждую уникальную систему выполняются только два обращения: разрешение имени и один POST первой страницы поиска. Дубли систем не запускаются, повторные/нагрузочные запросы не выполняются. Основная проверка пагинации и ошибок остаётся на mock-server тестах.
