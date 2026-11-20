@@ -44,13 +44,16 @@ pub fn print_results(bodies: &[Body]) {
                 body.biological_genera
                     .as_ref()
                     .filter(|genera| !genera.is_empty())
-                    .map_or_else(|| "не указаны".to_owned(), |genera| {
-                        genera
-                            .iter()
-                            .map(|genus| russian_group_name(genus))
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    })
+                    .map_or_else(
+                        || "не указаны".to_owned(),
+                        |genera| {
+                            genera
+                                .iter()
+                                .map(|genus| russian_group_name(genus))
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        },
+                    )
             );
 
             match exobiology_summary(body) {
