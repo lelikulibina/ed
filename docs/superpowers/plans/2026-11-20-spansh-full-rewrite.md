@@ -18,14 +18,14 @@
 ## Итог реализации
 
 ### Задача 1 — CLI и доменные типы
-<badge color="success">Готово</badge>
+**Статус: готово**
 
 - [x] Сохранены старые короткие/длинные CLI-флаги и defaults.
 - [x] Добавлены CLI compatibility tests.
 - [x] Добавлены `SearchCriteria`, диапазоны, нормализация прежних значений enum и валидация.
 
 ### Задача 2 — Resolver центральной системы
-<badge color="success">Готово</badge>
+**Статус: готово**
 
 - [x] Exact match имени предпочтительнее prefix match.
 - [x] Fallback удаляет конечные компоненты по одному; на fallback берётся первый результат.
@@ -35,7 +35,7 @@
 - [x] Mock tests и live smoke для Sol прошли.
 
 ### Задача 3 — DTO тел и локальная фильтрация
-<badge color="success">Готово</badge>
+**Статус: готово**
 
 - [x] Реализован Body DTO с nullable-полями, ID64 и parent-system данными.
 - [x] Поддерживаются flat body fields, вложенный body и sibling system envelope.
@@ -45,7 +45,7 @@
 - [x] Группировка строго по system_id64.
 
 ### Задача 4 — Body search и пагинация
-<badge color="success">Готово</badge>
+**Статус: готово**
 
 - [x] Реализован POST `/api/bodies/search` с reference_coords, distance, sort, size, page.
 - [x] `search_reference` распознаётся как UUID.
@@ -55,7 +55,7 @@
 - [x] Защитный предел 100 страниц, дедупликация и mock-server tests.
 
 ### Задача 5 — SearchUseCase и вывод
-<badge color="success">Готово</badge>
+**Статус: готово**
 
 - [x] CLI подключён к новому SearchUseCase.
 - [x] Полный mock-сценарий: имя -> координаты -> body search -> страницы -> фильтры -> результаты.
@@ -63,7 +63,7 @@
 - [x] Результаты группируются по ID64 родительской системы.
 
 ### Задача 6 — Удаление старой реализации
-<badge color="success">Готово</badge>
+**Статус: готово**
 
 - [x] Удалён `src/parser/`.
 - [x] Удалены scraper/futures/indicatif/urlencoding и обновлён Cargo.lock.
@@ -71,7 +71,7 @@
 - [x] CLI не зависит от старого EDSM runtime.
 
 ### Задача 7 — Проверка
-<badge color="success">Базовые проверки пройдены</badge>
+**Статус: базовые проверки пройдены**
 
 - [x] `cargo fmt -- --check`.
 - [x] `cargo clippy --locked --all-targets --all-features -- -D warnings`.
