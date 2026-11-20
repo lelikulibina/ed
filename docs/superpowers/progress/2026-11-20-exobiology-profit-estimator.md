@@ -29,7 +29,8 @@
 - `GET /body/{id64}` возвращает `{record: SearchBody}`. В `SearchBody` есть `volcanism_type`, `signals[{name,count}]`, `signal_count`, `signals_updated_at`, `genuses[{name}]` и `landmarks`.
 - Dump `Body` использует camelCase: `volcanismType`, `signals.signals` с ключом `$SAA_SignalType_Biological;`, `signals.genuses` с Codex-токенами и `signals.updateTime`.
 - В Spansh-модели не обнаружены прямые поля First Footfall или First Logged. SearchBody `updated_at` и dump Body `updateTime` — время последнего обновления записи, а не флаг высадки. `is_mapped`, `landmarks` и отсутствие сигналов также не подтверждают First Footfall.
-- First Footfall относится к планете, а First Logged — к конкретному виду на планете. Высадка другим командиром не доказывает, что бонус First Logged уже забран по всем видам. Spansh не сообщает статус продажи/первого логирования; ×5 остаётся условным сценарием.
+- В журнале/событии Scan есть `WasFootfalled` / `alreadyfirstfootfalled`, но это данные конкретного сканирования, а не глобальный API-статус для всех кандидатов. EDDI документирует этот флаг в [Body scanned event](https://github.com/EDCD/EDDI/wiki/Body-scanned-event).
+- First Footfall относится к планете, а First Logged — к конкретному виду на планете. Высадка другим командиром не доказывает, что бонус First Logged уже забран по всем видам. Spansh не сообщает статус продажи/первого логирования; ×5 остаётся условным сценарием. Дополнительно: [Frontier FAQ](https://store.steampowered.com/news/posts/?appids=359320&enddate=1614874210&feed=steam_community_announcements) описывает First Footfall как планетарный статус, отображаемый в System Map; обсуждение [First Footfall vs First Logged](https://steamcommunity.com/app/359320/discussions/0/693121295397729546/) подчёркивает различие этих событий.
 - `parents` доступны в модели тела, но полноценный контекст главной звезды требует связать цепочку родителей с телами из system dump; пока не используется, так как текущая выборка видов не требует star rules.
 - Поиск планет и его фильтры не менялись.
 - Предпочтительные места обитания не превращаются в жёсткие ограничения: для Tussock и Cactoida поле `planet_types` оставлено пустым, если источник описывает только предпочтение/типичную среду.
@@ -39,9 +40,10 @@
 
 ## Проверки
 
-- Rust CI на коммите `3797207` завершился успешно: `cargo fmt -- --check`, Clippy и `cargo test --locked --all-targets`.
-- Результат тестов: 64 unit-теста пройдены, 4 ignored; 5 integration-тестов пройдены; ошибок нет.
+- Rust CI на коммите `29e9671` завершился успешно: `cargo fmt -- --check`, Clippy и `cargo test --locked --all-targets`.
+- Результат тестов: 66 unit-тестов пройдены, 4 ignored; 5 integration-тестов пройдены; ошибок нет.
 - Тесты построены на формах JSON из официальной OpenAPI-схемы; live API запрос не выполнялся, workflow Spansh Live Contract Smoke был пропущен.
+- Добавлены тесты для разбора `updated_at` / `updateTime`, классификации возраста данных относительно Odyssey и формулировок, которые не выдают эвристику за прямой статус высадки.
 - Регрессионный тест на жёсткую фильтрацию предпочтительных планетных типов сначала упал на данных каталога, затем прошёл после исправления правил.
 - Тесты отдельно проверяют Water-rich как отличную от Water категорию и агрегацию альтернативных видов через максимум на род, а не суммой.
 
