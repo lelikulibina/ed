@@ -355,13 +355,13 @@ mod tests {
         let address = listener.local_addr().unwrap();
         let responses = [
             r#"{"count":2,"from":0,"size":1,"results":[{
-                "name":"Mapped Body",
+                "name":"Central Body",
                 "id64":"1001",
-                "system_id64":"2001",
-                "system_name":"Nearby A",
+                "system_id64":"42",
+                "system_name":"Sol",
                 "subtype":"Rocky body",
                 "is_landable":true,
-                "is_mapped":true,
+                "is_mapped":false,
                 "surface_temperature":250,
                 "surface_pressure":1.0,
                 "gravity":1.0,
