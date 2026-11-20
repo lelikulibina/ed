@@ -1,2 +1,2 @@
-pub mod output;
 pub mod menu;
+pub mod output;

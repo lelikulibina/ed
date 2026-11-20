@@ -62,7 +62,10 @@ impl BodySearchQuery {
             .expect("base query always contains an object of filters");
 
         if !criteria.planet_types.iter().any(|kind| kind == "any") {
-            filters.insert("subtype".to_owned(), json!({ "value": criteria.planet_types }));
+            filters.insert(
+                "subtype".to_owned(),
+                json!({ "value": criteria.planet_types }),
+            );
         }
         if criteria.atmosphere_type != "any" {
             filters.insert(
@@ -222,16 +225,36 @@ mod tests {
     #[test]
     fn payload_sends_all_allowed_surface_types() {
         use crate::domain::criteria::{NumericRange, SearchCriteria};
-        let query = BodySearchQuery::new(Coordinates { x: 0.0, y: 0.0, z: 0.0 }, 1000.0, 100).unwrap();
+        let query = BodySearchQuery::new(
+            Coordinates {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            1000.0,
+            100,
+        )
+        .unwrap();
         let criteria = SearchCriteria::from_types(
-            &["Rocky body", "High metal content world"], "Water",
-            NumericRange { min: 395.0, max: 450.0 },
+            &["Rocky body", "High metal content world"],
+            "Water",
+            NumericRange {
+                min: 395.0,
+                max: 450.0,
+            },
             NumericRange { min: 0.1, max: 1.0 },
-            NumericRange { min: 0.04, max: 0.063 }, 5,
-        ).unwrap();
+            NumericRange {
+                min: 0.04,
+                max: 0.063,
+            },
+            5,
+        )
+        .unwrap();
         let payload = query.to_payload_with_criteria(&criteria);
-        assert_eq!(payload["filters"]["subtype"]["value"],
-            serde_json::json!(["Rocky body", "High metal content world"]));
+        assert_eq!(
+            payload["filters"]["subtype"]["value"],
+            serde_json::json!(["Rocky body", "High metal content world"])
+        );
     }
 
     #[test]

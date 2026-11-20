@@ -59,7 +59,14 @@ impl SearchCriteria {
         pressure: NumericRange,
         count: usize,
     ) -> Result<Self, CriteriaError> {
-        Self::from_types(&[planet_type], atmosphere_type, temperature, gravity, pressure, count)
+        Self::from_types(
+            &[planet_type],
+            atmosphere_type,
+            temperature,
+            gravity,
+            pressure,
+            count,
+        )
     }
 
     pub fn from_types(
@@ -83,7 +90,11 @@ impl SearchCriteria {
         if normalized.is_empty() {
             normalized.push("any".to_owned());
         }
-        let planet_type = if normalized.len() == 1 { normalized[0].clone() } else { "multiple".to_owned() };
+        let planet_type = if normalized.len() == 1 {
+            normalized[0].clone()
+        } else {
+            "multiple".to_owned()
+        };
         Ok(Self {
             planet_type,
             planet_types: normalized,
@@ -110,7 +121,9 @@ impl SearchCriteria {
     pub fn matches(&self, body: &Body) -> bool {
         (self.planet_types.iter().any(|kind| kind == "any")
             || body.subtype.as_deref().is_some_and(|value| {
-                self.planet_types.iter().any(|kind| value.eq_ignore_ascii_case(kind))
+                self.planet_types
+                    .iter()
+                    .any(|kind| value.eq_ignore_ascii_case(kind))
             }))
             && (self.atmosphere_type == "any"
                 || body
@@ -131,7 +144,9 @@ fn volcanism_matches(filter: VolcanismFilter, value: Option<&str>) -> bool {
     match filter {
         VolcanismFilter::Any => true,
         // Exact value present in the repository's Spansh body fixtures.
-        VolcanismFilter::None => value.is_some_and(|v| v.trim().eq_ignore_ascii_case("No volcanism")),
+        VolcanismFilter::None => {
+            value.is_some_and(|v| v.trim().eq_ignore_ascii_case("No volcanism"))
+        }
         // No verified fixture/API contract proves both properties; fail closed.
         VolcanismFilter::WaterMagmaAndGeysers => false,
     }
@@ -352,19 +367,36 @@ mod tests {
     #[test]
     fn multi_subtype_accepts_both_allowed_values() {
         let criteria = SearchCriteria::from_types(
-            &["Rocky body", "High metal content world"], "Nitrogen",
-            NumericRange { min: 200.0, max: 300.0 },
+            &["Rocky body", "High metal content world"],
+            "Nitrogen",
+            NumericRange {
+                min: 200.0,
+                max: 300.0,
+            },
             NumericRange { min: 0.5, max: 1.5 },
-            NumericRange { min: 0.0, max: 2.0 }, 5,
-        ).unwrap();
+            NumericRange { min: 0.0, max: 2.0 },
+            5,
+        )
+        .unwrap();
         let mut body = Body {
-            id64: None, name: "X".to_owned(), system_id64: None, system_name: None,
-            subtype: Some("Rocky body".to_owned()), distance_ly: None,
-            is_landable: Some(true), is_mapped: Some(false), last_updated_at: None,
-            surface_temperature: Some(250.0), surface_pressure: Some(1.0), gravity: Some(1.0),
-            atmosphere: Some("Nitrogen".to_owned()), volcanism_type: None,
-            biological_signal_count: None, geological_signal_count: None,
-            biological_genera: None, signals_updated_at: None,
+            id64: None,
+            name: "X".to_owned(),
+            system_id64: None,
+            system_name: None,
+            subtype: Some("Rocky body".to_owned()),
+            distance_ly: None,
+            is_landable: Some(true),
+            is_mapped: Some(false),
+            last_updated_at: None,
+            surface_temperature: Some(250.0),
+            surface_pressure: Some(1.0),
+            gravity: Some(1.0),
+            atmosphere: Some("Nitrogen".to_owned()),
+            volcanism_type: None,
+            biological_signal_count: None,
+            geological_signal_count: None,
+            biological_genera: None,
+            signals_updated_at: None,
         };
         assert!(criteria.matches(&body));
         body.subtype = Some("High metal content world".to_owned());
@@ -377,18 +409,41 @@ mod tests {
     fn restricted_volcanism_filters_fail_closed_for_unknown_values() {
         for value in [None, Some(""), Some("unknown"), Some("Minor Rocky Magma")] {
             let mut body = Body {
-                id64: None, name: "X".to_owned(), system_id64: None, system_name: None,
-                subtype: Some("Rocky body".to_owned()), distance_ly: None,
-                is_landable: Some(true), is_mapped: Some(false), last_updated_at: None,
-                surface_temperature: Some(250.0), surface_pressure: Some(1.0), gravity: Some(1.0),
-                atmosphere: Some("Nitrogen".to_owned()), volcanism_type: value.map(str::to_owned),
-                biological_signal_count: None, geological_signal_count: None,
-                biological_genera: None, signals_updated_at: None,
+                id64: None,
+                name: "X".to_owned(),
+                system_id64: None,
+                system_name: None,
+                subtype: Some("Rocky body".to_owned()),
+                distance_ly: None,
+                is_landable: Some(true),
+                is_mapped: Some(false),
+                last_updated_at: None,
+                surface_temperature: Some(250.0),
+                surface_pressure: Some(1.0),
+                gravity: Some(1.0),
+                atmosphere: Some("Nitrogen".to_owned()),
+                volcanism_type: value.map(str::to_owned),
+                biological_signal_count: None,
+                geological_signal_count: None,
+                biological_genera: None,
+                signals_updated_at: None,
             };
-            assert!(!criteria().with_volcanism_filter(VolcanismFilter::None).matches(&body));
-            assert!(!criteria().with_volcanism_filter(VolcanismFilter::WaterMagmaAndGeysers).matches(&body));
+            assert!(
+                !criteria()
+                    .with_volcanism_filter(VolcanismFilter::None)
+                    .matches(&body)
+            );
+            assert!(
+                !criteria()
+                    .with_volcanism_filter(VolcanismFilter::WaterMagmaAndGeysers)
+                    .matches(&body)
+            );
             body.volcanism_type = Some("No volcanism".to_owned());
-            assert!(criteria().with_volcanism_filter(VolcanismFilter::None).matches(&body));
+            assert!(
+                criteria()
+                    .with_volcanism_filter(VolcanismFilter::None)
+                    .matches(&body)
+            );
         }
     }
 
