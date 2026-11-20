@@ -44,7 +44,12 @@ impl SystemResolver {
             let query = parts[..end].join(" ");
             let path = format!("/api/search/systems?q={}", encode_query_component(&query));
             let response = self.client.get_json(&path).await?;
-            if let Some(candidate) = first_candidate(&response) {
+            let candidate = if end == parts.len() {
+                exact_candidate(&response, &query)
+            } else {
+                first_candidate(&response)
+            };
+            if let Some(candidate) = candidate {
                 let id64 = candidate.id64.ok_or(ResolveError::InvalidResponse)?;
                 let detail = self.client.get_json(&format!("/api/system/{id64}")).await?;
                 return system_from_detail(&detail, id64, candidate.name)
@@ -84,6 +89,33 @@ fn first_candidate(value: &Value) -> Option<Candidate> {
     }
 
     candidate_from_value(value)
+}
+
+
+fn exact_candidate(value: &Value, expected_name: &str) -> Option<Candidate> {
+    let matches_name = |candidate: &Candidate| {
+        candidate.name.as_deref().is_some_and(|name| {
+            name.trim().eq_ignore_ascii_case(expected_name.trim())
+        })
+    };
+
+    for key in ["systems", "results", "values", "data"] {
+        if let Some(items) = value.get(key).and_then(Value::as_array) {
+            return items
+                .iter()
+                .filter_map(candidate_from_value)
+                .find(matches_name);
+        }
+    }
+
+    if let Some(items) = value.as_array() {
+        return items
+            .iter()
+            .filter_map(candidate_from_value)
+            .find(matches_name);
+    }
+
+    candidate_from_value(value).filter(matches_name)
 }
 
 fn candidate_from_value(value: &Value) -> Option<Candidate> {
@@ -162,6 +194,21 @@ fn encode_query_component(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn exact_candidate_skips_prefix_matches_and_returns_none_without_exact_name() {
+        let value = serde_json::json!({
+            "results": [
+                {"name": "Sol Alpha", "id64": "1"},
+                {"name": "Sol", "id64": "2"}
+            ]
+        });
+
+        let exact = exact_candidate(&value, "sol").unwrap();
+        assert_eq!(exact.name.as_deref(), Some("Sol"));
+        assert_eq!(exact.id64.as_deref(), Some("2"));
+        assert!(exact_candidate(&value, "Sol Beta").is_none());
+    }
 
     #[test]
     fn candidate_parser_preserves_large_id64_as_string() {
