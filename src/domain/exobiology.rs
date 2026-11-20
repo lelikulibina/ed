@@ -562,8 +562,8 @@ mod tests {
         planet.volcanism_type = Some("Water Magma".to_owned());
         planet.geological_signal_count = Some(1);
 
-        let estimate = estimate(&planet).unwrap();
-        let aquatis = estimate
+        let aquatis_estimate = estimate(&planet).unwrap();
+        let aquatis = aquatis_estimate
             .genera
             .iter()
             .find(|genus| genus.genus == "Fumerola")
