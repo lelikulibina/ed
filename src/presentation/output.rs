@@ -50,7 +50,7 @@ fn footfall_evidence_summary(body: &Body) -> String {
 
     match body.footfall_evidence() {
         FootfallEvidence::PreOdysseyUpdate => format!(
-            "прямой статус неизвестен; данные Spansh обновлялись до Odyssey ({updated_at}), кандидат с повышенным приоритетом, но свободная высадка не гарантирована"
+            "прямой статус неизвестен; данные Spansh обновлялись до Odyssey ({updated_at}), возможная цель для проверки в игре, но свободная высадка не гарантирована"
         ),
         FootfallEvidence::PostOdysseyUpdate => format!(
             "прямой статус неизвестен; данные Spansh обновлялись после выхода Odyssey ({updated_at}), возможна предыдущая активность, но это не доказывает высадку"
