@@ -232,39 +232,8 @@ mod tests {
 
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
-        let first = serde_json::json!({
-            "guid": "test-guid",
-            "results": [{
-                "name": "Unmapped? No",
-                "id64": "1001",
-                "system_id64": "2001",
-                "system_name": "Nearby A",
-                "subtype": "Rocky body",
-                "is_landable": true,
-                "is_mapped": true,
-                "surface_temperature": 250,
-                "surface_pressure": 1.0,
-                "gravity": 1.0,
-                "atmosphere": "Nitrogen"
-            }]
-        }).to_string();
-        let second = serde_json::json!({
-            "has_more": false,
-            "results": [{
-                "name": "Nearby B 1",
-                "id64": "1002",
-                "system_id64": "2002",
-                "system_name": "Nearby B",
-                "subtype": "Rocky body",
-                "is_landable": true,
-                "is_mapped": false,
-                "surface_temperature": 250,
-                "surface_pressure": 1.0,
-                "gravity": 1.0,
-                "atmosphere": "Nitrogen",
-                "distance": 12.0
-            }]
-        }).to_string();
+        let first = include_str!("../../tests/fixtures/spansh/body-search-page-0.json").to_owned();
+        let second = include_str!("../../tests/fixtures/spansh/body-search-page-1.json").to_owned();
 
         let server = tokio::spawn(async move {
             let mut requests = Vec::new();
