@@ -58,3 +58,13 @@
 
 - Live system-search endpoint returns `{count, query, results}`; each result includes `id64`, `name`, and flat `x/y/z` coordinates. Detail endpoint returns the system under `record`. Resolver now uses coordinates from search results directly and falls back to the detail `record` envelope only when needed.
 - Added RED→GREEN test coverage for the actual `record` detail envelope and a no-extra-detail-request resolver path; live resolver recheck is queued.
+
+
+## Последняя проверка и live-результаты
+
+- Live run `44663487447` успешно прошёл полный smoke: GET system search, GET system detail, resolver, POST body search и recall page 1.
+- Реальный search result Sol: `id64=10477373803`, `name=Sol`, `x/y/z=0/0/0`; resolver использует эти координаты без detail GET.
+- Реальный Mercury row: `id64=36028807496337771`, `system_id64=10477373803`, `subtype=Metal-rich body`, `is_landable=true`, `is_mapped=null`, температура/давление/гравитация/атмосфера присутствуют. Большой ID64 успешно преобразован в строку без потери точности.
+- На основании live `is_mapped=null` критерий изменён: исключается только `Some(true)`; null трактуется как false по legacy default. Добавлен тест; CI run `44663617171` прошёл.
+- CI run `44663793602`: Format, Clippy и все тесты прошли после последней правки live smoke logging.
+- Live smoke workflow ограничен 10 минутами и теперь явно gated: запускается по workflow_dispatch или commit marker `[spansh-live-smoke]`; обычные commits пропускают live job.
