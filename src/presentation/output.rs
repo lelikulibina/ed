@@ -252,6 +252,8 @@ mod tests {
         body.atmosphere = Some("Neon".to_owned());
         body.surface_temperature = Some(40.0);
         body.gravity = Some(1.0);
+        body.volcanism_type = Some("No volcanism".to_owned());
+        body.geological_signal_count = Some(0);
 
         assert_eq!(exobiology_summary(&body).unwrap(), None);
     }
