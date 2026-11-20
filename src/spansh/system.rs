@@ -320,13 +320,15 @@ mod tests {
         let address = listener.local_addr().unwrap();
         let responses = [
             r#"{"results":[{"name":"Sol Alpha","id64":"1"},{"name":"Sol","id64":"2"}]}"#,
-            r#"{"name":"Sol Alpha","id64":"1","coords":{"x":1.0,"y":2.0,"z":3.0}}"#,
+            r#"{"name":"Sol","id64":"2","coords":{"x":1.0,"y":2.0,"z":3.0}}"#,
         ];
         let server = tokio::spawn(async move {
+            let mut requests = Vec::new();
             for body in responses {
                 let (mut socket, _) = listener.accept().await.unwrap();
                 let mut request = [0_u8; 2048];
-                let _ = socket.read(&mut request).await.unwrap();
+                let size = socket.read(&mut request).await.unwrap();
+                requests.push(String::from_utf8_lossy(&request[..size]).to_string());
                 let response = format!(
                     "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
                     body.len(),
@@ -334,6 +336,7 @@ mod tests {
                 );
                 socket.write_all(response.as_bytes()).await.unwrap();
             }
+            requests
         });
 
         let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
@@ -341,7 +344,8 @@ mod tests {
 
         assert_eq!(system.name, "Sol");
         assert_eq!(system.id64, "2");
-        server.await.unwrap();
+        let requests = server.await.unwrap();
+        assert!(requests[1].starts_with("GET /api/system/2 "));
     }
 
     #[test]
