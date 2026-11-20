@@ -399,6 +399,32 @@
     },
     {
       "genus": "Frutexa",
+      "species": "Metallicum",
+      "base_value_cr": 1632500,
+      "planet_types": [
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Ammonia",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ],
+      "conditional_temperature_rules": [
+        {
+          "atmospheres": [
+            "Carbon dioxide",
+            "Carbon dioxide-rich"
+          ],
+          "temperature_max_k": 195,
+          "temperature_max_inclusive": false
+        }
+      ]
+    },
+    {
+      "genus": "Frutexa",
       "species": "Sponsae",
       "base_value_cr": 5988000,
       "planet_types": [
@@ -512,6 +538,30 @@
     },
     {
       "genus": "Fungoida",
+      "species": "Gelata",
+      "base_value_cr": 3330300,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich",
+        "Water"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ],
+      "conditional_temperature_rules": [
+        {
+          "atmospheres": [
+            "Carbon dioxide",
+            "Carbon dioxide-rich"
+          ],
+          "temperature_min_k": 180,
+          "temperature_max_k": 195
+        }
+      ]
+    },
+    {
+      "genus": "Fungoida",
       "species": "Setisis",
       "base_value_cr": 1670100,
       "planet_types": [],
@@ -520,6 +570,30 @@
       ],
       "terrain": [
         "Mountainous terrain"
+      ]
+    },
+    {
+      "genus": "Fungoida",
+      "species": "Stabitis",
+      "base_value_cr": 2680300,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich",
+        "Water"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ],
+      "conditional_temperature_rules": [
+        {
+          "atmospheres": [
+            "Carbon dioxide",
+            "Carbon dioxide-rich"
+          ],
+          "temperature_min_k": 180,
+          "temperature_max_k": 195
+        }
       ]
     },
     {
@@ -762,8 +836,15 @@
         "Water",
         "Water-rich"
       ],
-      "temperature_min_k": 165,
-      "temperature_min_inclusive": false
+      "conditional_temperature_rules": [
+        {
+          "atmospheres": [
+            "Ammonia"
+          ],
+          "temperature_min_k": 165,
+          "temperature_min_inclusive": false
+        }
+      ]
     },
     {
       "genus": "Stratum",
