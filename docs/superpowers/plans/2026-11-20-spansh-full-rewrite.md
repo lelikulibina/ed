@@ -80,7 +80,8 @@
 - [x] Проверены старые CLI flags/defaults unit tests.
 - [x] Live smoke: system search, detail envelope, body search, search_reference, recall pages 1 и 39 (последняя страница для count=40), direct POST page 1.
 - [x] Проверить последнюю страницу на выдаче count=40.
-- [ ] Проверить большой поиск (100+ результатов).
+- [x] Проверить live поиск на 10 000 результатов: page size 100, page 40 (Alpha Centauri) и последняя page 99.
+- [ ] Проверить, что происходит при выдаче свыше 10 000 (возможно provider cap).
 - [ ] Проверить единицы surface_pressure/gravity и все варианты subtype/atmosphere на реальных данных.
 - [ ] Проверить 400/429/5xx, исчерпание retry и временную недоступность recall.
 - [ ] Провести повторный review после этих проверок.
