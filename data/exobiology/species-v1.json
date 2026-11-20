@@ -28,9 +28,7 @@
       "genus": "Tussock",
       "species": "Virgam",
       "base_value_cr": 14313700,
-      "planet_types": [
-        "Rocky body"
-      ],
+      "planet_types": [],
       "atmospheres": [
         "Water",
         "Water-rich"
@@ -40,9 +38,7 @@
       "genus": "Tussock",
       "species": "Stigmasis",
       "base_value_cr": 19010800,
-      "planet_types": [
-        "Rocky body"
-      ],
+      "planet_types": [],
       "atmospheres": [
         "Sulphur dioxide"
       ]
@@ -51,10 +47,7 @@
       "genus": "Cactoida",
       "species": "Vermis",
       "base_value_cr": 16202800,
-      "planet_types": [
-        "Rocky body",
-        "High metal content world"
-      ],
+      "planet_types": [],
       "atmospheres": [
         "Water"
       ]
