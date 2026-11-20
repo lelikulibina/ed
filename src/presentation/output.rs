@@ -238,7 +238,7 @@ mod tests {
         let summary = exobiology_summary(&body).unwrap().unwrap();
         assert!(summary.contains("Экзобиология — предварительный прогноз"));
         assert!(summary.contains("Потенциальная стоимость (базовая): 0–"));
-        assert!(summary.contains("Если доступен First Logged: 0–"));
+        assert!(summary.contains("Сценарий First Logged ×5 (если доступен для конкретного вида): 0–"));
         assert!(summary.contains("Вероятности появления видов не рассчитаны"));
         assert!(summary.contains("Кандидаты совпадают только по условиям"));
         assert!(summary.contains("нужна проверка: тип вулканизма"));
