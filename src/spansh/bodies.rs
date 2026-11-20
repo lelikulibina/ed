@@ -499,6 +499,81 @@ mod tests {
         assert_eq!(payload["page"], 1);
     }
 
+
+    #[tokio::test]
+    async fn returns_page_limit_error_instead_of_silent_partial_results() {
+        use tokio::{
+            io::{AsyncReadExt, AsyncWriteExt},
+            net::TcpListener,
+        };
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let response_body = r#"{"count":2,"from":0,"results":[{
+            "name":"Mapped Body",
+            "id64":"1001",
+            "system_id64":"2001",
+            "system_name":"Nearby",
+            "subtype":"Rocky body",
+            "distance":1.0,
+            "is_landable":true,
+            "is_mapped":true,
+            "surface_temperature":250,
+            "surface_pressure":1.0,
+            "gravity":1.0,
+            "atmosphere":"Nitrogen"
+        }]}"#;
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = [0_u8; 2048];
+            let _ = socket.read(&mut request).await.unwrap();
+            let response = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
+                response_body.len(),
+                response_body
+            );
+            socket.write_all(response.as_bytes()).await.unwrap();
+        });
+
+        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let center = ResolvedSystem {
+            id64: "42".to_owned(),
+            name: "Sol".to_owned(),
+            coordinates: super::super::query::Coordinates {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        };
+        let criteria = SearchCriteria::from_cli(
+            "any",
+            "any",
+            crate::domain::criteria::NumericRange {
+                min: 0.0,
+                max: 5000.0,
+            },
+            crate::domain::criteria::NumericRange {
+                min: 0.0,
+                max: 10.0,
+            },
+            crate::domain::criteria::NumericRange {
+                min: 0.0,
+                max: 10.0,
+            },
+            1,
+        )
+        .unwrap();
+
+        let error = BodySearch::new(client)
+            .with_limits(100.0, 1, 1)
+            .search(&center, &criteria)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(error, BodySearchError::PageLimit(1)));
+        server.await.unwrap();
+    }
+
     #[tokio::test]
     #[ignore = "requires live network; low-volume Spansh contract and pagination probe"]
     async fn live_spansh_body_search_contract() {
