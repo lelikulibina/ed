@@ -311,6 +311,46 @@ mod tests {
         assert!(requests[1].starts_with("GET /api/bodies/search/recall/test-guid/1 "));
     }
 
+    #[tokio::test]
+    #[ignore = "requires live network; one low-volume Spansh contract probe"]
+    async fn live_spansh_body_search_contract() {
+        use super::super::query::Coordinates;
+
+        let client = SpanshClient::spansh(1).unwrap();
+        let query = BodySearchQuery::new(
+            Coordinates {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            1.0,
+            5,
+        )
+        .unwrap();
+
+        let response = client
+            .post_json("/api/bodies/search", &query.to_payload())
+            .await
+            .expect("Spansh body-search POST must succeed");
+        let page = parse_page(&response)
+            .expect("live response must match one of the supported page envelopes");
+
+        eprintln!(
+            "Spansh live body-search contract: {} body rows, search reference present: {}",
+            page.bodies.len(),
+            find_guid(&response).is_some()
+        );
+
+        if let Some(guid) = find_guid(&response) {
+            let recall = client
+                .get_json(&format!("/api/bodies/search/recall/{guid}/1"))
+                .await
+                .expect("recall page request must succeed");
+            let _ = parse_page(&recall)
+                .expect("recall response must match a supported page envelope");
+        }
+    }
+
     #[test]
     fn rejects_unknown_page_shape_instead_of_reporting_empty_results() {
         assert!(matches!(
