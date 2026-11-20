@@ -70,6 +70,37 @@ impl Body {
     }
 }
 
+fn normalize_atmosphere_label(value: &str) -> String {
+    let normalized = value.trim().to_ascii_lowercase().replace('-', " ");
+    let patterns = [
+        ("no atmosphere", "No atmosphere"),
+        ("carbon dioxide rich", "Carbon dioxide-rich"),
+        ("water rich", "Water-rich"),
+        ("methane rich", "Methane-rich"),
+        ("neon rich", "Neon-rich"),
+        ("argon rich", "Argon-rich"),
+        ("silicate vapour", "Silicate vapour"),
+        ("silicate vapor", "Silicate vapour"),
+        ("sulphur dioxide", "Sulphur dioxide"),
+        ("sulfur dioxide", "Sulphur dioxide"),
+        ("carbon dioxide", "Carbon dioxide"),
+        ("ammonia", "Ammonia"),
+        ("nitrogen", "Nitrogen"),
+        ("methane", "Methane"),
+        ("helium", "Helium"),
+        ("neon", "Neon"),
+        ("argon", "Argon"),
+        ("oxygen", "Oxygen"),
+        ("water", "Water"),
+    ];
+
+    patterns
+        .iter()
+        .find_map(|(needle, canonical)| normalized.contains(needle).then_some(*canonical))
+        .unwrap_or(value.trim())
+        .to_owned()
+}
+
 fn id_field(value: &Value, names: &[&str]) -> Option<String> {
     names.iter().find_map(|name| {
         value.get(name).and_then(|field| {
@@ -150,6 +181,26 @@ mod tests {
         assert_eq!(body.system_id64.as_deref(), Some("123"));
         assert_eq!(body.system_name.as_deref(), Some("A"));
         assert_eq!(body.distance_ly, Some(2.5));
+    }
+
+    #[test]
+    fn normalizes_descriptive_spansh_atmosphere_labels() {
+        assert_eq!(
+            normalize_atmosphere_label("Hot thick Carbon dioxide"),
+            "Carbon dioxide"
+        );
+        assert_eq!(
+            normalize_atmosphere_label("Carbon dioxide-rich atmosphere"),
+            "Carbon dioxide-rich"
+        );
+        assert_eq!(
+            normalize_atmosphere_label("Water-rich"),
+            "Water-rich"
+        );
+        assert_eq!(
+            normalize_atmosphere_label("No atmosphere"),
+            "No atmosphere"
+        );
     }
 
     #[test]
