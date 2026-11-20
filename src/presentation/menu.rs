@@ -340,3 +340,4 @@ mod tests {
             MenuAction::Exit => panic!("expected profile search"),
         }
     }
+}

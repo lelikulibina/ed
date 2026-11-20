@@ -28,7 +28,7 @@ impl VolcanismFilter {
         match self {
             Self::Any => "без ограничений",
             Self::None => "без вулканизма",
-            Self::WaterMagmaAndGeysers => "водная магма и гейзеры",
+            Self::WaterMagmaAndGeysers => "водная магма / водные гейзеры",
         }
     }
 }
