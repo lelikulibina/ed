@@ -69,12 +69,12 @@ CLI / Args
 - `GET /api/system/{id64}` возвращает данные системы внутри `record`; внутри есть `id64`, `name`, `x/y/z`.
 - `POST /api/bodies/search` принимает payload с `filters.distance`, `sort`, `size`, `page`, `reference_coords`.
 - Ответ body search содержит `count`, `from`, `results`, `search`, `search_reference`, `size`.
-- `search_reference` — UUID; `GET /api/bodies/search/recall/{reference}/1` вернул следующую страницу.
+- `search_reference` — UUID; `GET /api/bodies/search/recall/{reference}/1` вернул следующую страницу. Для выдачи `count=40` запрос страницы 39 вернул `from=39` и одну строку; условие `from + rows >= count` корректно распознало последнюю страницу.
 - Повторный POST с `page=1` также вернул следующую страницу: `from` изменился с 0 на 1, ID64 тела отличался.
 - В живом ответе тела наблюдались поля `name`, `id64`, `system_id64`, `system_name`, `subtype`, `distance`, `is_landable`, `is_mapped`, `surface_temperature`, `surface_pressure`, `gravity`, `atmosphere`.
 - Для Mercury поле `is_mapped` пришло как `null`; согласно legacy parser default, `null` трактуется как false (не отмечено как mapped).
 
-Проверенные координаты: Sol `(0,0,0)`, радиус 1 св. л., страницы 0/1. Это подтверждает рабочий путь запроса, но не полный контракт API.
+Проверенные координаты: Sol `(0,0,0)`, радиус 1 св. л., страницы 0/1. Это подтверждает рабочий путь запроса и завершение 40-строчной выдачи, но не полный контракт API; выдачи 100+ строк ещё не проверены.
 
 ### Ещё требуется проверить
 
