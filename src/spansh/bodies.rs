@@ -523,6 +523,34 @@ mod tests {
             net::TcpListener,
         };
 
+        async fn read_request(socket: &mut tokio::net::TcpStream) -> String {
+            let mut bytes = Vec::new();
+            let mut chunk = [0_u8; 2048];
+            loop {
+                let read = socket.read(&mut chunk).await.unwrap();
+                if read == 0 {
+                    break;
+                }
+                bytes.extend_from_slice(&chunk[..read]);
+                if let Some(header_end) = bytes.windows(4).position(|window| window == b"\r\n\r\n") {
+                    let headers = String::from_utf8_lossy(&bytes[..header_end]);
+                    let content_length = headers
+                        .lines()
+                        .find_map(|line| {
+                            let (key, value) = line.split_once(':')?;
+                            key.eq_ignore_ascii_case("content-length")
+                                .then(|| value.trim().parse::<usize>().ok())
+                                .flatten()
+                        })
+                        .unwrap_or(0);
+                    if bytes.len() >= header_end + 4 + content_length {
+                        break;
+                    }
+                }
+            }
+            String::from_utf8_lossy(&bytes).to_string()
+        }
+
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let first = r#"{"guid":"expired-guid","count":2,"from":0,"results":[{
@@ -562,9 +590,7 @@ mod tests {
             let mut requests = Vec::new();
             for (status, body) in responses {
                 let (mut socket, _) = listener.accept().await.unwrap();
-                let mut bytes = [0_u8; 4096];
-                let size = socket.read(&mut bytes).await.unwrap();
-                requests.push(String::from_utf8_lossy(&bytes[..size]).to_string());
+                requests.push(read_request(&mut socket).await);
                 let response = format!(
                     "{status}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
                     body.len(),
