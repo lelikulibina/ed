@@ -163,6 +163,48 @@ mod tests {
         assert_eq!(normalize_atmosphere_type("any").unwrap(), "any");
     }
 
+
+    #[test]
+    fn accepts_every_legacy_planet_and_atmosphere_value() {
+        for value in [
+            "any",
+            "rocky body",
+            "icy body",
+            "rocky ice world",
+            "high metal content world",
+        ] {
+            assert!(
+                normalize_planet_type(value).is_ok(),
+                "legacy planet type must be accepted: {value}"
+            );
+        }
+
+        for value in [
+            "any",
+            "ammonia",
+            "water",
+            "carbon-dioxide",
+            "sulphur-dioxide",
+            "nitrogen",
+            "water-rich",
+            "methane-rich",
+            "carbon dioxide-rich",
+            "methane",
+            "helium",
+            "silicate vapour",
+            "neon-rich",
+            "argon-rich",
+            "neon",
+            "argon",
+            "oxygen",
+        ] {
+            assert!(
+                normalize_atmosphere_type(value).is_ok(),
+                "legacy atmosphere type must be accepted: {value}"
+            );
+        }
+    }
+
     #[test]
     fn requires_body_to_match_all_legacy_filters() {
         let body = Body {
