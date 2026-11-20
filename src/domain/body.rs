@@ -418,7 +418,7 @@ mod tests {
         .unwrap();
         assert_eq!(body.footfall_evidence(), FootfallEvidence::Pre2022Update);
 
-        body.last_updated_at = Some("2026-11-20T10:00:00Z".to_owned());
+        body.last_updated_at = Some("2022-01-01T00:00:00Z".to_owned());
         assert_eq!(
             body.footfall_evidence(),
             FootfallEvidence::Since2022Update
@@ -428,7 +428,6 @@ mod tests {
         assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
         body.last_updated_at = Some("not-a-date".to_owned());
         assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
-
     }
 
     #[test]
