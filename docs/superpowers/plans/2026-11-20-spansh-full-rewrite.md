@@ -54,6 +54,7 @@
 - [x] Recall GET `/api/bodies/search/recall/{reference}/{page}` подтверждён live для page 1.
 - [x] Direct POST с увеличенным `page` используется, если reference отсутствует; подтверждён live.
 - [x] Серверные фильтры `subtype`, `atmosphere`, `surface_temperature`, `surface_pressure`, `gravity`, `is_landable` передаются в Spansh; локальная проверка остаётся защитой.
+- [x] Атмосферный фильтр расширяется до всех Spansh labels, которые локальный normalizer сводит к одному CLI-типу (например, Water включает Thin/Thick/Hot Water).
 - [x] Конец выдачи определяется по `count/from`, empty/short-page fallback.
 - [x] При `count >= 10 000` поиск проверяет следующие страницы вместо остановки на metadata count; предельная защита — 1000 страниц.
 - [x] Дедупликация и mock-server tests.
