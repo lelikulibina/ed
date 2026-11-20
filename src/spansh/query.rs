@@ -87,10 +87,15 @@ mod tests {
     #[test]
     fn payload_contains_reference_coordinates_and_radius() {
         let query = BodySearchQuery::new(
-            Coordinates { x: 55.7, y: 17.5, z: 27.1 },
+            Coordinates {
+                x: 55.7,
+                y: 17.5,
+                z: 27.1,
+            },
             50.0,
             100,
-        ).unwrap();
+        )
+        .unwrap();
 
         let payload = query.to_payload();
         assert_eq!(payload["reference_coords"]["x"], 55.7);
@@ -106,15 +111,36 @@ mod tests {
     #[test]
     fn rejects_non_finite_coordinates_and_invalid_radius() {
         assert_eq!(
-            Coordinates { x: f64::NAN, y: 0.0, z: 0.0 }.validate(),
+            Coordinates {
+                x: f64::NAN,
+                y: 0.0,
+                z: 0.0
+            }
+            .validate(),
             Err(QueryError::Coordinates)
         );
         assert_eq!(
-            BodySearchQuery::new(Coordinates { x: 0.0, y: 0.0, z: 0.0 }, 0.0, 10),
+            BodySearchQuery::new(
+                Coordinates {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0
+                },
+                0.0,
+                10
+            ),
             Err(QueryError::Radius)
         );
         assert_eq!(
-            BodySearchQuery::new(Coordinates { x: 0.0, y: 0.0, z: 0.0 }, 1.0, 0),
+            BodySearchQuery::new(
+                Coordinates {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0
+                },
+                1.0,
+                0
+            ),
             Err(QueryError::PageSize)
         );
     }

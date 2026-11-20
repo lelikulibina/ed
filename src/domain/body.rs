@@ -29,17 +29,20 @@ impl Body {
         if !value.is_object() {
             return Err(BodyParseError::NotObject);
         }
-        let root = value.get("body").filter(|body| body.is_object()).unwrap_or(value);
+        let root = value
+            .get("body")
+            .filter(|body| body.is_object())
+            .unwrap_or(value);
         let system = root.get("system").filter(|system| system.is_object());
 
-        let name = string_field(root, &["name", "body_name"])
-            .ok_or(BodyParseError::MissingName)?;
+        let name = string_field(root, &["name", "body_name"]).ok_or(BodyParseError::MissingName)?;
 
         Ok(Self {
             id64: id_field(root, &["id64", "body_id64", "id"]),
             name,
-            system_id64: id_field(root, &["system_id64", "systemId64"])
-                .or_else(|| system.and_then(|value| id_field(value, &["id64", "system_id64", "id"]))),
+            system_id64: id_field(root, &["system_id64", "systemId64"]).or_else(|| {
+                system.and_then(|value| id_field(value, &["id64", "system_id64", "id"]))
+            }),
             system_name: string_field(root, &["system_name", "systemName"])
                 .or_else(|| system.and_then(|value| string_field(value, &["name", "system_name"]))),
             subtype: string_field(root, &["subtype", "type"]),
@@ -57,29 +60,35 @@ impl Body {
 fn id_field(value: &Value, names: &[&str]) -> Option<String> {
     names.iter().find_map(|name| {
         value.get(name).and_then(|field| {
-            field.as_str().map(str::to_owned)
+            field
+                .as_str()
+                .map(str::to_owned)
                 .or_else(|| field.as_u64().map(|id| id.to_string()))
         })
     })
 }
 
 fn string_field(value: &Value, names: &[&str]) -> Option<String> {
-    names.iter().find_map(|name| {
-        value.get(name).and_then(Value::as_str).map(str::to_owned)
-    })
+    names
+        .iter()
+        .find_map(|name| value.get(name).and_then(Value::as_str).map(str::to_owned))
 }
 
 fn number_field(value: &Value, names: &[&str]) -> Option<f64> {
     names.iter().find_map(|name| {
         value.get(name).and_then(|field| {
-            field.as_f64().or_else(|| field.as_str()?.parse().ok())
+            field
+                .as_f64()
+                .or_else(|| field.as_str()?.parse().ok())
                 .filter(|number| number.is_finite())
         })
     })
 }
 
 fn bool_field(value: &Value, names: &[&str]) -> Option<bool> {
-    names.iter().find_map(|name| value.get(name).and_then(Value::as_bool))
+    names
+        .iter()
+        .find_map(|name| value.get(name).and_then(Value::as_bool))
 }
 
 #[cfg(test)]
@@ -122,7 +131,8 @@ mod tests {
                 "system": {"id64": "123", "name": "A"},
                 "distance": 2.5
             }
-        })).unwrap();
+        }))
+        .unwrap();
         assert_eq!(body.id64.as_deref(), Some("9007199254740993"));
         assert_eq!(body.system_id64.as_deref(), Some("123"));
         assert_eq!(body.system_name.as_deref(), Some("A"));
@@ -131,7 +141,13 @@ mod tests {
 
     #[test]
     fn rejects_non_object_and_missing_name() {
-        assert_eq!(Body::from_json(&serde_json::json!([])), Err(BodyParseError::NotObject));
-        assert_eq!(Body::from_json(&serde_json::json!({"id64":"1"})), Err(BodyParseError::MissingName));
+        assert_eq!(
+            Body::from_json(&serde_json::json!([])),
+            Err(BodyParseError::NotObject)
+        );
+        assert_eq!(
+            Body::from_json(&serde_json::json!({"id64":"1"})),
+            Err(BodyParseError::MissingName)
+        );
     }
 }

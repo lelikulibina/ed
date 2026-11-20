@@ -42,17 +42,11 @@ impl SystemResolver {
 
         for end in (1..=parts.len()).rev() {
             let query = parts[..end].join(" ");
-            let path = format!(
-                "/api/search/systems?q={}",
-                encode_query_component(&query)
-            );
+            let path = format!("/api/search/systems?q={}", encode_query_component(&query));
             let response = self.client.get_json(&path).await?;
             if let Some(candidate) = first_candidate(&response) {
                 let id64 = candidate.id64.ok_or(ResolveError::InvalidResponse)?;
-                let detail = self
-                    .client
-                    .get_json(&format!("/api/system/{id64}"))
-                    .await?;
+                let detail = self.client.get_json(&format!("/api/system/{id64}")).await?;
                 return system_from_detail(&detail, id64, candidate.name)
                     .ok_or(ResolveError::InvalidResponse);
             }
@@ -204,7 +198,14 @@ mod tests {
         let system = system_from_detail(&detail, "0".to_owned(), None).unwrap();
         assert_eq!(system.name, "Sol");
         assert_eq!(system.id64, "42");
-        assert_eq!(system.coordinates, Coordinates { x: 1.0, y: 2.0, z: 3.0 });
+        assert_eq!(
+            system.coordinates,
+            Coordinates {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0
+            }
+        );
     }
 
     #[tokio::test]
@@ -240,23 +241,32 @@ mod tests {
 
         let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
         let resolver = SystemResolver::new(client);
-        let system = resolver
-            .resolve("Col 285 Sector BQ-Y d40")
-            .await
-            .unwrap();
+        let system = resolver.resolve("Col 285 Sector BQ-Y d40").await.unwrap();
 
         assert_eq!(system.name, "Col 285 Sector BQ-Y");
         assert_eq!(system.id64, "9223372036854775807");
-        assert_eq!(system.coordinates, Coordinates { x: 10.0, y: 20.0, z: 30.0 });
+        assert_eq!(
+            system.coordinates,
+            Coordinates {
+                x: 10.0,
+                y: 20.0,
+                z: 30.0
+            }
+        );
 
         let requests = server.await.unwrap();
-        assert!(requests[0].starts_with("GET /api/search/systems?q=Col%20285%20Sector%20BQ-Y%20d40 "));
+        assert!(
+            requests[0].starts_with("GET /api/search/systems?q=Col%20285%20Sector%20BQ-Y%20d40 ")
+        );
         assert!(requests[1].starts_with("GET /api/search/systems?q=Col%20285%20Sector%20BQ-Y "));
         assert!(requests[2].starts_with("GET /api/system/9223372036854775807 "));
     }
 
     #[test]
     fn query_component_is_percent_encoded() {
-        assert_eq!(encode_query_component("Col 285 Sector BQ-Y d40"), "Col%20285%20Sector%20BQ-Y%20d40");
+        assert_eq!(
+            encode_query_component("Col 285 Sector BQ-Y d40"),
+            "Col%20285%20Sector%20BQ-Y%20d40"
+        );
     }
 }

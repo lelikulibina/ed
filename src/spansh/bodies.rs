@@ -62,7 +62,10 @@ impl BodySearch {
         criteria: &SearchCriteria,
     ) -> Result<Vec<Body>, BodySearchError> {
         let query = BodySearchQuery::new(center.coordinates, self.radius_ly, self.page_size)?;
-        let initial = self.client.post_json("/api/bodies/search", &query.to_payload()).await?;
+        let initial = self
+            .client
+            .post_json("/api/bodies/search", &query.to_payload())
+            .await?;
 
         let mut page = parse_page(&initial)?;
         let mut guid = find_guid(&initial);
@@ -73,13 +76,19 @@ impl BodySearch {
         for page_index in 0..self.max_pages {
             for body in page.bodies.drain(..) {
                 let identity = body.id64.clone().unwrap_or_else(|| {
-                    format!("{}:{}", body.system_id64.as_deref().unwrap_or(""), body.name)
+                    format!(
+                        "{}:{}",
+                        body.system_id64.as_deref().unwrap_or(""),
+                        body.name
+                    )
                 });
                 if !seen.insert(identity) {
                     continue;
                 }
 
-                if body.distance_ly.is_some_and(|distance| distance <= self.radius_ly)
+                if body
+                    .distance_ly
+                    .is_some_and(|distance| distance <= self.radius_ly)
                     && criteria.matches(&body)
                 {
                     results.push(body);
@@ -169,10 +178,11 @@ fn find_guid(value: &Value) -> Option<String> {
         .iter()
         .find_map(|key| value.get(key).and_then(Value::as_str).map(str::to_owned))
         .or_else(|| {
-            value.get("search")
-                .and_then(|search| ["guid", "id"].iter().find_map(|key| {
-                    search.get(key).and_then(Value::as_str).map(str::to_owned)
-                }))
+            value.get("search").and_then(|search| {
+                ["guid", "id"]
+                    .iter()
+                    .find_map(|key| search.get(key).and_then(Value::as_str).map(str::to_owned))
+            })
         })
 }
 
@@ -215,17 +225,27 @@ mod tests {
             let mut chunk = [0_u8; 2048];
             loop {
                 let read = socket.read(&mut chunk).await.unwrap();
-                if read == 0 { break; }
+                if read == 0 {
+                    break;
+                }
                 bytes.extend_from_slice(&chunk[..read]);
-                if let Some(header_end) = bytes.windows(4).position(|window| window == b"\\r\\n\\r\\n") {
+                if let Some(header_end) = bytes
+                    .windows(4)
+                    .position(|window| window == b"\\r\\n\\r\\n")
+                {
                     let headers = String::from_utf8_lossy(&bytes[..header_end]);
-                    let content_length = headers.lines()
+                    let content_length = headers
+                        .lines()
                         .find_map(|line| {
                             let (key, value) = line.split_once(':')?;
-                            key.eq_ignore_ascii_case("content-length").then(|| value.trim().parse::<usize>().ok()).flatten()
+                            key.eq_ignore_ascii_case("content-length")
+                                .then(|| value.trim().parse::<usize>().ok())
+                                .flatten()
                         })
                         .unwrap_or(0);
-                    if bytes.len() >= header_end + 4 + content_length { break; }
+                    if bytes.len() >= header_end + 4 + content_length {
+                        break;
+                    }
                 }
             }
             String::from_utf8_lossy(&bytes).to_string()
@@ -243,7 +263,8 @@ mod tests {
                 requests.push(read_request(&mut socket).await);
                 let response = format!(
                     "HTTP/1.1 200 OK\\r\\ncontent-type: application/json\\r\\ncontent-length: {}\\r\\nconnection: close\\r\\n\\r\\n{}",
-                    body.len(), body
+                    body.len(),
+                    body
                 );
                 socket.write_all(response.as_bytes()).await.unwrap();
             }
@@ -254,15 +275,24 @@ mod tests {
         let center = ResolvedSystem {
             id64: "42".to_owned(),
             name: "Sol".to_owned(),
-            coordinates: super::super::query::Coordinates { x: 1.0, y: 2.0, z: 3.0 },
+            coordinates: super::super::query::Coordinates {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0,
+            },
         };
         let criteria = SearchCriteria::from_cli(
-            "rocky body", "nitrogen",
-            crate::domain::criteria::NumericRange { min: 200.0, max: 300.0 },
+            "rocky body",
+            "nitrogen",
+            crate::domain::criteria::NumericRange {
+                min: 200.0,
+                max: 300.0,
+            },
             crate::domain::criteria::NumericRange { min: 0.5, max: 1.5 },
             crate::domain::criteria::NumericRange { min: 0.0, max: 2.0 },
             1,
-        ).unwrap();
+        )
+        .unwrap();
 
         let results = BodySearch::new(client)
             .with_limits(100.0, 1, 3)

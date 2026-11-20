@@ -11,12 +11,18 @@ pub fn print_results(bodies: &[Body]) {
     let mut systems: BTreeMap<(String, String), Vec<&Body>> = BTreeMap::new();
     for body in bodies {
         let system_id = body.system_id64.clone().unwrap_or_else(|| {
-            body.system_name.clone().unwrap_or_else(|| "unknown".to_owned())
+            body.system_name
+                .clone()
+                .unwrap_or_else(|| "unknown".to_owned())
         });
-        let system_name = body.system_name.clone().unwrap_or_else(|| {
-            format!("Система {system_id}")
-        });
-        systems.entry((system_name, system_id)).or_default().push(body);
+        let system_name = body
+            .system_name
+            .clone()
+            .unwrap_or_else(|| format!("Система {system_id}"));
+        systems
+            .entry((system_name, system_id))
+            .or_default()
+            .push(body);
     }
 
     println!("\nНайденные планеты по системам:\n");
@@ -26,7 +32,11 @@ pub fn print_results(bodies: &[Body]) {
             println!(
                 "  • {}{}\n    Тип: {}\n    Атмосфера: {}\n    Температура: {} K\n    Давление: {}\n    Гравитация: {} g\n    Расстояние от центра поиска: {} св. л.\n",
                 body.name,
-                if body.is_mapped == Some(true) { " [изучена]" } else { "" },
+                if body.is_mapped == Some(true) {
+                    " [изучена]"
+                } else {
+                    ""
+                },
                 body.subtype.as_deref().unwrap_or("неизвестно"),
                 body.atmosphere.as_deref().unwrap_or("неизвестно"),
                 display_number(body.surface_temperature),
@@ -39,6 +49,7 @@ pub fn print_results(bodies: &[Body]) {
 }
 
 fn display_number(value: Option<f64>) -> String {
-    value.map(|number| format!("{number:.3}"))
+    value
+        .map(|number| format!("{number:.3}"))
         .unwrap_or_else(|| "нет данных".to_owned())
 }

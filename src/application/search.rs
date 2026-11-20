@@ -21,7 +21,10 @@ impl SearchUseCase {
     }
 
     pub async fn resolve_center(&self, system_name: &str) -> Result<ResolvedSystem, SearchError> {
-        SystemResolver::new(self.client.clone()).resolve(system_name).await.map_err(Into::into)
+        SystemResolver::new(self.client.clone())
+            .resolve(system_name)
+            .await
+            .map_err(Into::into)
     }
 
     pub async fn execute(
@@ -29,6 +32,9 @@ impl SearchUseCase {
         center: &ResolvedSystem,
         criteria: &SearchCriteria,
     ) -> Result<Vec<Body>, SearchError> {
-        BodySearch::new(self.client.clone()).search(center, criteria).await.map_err(Into::into)
+        BodySearch::new(self.client.clone())
+            .search(center, criteria)
+            .await
+            .map_err(Into::into)
     }
 }

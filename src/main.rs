@@ -4,7 +4,7 @@ mod domain;
 mod presentation;
 mod spansh;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::Parser;
 
 use application::search::SearchUseCase;
@@ -21,18 +21,12 @@ async fn main() -> Result<()> {
     let (gravity_min, gravity_max) = parse_range_f32(&args.gravity)?;
     let (pressure_min, pressure_max) = parse_range_f32(&args.pressure)?;
 
-    let temperature = NumericRange::new(
-        f64::from(temperature_min),
-        f64::from(temperature_max),
-    ).ok_or_else(|| anyhow!("Некорректный диапазон температуры: {}", args.temperature))?;
-    let gravity = NumericRange::new(
-        f64::from(gravity_min),
-        f64::from(gravity_max),
-    ).ok_or_else(|| anyhow!("Некорректный диапазон гравитации: {}", args.gravity))?;
-    let pressure = NumericRange::new(
-        f64::from(pressure_min),
-        f64::from(pressure_max),
-    ).ok_or_else(|| anyhow!("Некорректный диапазон давления: {}", args.pressure))?;
+    let temperature = NumericRange::new(f64::from(temperature_min), f64::from(temperature_max))
+        .ok_or_else(|| anyhow!("Некорректный диапазон температуры: {}", args.temperature))?;
+    let gravity = NumericRange::new(f64::from(gravity_min), f64::from(gravity_max))
+        .ok_or_else(|| anyhow!("Некорректный диапазон гравитации: {}", args.gravity))?;
+    let pressure = NumericRange::new(f64::from(pressure_min), f64::from(pressure_max))
+        .ok_or_else(|| anyhow!("Некорректный диапазон давления: {}", args.pressure))?;
 
     let criteria = SearchCriteria::from_cli(
         &args.planet_type,
@@ -50,8 +44,7 @@ async fn main() -> Result<()> {
     let center = search.resolve_center(&args.system).await?;
     println!(
         "Центр поиска: {} (ID64: {}), координаты: ({:.3}, {:.3}, {:.3})",
-        center.name, center.id64,
-        center.coordinates.x, center.coordinates.y, center.coordinates.z
+        center.name, center.id64, center.coordinates.x, center.coordinates.y, center.coordinates.z
     );
 
     println!("Ищу подходящие планеты в радиусе 100 св. л....");

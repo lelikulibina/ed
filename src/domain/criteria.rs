@@ -51,9 +51,15 @@ impl SearchCriteria {
 
     pub fn matches(&self, body: &Body) -> bool {
         (self.planet_type == "any"
-            || body.subtype.as_deref().is_some_and(|value| value.eq_ignore_ascii_case(&self.planet_type)))
+            || body
+                .subtype
+                .as_deref()
+                .is_some_and(|value| value.eq_ignore_ascii_case(&self.planet_type)))
             && (self.atmosphere_type == "any"
-                || body.atmosphere.as_deref().is_some_and(|value| value.eq_ignore_ascii_case(&self.atmosphere_type)))
+                || body
+                    .atmosphere
+                    .as_deref()
+                    .is_some_and(|value| value.eq_ignore_ascii_case(&self.atmosphere_type)))
             && self.temperature.contains(body.surface_temperature)
             && self.gravity.contains(body.gravity)
             && self.pressure.contains(body.surface_pressure)
@@ -79,7 +85,9 @@ fn normalize_planet_type(value: &str) -> Result<String, CriteriaError> {
         "rocky body" | "rocky" | "rock" => "Rocky body",
         "icy body" | "icy" | "ice" => "Icy body",
         "rocky ice world" | "rocky-ice world" | "rocky ice" => "Rocky ice world",
-        "high metal content world" | "high-metal content" | "high metal" => "High metal content world",
+        "high metal content world" | "high-metal content" | "high metal" => {
+            "High metal content world"
+        }
         _ => return Err(CriteriaError::PlanetType(value.to_owned())),
     };
     Ok(canonical.to_owned())
@@ -96,7 +104,9 @@ fn normalize_atmosphere_type(value: &str) -> Result<String, CriteriaError> {
         "nitrogen" => "Nitrogen",
         "water-rich" | "water rich" => "Water-rich",
         "methane-rich" | "methan-rich" | "methane rich" => "Methane-rich",
-        "carbon dioxide-rich" | "carbon-dioxide rich" | "carbon dioxide rich" => "Carbon dioxide-rich",
+        "carbon dioxide-rich" | "carbon-dioxide rich" | "carbon dioxide rich" => {
+            "Carbon dioxide-rich"
+        }
         "methane" | "methan" => "Methane",
         "helium" => "Helium",
         "silicate vapour" | "silicate vapor" => "Silicate vapour",
@@ -118,16 +128,23 @@ mod tests {
         SearchCriteria::from_cli(
             "Rocky body",
             "Nitrogen",
-            NumericRange { min: 200.0, max: 300.0 },
+            NumericRange {
+                min: 200.0,
+                max: 300.0,
+            },
             NumericRange { min: 0.5, max: 1.5 },
             NumericRange { min: 0.0, max: 2.0 },
             5,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
     fn range_boundaries_are_inclusive_and_missing_values_do_not_match() {
-        let range = NumericRange { min: 10.0, max: 20.0 };
+        let range = NumericRange {
+            min: 10.0,
+            max: 20.0,
+        };
         assert!(range.contains(Some(10.0)));
         assert!(range.contains(Some(20.0)));
         assert!(!range.contains(None));
@@ -139,19 +156,28 @@ mod tests {
     #[test]
     fn normalizes_legacy_cli_values() {
         assert_eq!(normalize_planet_type("rocky").unwrap(), "Rocky body");
-        assert_eq!(normalize_atmosphere_type("carbon-dioxide").unwrap(), "Carbon dioxide");
+        assert_eq!(
+            normalize_atmosphere_type("carbon-dioxide").unwrap(),
+            "Carbon dioxide"
+        );
         assert_eq!(normalize_atmosphere_type("any").unwrap(), "any");
     }
 
     #[test]
     fn requires_body_to_match_all_legacy_filters() {
         let body = Body {
-            id64: Some("1".to_owned()), name: "Sol 3".to_owned(),
-            system_id64: Some("2".to_owned()), system_name: Some("Sol".to_owned()),
-            subtype: Some("Rocky body".to_owned()), distance_ly: Some(1.0),
-            is_landable: Some(true), is_mapped: Some(false),
-            surface_temperature: Some(250.0), surface_pressure: Some(1.0),
-            gravity: Some(1.0), atmosphere: Some("Nitrogen".to_owned()),
+            id64: Some("1".to_owned()),
+            name: "Sol 3".to_owned(),
+            system_id64: Some("2".to_owned()),
+            system_name: Some("Sol".to_owned()),
+            subtype: Some("Rocky body".to_owned()),
+            distance_ly: Some(1.0),
+            is_landable: Some(true),
+            is_mapped: Some(false),
+            surface_temperature: Some(250.0),
+            surface_pressure: Some(1.0),
+            gravity: Some(1.0),
+            atmosphere: Some("Nitrogen".to_owned()),
         };
         assert!(criteria().matches(&body));
     }
@@ -159,11 +185,18 @@ mod tests {
     #[test]
     fn mapped_or_non_landable_bodies_are_excluded() {
         let mut body = Body {
-            id64: None, name: "X".to_owned(), system_id64: None, system_name: None,
-            subtype: Some("Earth-like world".to_owned()), distance_ly: None,
-            is_landable: Some(true), is_mapped: Some(false),
-            surface_temperature: Some(250.0), surface_pressure: Some(1.0),
-            gravity: Some(1.0), atmosphere: Some("Nitrogen".to_owned()),
+            id64: None,
+            name: "X".to_owned(),
+            system_id64: None,
+            system_name: None,
+            subtype: Some("Earth-like world".to_owned()),
+            distance_ly: None,
+            is_landable: Some(true),
+            is_mapped: Some(false),
+            surface_temperature: Some(250.0),
+            surface_pressure: Some(1.0),
+            gravity: Some(1.0),
+            atmosphere: Some("Nitrogen".to_owned()),
         };
         body.is_mapped = Some(true);
         assert!(!criteria().matches(&body));

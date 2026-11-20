@@ -98,7 +98,6 @@ pub(crate) fn parse_range_i32(s: &str) -> Result<(i32, i32)> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::Args;
@@ -107,9 +106,15 @@ mod tests {
     #[test]
     fn keeps_legacy_long_flags_and_defaults() {
         let args = Args::try_parse_from([
-            "ed_planet_search", "--system", "Sol",
-            "--planet-type", "rocky body", "--atmosphere-type", "water",
-        ]).unwrap();
+            "ed_planet_search",
+            "--system",
+            "Sol",
+            "--planet-type",
+            "rocky body",
+            "--atmosphere-type",
+            "water",
+        ])
+        .unwrap();
         assert_eq!(args.system, "Sol");
         assert_eq!(args.planet_type, "rocky body");
         assert_eq!(args.atmosphere_type, "water");
@@ -122,9 +127,23 @@ mod tests {
     #[test]
     fn keeps_legacy_short_flags_and_range_values() {
         let args = Args::try_parse_from([
-            "ed_planet_search", "-S", "Sol", "-P", "any", "-A", "any",
-            "-t", "100-900", "-g", "0.2-0.8", "-p", "0.0-2.5", "-c", "12",
-        ]).unwrap();
+            "ed_planet_search",
+            "-S",
+            "Sol",
+            "-P",
+            "any",
+            "-A",
+            "any",
+            "-t",
+            "100-900",
+            "-g",
+            "0.2-0.8",
+            "-p",
+            "0.0-2.5",
+            "-c",
+            "12",
+        ])
+        .unwrap();
         assert_eq!(args.system, "Sol");
         assert_eq!(args.temperature, "100-900");
         assert_eq!(args.gravity, "0.2-0.8");
