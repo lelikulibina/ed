@@ -52,7 +52,7 @@ fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
     if estimate.genera.is_empty() {
         if let Some(genera) = estimate.biological_genera.as_ref().filter(|genera| !genera.is_empty()) {
             return Ok(Some(format!(
-                "    Экзобиология: Spansh указал роды {}, но в текущем каталоге для них пока нет правил.",
+                "    Экзобиология: Spansh указал роды {}, но по текущим параметрам в справочнике не найдено подходящих видов.",
                 genera.join(", ")
             )));
         }
