@@ -41,8 +41,7 @@ impl Body {
         let name = string_field(root, &["name", "body_name"]).ok_or(BodyParseError::MissingName)?;
 
         Ok(Self {
-            id64: id_field(root, &["id64", "body_id64", "id"])
-                .or_else(|| id_field(value, &["id64", "body_id64", "id"])),
+            id64: id_field(root, &["id64", "body_id64", "id"]),
             name,
             system_id64: id_field(root, &["system_id64", "systemId64"])
                 .or_else(|| {
