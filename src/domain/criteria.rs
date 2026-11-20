@@ -43,7 +43,11 @@ impl SearchCriteria {
         }
 
         let planet_type = normalize_planet_type(planet_type)?;
-        let planet_types = if planet_type == "any" { Vec::new() } else { vec![planet_type.clone()] };
+        let planet_types = if planet_type == "any" {
+            Vec::new()
+        } else {
+            vec![planet_type.clone()]
+        };
 
         Ok(Self {
             planet_type,
@@ -73,17 +77,21 @@ impl SearchCriteria {
     pub fn matches(&self, body: &Body) -> bool {
         (if self.planet_types.is_empty() {
             self.planet_type == "any"
-                || body.subtype.as_deref().is_some_and(|value| value.eq_ignore_ascii_case(&self.planet_type))
+                || body
+                    .subtype
+                    .as_deref()
+                    .is_some_and(|value| value.eq_ignore_ascii_case(&self.planet_type))
         } else {
             body.subtype.as_deref().is_some_and(|value| {
-                self.planet_types.iter().any(|allowed| value.eq_ignore_ascii_case(allowed))
+                self.planet_types
+                    .iter()
+                    .any(|allowed| value.eq_ignore_ascii_case(allowed))
             })
-        })
-            && (self.atmosphere_type == "any"
-                || body
-                    .atmosphere
-                    .as_deref()
-                    .is_some_and(|value| value.eq_ignore_ascii_case(&self.atmosphere_type)))
+        }) && (self.atmosphere_type == "any"
+            || body
+                .atmosphere
+                .as_deref()
+                .is_some_and(|value| value.eq_ignore_ascii_case(&self.atmosphere_type)))
             && self.temperature.contains(body.surface_temperature)
             && self.gravity.contains(body.gravity)
             && self.pressure.contains(body.surface_pressure)
