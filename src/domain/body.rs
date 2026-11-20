@@ -194,14 +194,8 @@ mod tests {
             normalize_atmosphere_label("Carbon dioxide-rich atmosphere"),
             "Carbon dioxide-rich"
         );
-        assert_eq!(
-            normalize_atmosphere_label("Water-rich"),
-            "Water-rich"
-        );
-        assert_eq!(
-            normalize_atmosphere_label("No atmosphere"),
-            "No atmosphere"
-        );
+        assert_eq!(normalize_atmosphere_label("Water-rich"), "Water-rich");
+        assert_eq!(normalize_atmosphere_label("No atmosphere"), "No atmosphere");
     }
 
     #[test]
