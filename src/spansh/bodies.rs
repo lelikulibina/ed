@@ -346,8 +346,8 @@ mod tests {
                 .get_json(&format!("/api/bodies/search/recall/{guid}/1"))
                 .await
                 .expect("recall page request must succeed");
-            let _ = parse_page(&recall)
-                .expect("recall response must match a supported page envelope");
+            let _ =
+                parse_page(&recall).expect("recall response must match a supported page envelope");
         }
     }
 
