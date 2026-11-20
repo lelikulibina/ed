@@ -815,10 +815,10 @@ mod tests {
             .search(&center, &criteria)
             .await;
 
-        assert!(
-            result.is_err(),
-            "a 10,000-row result may be provider-truncated"
-        );
+        assert!(matches!(
+            result,
+            Err(BodySearchError::PotentialTruncation(10_000))
+        ));
         server.await.unwrap();
     }
 
