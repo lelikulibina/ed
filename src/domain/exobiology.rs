@@ -217,6 +217,21 @@ fn evaluate_species(entry: &Value, body: &Body) -> Option<SpeciesCandidate> {
         }
     }
 
+    if entry["terrain"]
+        .as_array()
+        .is_some_and(|terrain| !terrain.is_empty())
+    {
+        unknown_conditions.push("тип рельефа".to_owned());
+    }
+
+    if entry["requires_geological_signals"].as_bool() == Some(true) {
+        match body.geological_signal_count {
+            Some(0) => return None,
+            Some(_) => unknown_conditions.push("конкретные геологические объекты/фумаролы".to_owned()),
+            None => unknown_conditions.push("геологические сигналы".to_owned()),
+        }
+    }
+
     if let Some(allowed) = entry["volcanism"]
         .as_array()
         .filter(|values| !values.is_empty())
