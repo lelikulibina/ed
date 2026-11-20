@@ -112,10 +112,26 @@ impl BodySearch {
             let next_page = page_index + 1;
             let response = if let Some(search_guid) = guid.as_deref() {
                 let path = format!("/api/bodies/search/recall/{search_guid}/{next_page}");
-                self.client.get_json(&path).await?
+                match self.client.get_json(&path).await {
+                    Ok(response) => response,
+                    Err(SpanshError::Status { status, .. })
+                        if status == reqwest::StatusCode::NOT_FOUND
+                            || status == reqwest::StatusCode::GONE
+                            || status == reqwest::StatusCode::METHOD_NOT_ALLOWED
+                            || status.is_server_error() =>
+                    {
+                        // A saved search may expire or recall may be temporarily
+                        // unavailable. Direct POST pagination is live-confirmed.
+                        query.page = next_page;
+                        self.client
+                            .post_json("/api/bodies/search", &query.to_payload())
+                            .await?
+                    }
+                    Err(error) => return Err(error.into()),
+                }
             } else {
                 // Live API probe confirms page=N advances the result set; use it
-                // as fallback when no search_reference is supplied.
+                // when no search_reference is supplied.
                 query.page = next_page;
                 self.client
                     .post_json("/api/bodies/search", &query.to_payload())
