@@ -281,7 +281,7 @@ mod tests {
                 let mut request = [0_u8; 2048];
                 let _ = socket.read(&mut request).await.unwrap();
                 let response = format!(
-                    "HTTP/1.1 200 OK\\r\\ncontent-type: application/json\\r\\ncontent-length: {}\\r\\nconnection: close\\r\\n\\r\\n{}",
+                    "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
                     body.len(),
                     body
                 );
