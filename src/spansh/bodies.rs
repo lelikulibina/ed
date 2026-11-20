@@ -737,17 +737,39 @@ mod tests {
                 total_count <= 10_000,
                 "current 100-page safety limit must cover the provider result cap"
             );
-            let nearby_landable = bulk_page
+            let broad_criteria = crate::domain::criteria::SearchCriteria::from_cli(
+                "any",
+                "any",
+                crate::domain::criteria::NumericRange {
+                    min: 0.0,
+                    max: 5000.0,
+                },
+                crate::domain::criteria::NumericRange {
+                    min: 0.0,
+                    max: 10.0,
+                },
+                crate::domain::criteria::NumericRange {
+                    min: 0.0,
+                    max: 1000.0,
+                },
+                1,
+            )
+            .unwrap();
+            let nearby_match = bulk_page
                 .bodies
                 .iter()
-                .find(|body| !is_center_system(body, &center) && body.is_landable == Some(true))
-                .expect("100-ly first page should include a landable body in another system");
+                .find(|body| !is_center_system(body, &center) && broad_criteria.matches(body))
+                .expect("100-ly first page should include a fully characterized matching planet");
             eprintln!(
-                "Nearby landable body: {} in {:?}, subtype={:?}, distance={:?}",
-                nearby_landable.name,
-                nearby_landable.system_name,
-                nearby_landable.subtype,
-                nearby_landable.distance_ly
+                "Nearby matching planet: {} in {:?}, subtype={:?}, distance={:?}, temperature={:?}, pressure={:?}, gravity={:?}, atmosphere={:?}",
+                nearby_match.name,
+                nearby_match.system_name,
+                nearby_match.subtype,
+                nearby_match.distance_ly,
+                nearby_match.surface_temperature,
+                nearby_match.surface_pressure,
+                nearby_match.gravity,
+                nearby_match.atmosphere
             );
 
             let last_index = u32::try_from((total_count - 1) / 100).unwrap();
