@@ -165,7 +165,7 @@ mod tests {
         let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
         client.retry_delay = Duration::from_millis(1);
         let value = client.get_json("/fixture").await.unwrap();
-        assert_eq!(value["ok"], true);
+        assert!(value["ok"].as_bool().unwrap());
         server.await.unwrap();
     }
 }
