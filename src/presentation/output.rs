@@ -228,6 +228,23 @@ mod tests {
     }
 
     #[test]
+    fn footfall_summary_explains_update_time_is_only_a_heuristic() {
+        let mut body = body("Test body", "100", "Test system");
+        body.last_updated_at = Some("2021-05-18T23:59:59Z".to_owned());
+        let old = footfall_evidence_summary(&body);
+        assert!(old.contains("до Odyssey"));
+        assert!(old.contains("свободная высадка не гарантирована"));
+
+        body.last_updated_at = Some("2026-11-20T10:00:00Z".to_owned());
+        let recent = footfall_evidence_summary(&body);
+        assert!(recent.contains("после выхода Odyssey"));
+        assert!(recent.contains("не доказывает высадку"));
+
+        body.last_updated_at = None;
+        assert!(footfall_evidence_summary(&body).contains("статус неизвестен"));
+    }
+
+    #[test]
     fn exobiology_summary_reports_range_and_separates_first_logged_scenario() {
         let mut body = body("Test body", "100", "Test system");
         body.subtype = Some("Rocky body".to_owned());
