@@ -115,3 +115,5 @@
 - Дополнительный review resolver выявил edge case: при prefix fallback первым мог прийти autocomplete/name-only элемент без ID64, из-за чего поиск завершался InvalidResponse, не рассматривая следующие кандидаты. Resolver теперь пропускает записи без ID64; добавлены unit tests для exact и fallback candidate selection.
 - Добавлен mock test на исчерпание четырёх попыток при постоянном HTTP 503; ожидается явная SpanshError::Status, а не пустой результат.
 - CI run `44666537004` обнаружил только rustfmt diff; исправлено. CI для последнего SHA `b897773d260240dba0fb5364835880afbbeef44e` выполняется.
+
+- Последний rustfmt review потребовал убрать пустые строки между unit tests в `client.rs` и `system.rs`; поправлено в SHA `07670204c88c8efc3da11c8874b340bb20a26cbd`. Предыдущие CI падения были только на Format и до Clippy/Tests не доходили; ожидаем новый полный прогон.
