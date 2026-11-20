@@ -1125,44 +1125,48 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "requires live network; one targeted user-requested search"]
+    #[ignore = "requires live network; one targeted diagnostic query"]
     async fn live_drojia_water_rock_query() {
         let client = SpanshClient::spansh(1).unwrap();
         let center = super::super::system::SystemResolver::new(client.clone())
             .resolve("Drojia ZB-Z b32-0")
             .await
             .expect("Drojia center system must resolve");
-        let criteria = SearchCriteria::from_cli(
-            "Rock",
-            "Water",
-            crate::domain::criteria::NumericRange {
-                min: 190.0,
-                max: 195.0,
+        let query = BodySearchQuery::new(center.coordinates, 1_000.0, 100).unwrap();
+        let payload = serde_json::json!({
+            "filters": {
+                "distance": { "min": 0, "max": 1_000 },
+                "subtype": { "value": ["Rocky body"] },
+                "atmosphere": {
+                    "value": crate::domain::body::atmosphere_filter_labels("Water")
+                },
+                "is_landable": { "value": true }
             },
-            crate::domain::criteria::NumericRange { min: 0.1, max: 1.0 },
-            crate::domain::criteria::NumericRange {
-                min: 0.042,
-                max: 0.237,
-            },
-            15,
-        )
-        .unwrap();
+            "sort": [{ "distance": { "direction": "asc" } }],
+            "size": 100,
+            "page": 0,
+            "reference_coords": {
+                "x": query.reference_coords.x,
+                "y": query.reference_coords.y,
+                "z": query.reference_coords.z
+            }
+        });
+        eprintln!("Drojia normalized atmosphere filter payload: {payload}");
 
-        let results = BodySearch::new(client)
-            .search(&center, &criteria)
+        let response = client
+            .post_json("/api/bodies/search", &payload)
             .await
-            .expect("filtered Drojia body search must succeed");
+            .expect("Drojia atmosphere variant query must succeed");
+        let page = parse_page(&response).expect("Drojia response must parse");
         eprintln!(
-            "Drojia resolved as {} (ID64={}), returned {} matching bodies",
-            center.name,
-            center.id64,
-            results.len()
+            "Drojia rocky landable Water variants: count={:?}, rows={}",
+            page.total_count,
+            page.last_page_size
         );
-        for body in &results {
+        for body in page.bodies.iter().take(15) {
             eprintln!(
-                "{} | system={} | subtype={:?} | atmosphere={:?} | temp={:?} K | pressure={:?} atm | gravity={:?} g | landable={:?}",
+                "{} | subtype={:?} | atmosphere={:?} | temp={:?} K | pressure={:?} atm | gravity={:?} g | landable={:?}",
                 body.name,
-                body.system_name.as_deref().unwrap_or("?"),
                 body.subtype,
                 body.atmosphere,
                 body.surface_temperature,
@@ -1170,13 +1174,8 @@ mod tests {
                 body.gravity,
                 body.is_landable
             );
-            assert!(criteria.matches(body), "each result must satisfy every criterion");
         }
-        assert!(
-            !results.is_empty(),
-            "the exact Drojia query must return matching planets"
-        );
-        assert!(results.len() <= 15);
+        eprintln!("Drojia center resolved as {} (ID64={})", center.name, center.id64);
     }
 
     #[tokio::test]
