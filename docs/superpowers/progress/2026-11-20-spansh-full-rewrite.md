@@ -55,3 +55,6 @@
 - Следующая live-проверка расширена на GET resolver `/api/search/systems?q=Sol` + `/api/system/{id64}`, чтобы проверить реальный поиск системы и координаты.
 
 - Live probe with system resolver failed at `ResolveError::InvalidResponse` for `Sol`; body-search POST and recall are already verified. This failure may be in the system search response envelope or system detail coordinate shape. Added a diagnostic live probe to inspect both GET responses before changing the resolver parser.
+
+- Live system-search endpoint returns `{count, query, results}`; each result includes `id64`, `name`, and flat `x/y/z` coordinates. Detail endpoint returns the system under `record`. Resolver now uses coordinates from search results directly and falls back to the detail `record` envelope only when needed.
+- Added RED→GREEN test coverage for the actual `record` detail envelope and a no-extra-detail-request resolver path; live resolver recheck is queued.
