@@ -87,3 +87,7 @@
 - Live run `44664397995` прошёл end-to-end probe для 100 ly: `count=10000`; page 40 — Alpha Centauri на 4.37712 ly; первая page size100 содержит landable Rocky body `2045 PC2` в Alpha Centauri; page99 вернула `from=9900/rows=100` и распознана как последняя.
 - Центральная система теперь исключается в production BodySearch по ID64 (fallback — имя). Mock fallback test специально содержит подходящее тело Sol на page0 и подтверждает, что поиск продолжает выдачу до другой системы.
 - CI после добавления 100-row live probe требует только форматирования; rustfmt diff применён. Финальный CI после этих правок ожидается.
+
+- CI run `44664493252` (commit `1197165bdca8b6abe426d4010fa7f823e433c561`): Format, Clippy and all tests passed after central-system exclusion and live page-size-100 test were added.
+- Live run `44664397995` (commit `fa194da66ddc3836c94d860e053b5973adadd0fe`): 100-ly query returned count=10000; page 40 Alpha Centauri; page 0 size100 contained landable Rocky body 2045 PC2 in Alpha Centauri; page 99 returned from=9900/100 rows and was correctly recognized as last page.
+- Остаточные проверки: units полей на разных типах тел, 400/429/5xx/retry exhaustion, поведение выше 10k (provider cap), и финальный независимый review.
