@@ -335,7 +335,7 @@ mod tests {
     #[test]
     fn every_profile_can_be_selected_from_the_menu() {
         for number in 1..=7 {
-            let mut input = Cursor::new(format!("{number}\\nSol\\n\\n").into_bytes());
+            let mut input = Cursor::new(format!("{number}\nSol\n\n").into_bytes());
             let mut output = Vec::new();
             match run_menu(&mut input, &mut output).unwrap() {
                 MenuAction::Search { criteria, system } => {
