@@ -119,11 +119,15 @@ mod tests {
         let criteria = SearchCriteria::from_cli(
             "rocky body",
             "nitrogen",
-            NumericRange { min: 200.0, max: 300.0 },
+            NumericRange {
+                min: 200.0,
+                max: 300.0,
+            },
             NumericRange { min: 0.5, max: 1.5 },
             NumericRange { min: 0.0, max: 2.0 },
             1,
-        ).unwrap();
+        )
+        .unwrap();
 
         let results = search.execute(&center, &criteria).await.unwrap();
         assert_eq!(results.len(), 1);
