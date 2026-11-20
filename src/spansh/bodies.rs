@@ -736,7 +736,8 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let rows: Vec<Value> = (0..100)
-            .map(|index| serde_json::json!({
+            .map(|index| {
+                serde_json::json!({
                 "name": format!("Mapped Body {index}"),
                 "id64": format!("{}{}", 1000, index),
                 "system_id64": format!("{}{}", 2000, index),
@@ -749,7 +750,8 @@ mod tests {
                 "surface_pressure": 1.0,
                 "gravity": 1.0,
                 "atmosphere": "Nitrogen"
-            }))
+                })
+            })
             .collect();
         let response_body = serde_json::json!({
             "count": 10000,
@@ -763,7 +765,7 @@ mod tests {
             let mut request = [0_u8; 8192];
             let _ = socket.read(&mut request).await.unwrap();
             let response = format!(
-                "HTTP/1.1 200 OK\\r\\ncontent-type: application/json\\r\\ncontent-length: {}\\r\\nconnection: close\\r\\n\\r\\n{}",
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
                 response_body.len(),
                 response_body
             );
@@ -783,9 +785,18 @@ mod tests {
         let criteria = SearchCriteria::from_cli(
             "any",
             "any",
-            crate::domain::criteria::NumericRange { min: 0.0, max: 5000.0 },
-            crate::domain::criteria::NumericRange { min: 0.0, max: 10.0 },
-            crate::domain::criteria::NumericRange { min: 0.0, max: 10.0 },
+            crate::domain::criteria::NumericRange {
+                min: 0.0,
+                max: 5000.0,
+            },
+            crate::domain::criteria::NumericRange {
+                min: 0.0,
+                max: 10.0,
+            },
+            crate::domain::criteria::NumericRange {
+                min: 0.0,
+                max: 10.0,
+            },
             1,
         )
         .unwrap();
@@ -795,7 +806,10 @@ mod tests {
             .search(&center, &criteria)
             .await;
 
-        assert!(result.is_err(), "a 10,000-row result may be provider-truncated");
+        assert!(
+            result.is_err(),
+            "a 10,000-row result may be provider-truncated"
+        );
         server.await.unwrap();
     }
 
