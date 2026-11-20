@@ -102,3 +102,7 @@
 
 - Raw live atmosphere data: `atmosphere` is a descriptive label; `atmosphere_composition` is an array of `{name, share}`. Example Venus: CO2 96.5%; Earth: Nitrogen 77.89%, Oxygen 20.89%, Argon 0.93%; Io: Sulphur dioxide 90%.
 - Body normalizer now prefers a meaningful descriptive label, but when label is `No atmosphere` derives the CLI atmosphere category from the dominant composition. Added fixture tests and live assertions for Venus=Carbon dioxide, Earth=Nitrogen, Io=Sulphur dioxide.
+
+- Live run `44665360265` прошёл atmosphere assertions: Venus -> Carbon dioxide (label), Earth -> Nitrogen (dominant composition), Io -> Sulphur dioxide (dominant composition). Raw `atmosphere_composition` is an array of gas name/share; `atmosphere_type` is absent in these rows.
+- Temperature values look like Kelvin and gravity like g; pressure units remain provisional (likely atm) and require a broader consistency check.
+- CI run `44665347638` caught Clippy `collapsible_if`; corrected with a let-chain. New CI is required to confirm the fix.
