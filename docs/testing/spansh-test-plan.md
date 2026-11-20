@@ -64,7 +64,9 @@ Workflow: `.github/workflows/spansh-live-smoke.yml`; запускается вр
 - Радиус 100 ly вернул `count=10000`; page 40 — Alpha Centauri на 4.37712 ly. В первой странице размера 100 найден landable Rocky body `2045 PC2` в Alpha Centauri.
 - Размер страницы 100 работает; recall page 99 вернул `from=9900`, 100 строк и распознан как последняя страница.
 - Отдельный direct POST с `page=1` также вернул следующую запись с `from=1` и другим ID64.
-- Живой Mercury result содержал `id64`, `system_id64`, `subtype`, `distance`, `is_landable=true`, `is_mapped=null`, `surface_temperature`, `surface_pressure`, `gravity`, `atmosphere`. Это подтвердило форму полей, но не единицы измерения для всех типов тел.
+- Живые body rows содержат `id64`, `system_id64`, `subtype`, `distance`, `is_landable`, `is_mapped`, `surface_temperature`, `surface_pressure`, `gravity`, `atmosphere`, а для части тел — `atmosphere_composition[{name, share}]`.
+- Проверены live atmosphere normalization: Venus `Hot thick Carbon dioxide` -> Carbon dioxide; Earth label `No atmosphere` + composition -> Nitrogen; Io label `No atmosphere` + composition -> Sulphur dioxide.
+- Температура выглядит как Kelvin, gravity как g; pressure, вероятно, atm, но единицу давления нужно подтвердить отдельно.
 
 ## Что ещё не подтверждено
 
