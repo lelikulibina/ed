@@ -70,7 +70,11 @@ impl BodySearchQuery {
         if criteria.atmosphere_type != "any" {
             filters.insert(
                 "atmosphere".to_owned(),
-                json!({ "value": [criteria.atmosphere_type] }),
+                json!({
+                    "value": crate::domain::body::atmosphere_filter_labels(
+                        &criteria.atmosphere_type
+                    )
+                }),
             );
         }
 
@@ -191,10 +195,12 @@ mod tests {
             payload["filters"]["subtype"]["value"],
             serde_json::json!(["Rocky body"])
         );
-        assert_eq!(
-            payload["filters"]["atmosphere"]["value"],
-            serde_json::json!(["Water"])
-        );
+        let atmosphere_values = payload["filters"]["atmosphere"]["value"]
+            .as_array()
+            .unwrap();
+        assert!(atmosphere_values.contains(&serde_json::json!("Water")));
+        assert!(atmosphere_values.contains(&serde_json::json!("Thin Water")));
+        assert!(atmosphere_values.contains(&serde_json::json!("Hot thick Water")));
         assert_eq!(
             payload["filters"]["surface_temperature"]["comparison"],
             "<=>"
