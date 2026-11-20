@@ -157,10 +157,10 @@ fn prompt_count<R: BufRead, W: Write>(r: &mut R, w: &mut W) -> io::Result<usize>
         if value.is_empty() {
             return Ok(5);
         }
-        if let Ok(n) = value.parse::<usize>() {
-            if n > 0 {
-                return Ok(n);
-            }
+        if let Ok(n) = value.parse::<usize>()
+            && n > 0
+        {
+            return Ok(n);
         }
         writeln!(w, "Введите целое число больше нуля.")?;
     }
@@ -176,10 +176,10 @@ fn prompt_range_i32<R: BufRead, W: Write>(
         let Some(v) = read_line(r)? else {
             return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "EOF"));
         };
-        if let Ok((a, b)) = parse_range_i32(&v) {
-            if let Some(range) = NumericRange::new(f64::from(a), f64::from(b)) {
-                return Ok(range);
-            }
+        if let Ok((a, b)) = parse_range_i32(&v)
+            && let Some(range) = NumericRange::new(f64::from(a), f64::from(b))
+        {
+            return Ok(range);
         }
         writeln!(
             w,
@@ -198,10 +198,10 @@ fn prompt_range_f32<R: BufRead, W: Write>(
         let Some(v) = read_line(r)? else {
             return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "EOF"));
         };
-        if let Ok((a, b)) = parse_range_f32(&v) {
-            if let Some(range) = NumericRange::new(f64::from(a), f64::from(b)) {
-                return Ok(range);
-            }
+        if let Ok((a, b)) = parse_range_f32(&v)
+            && let Some(range) = NumericRange::new(f64::from(a), f64::from(b))
+        {
+            return Ok(range);
         }
         writeln!(
             w,
