@@ -1132,58 +1132,51 @@ mod tests {
             .resolve("Drojia ZB-Z b32-0")
             .await
             .expect("Drojia center system must resolve");
-        let criteria = SearchCriteria::from_cli(
-            "Rock",
-            "Water",
-            crate::domain::criteria::NumericRange {
-                min: 190.0,
-                max: 195.0,
-            },
-            crate::domain::criteria::NumericRange { min: 0.1, max: 1.0 },
-            crate::domain::criteria::NumericRange {
-                min: 0.042,
-                max: 0.237,
-            },
-            15,
-        )
-        .unwrap();
         let query = BodySearchQuery::new(center.coordinates, 1_000.0, 1).unwrap();
-        let base_payload = query.to_payload_with_criteria(&criteria);
-
-        let stages: [(&str, &[&str]); 4] = [
-            ("subtype+atmosphere+landable", &["surface_temperature", "surface_pressure", "gravity"]),
-            ("+temperature", &["surface_pressure", "gravity"]),
-            ("+pressure", &["gravity"]),
-            ("+gravity (full query)", &[]),
+        let stages = [
+            (
+                "subtype+atmosphere",
+                serde_json::json!({
+                    "subtype": { "value": ["Rocky body"] },
+                    "atmosphere": { "value": ["Water"] }
+                }),
+            ),
+            (
+                "subtype+landable",
+                serde_json::json!({
+                    "subtype": { "value": ["Rocky body"] },
+                    "is_landable": { "value": true }
+                }),
+            ),
+            (
+                "atmosphere+landable",
+                serde_json::json!({
+                    "atmosphere": { "value": ["Water"] },
+                    "is_landable": { "value": true }
+                }),
+            ),
         ];
-        for (label, omitted_filters) in stages {
-            let mut payload = base_payload.clone();
-            let filters = payload["filters"].as_object_mut().unwrap();
-            for filter in omitted_filters {
-                filters.remove(*filter);
-            }
 
+        for (label, filters) in stages {
+            let mut payload = query.to_payload();
+            payload["filters"] = filters;
             let response = client
                 .post_json("/api/bodies/search", &payload)
                 .await
                 .unwrap_or_else(|error| panic!("Drojia stage {label} failed: {error}"));
             let page = parse_page(&response).expect("Drojia stage response must parse");
             eprintln!(
-                "Drojia stage {label}: count={:?}, rows={}, first={:?}",
+                "Drojia pair {label}: count={:?}, first={:?}",
                 page.total_count,
-                page.last_page_size,
                 page.bodies.first().map(|body| (
                     &body.name,
                     &body.subtype,
                     &body.atmosphere,
-                    body.surface_temperature,
-                    body.surface_pressure,
-                    body.gravity,
-                    body.is_landable
+                    body.is_landable,
+                    body.distance_ly
                 ))
             );
         }
-
         eprintln!(
             "Drojia center resolved as {} (ID64={}) at ({:.3},{:.3},{:.3})",
             center.name,
