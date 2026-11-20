@@ -99,3 +99,6 @@
 - Sol page sample shows pressure values 93.19 (Venus), 0.999 (Earth), 2.303 (Mars), gravity ~0.90/0.999/0.377 and temperatures 735/288/261. Pressure appears atm and gravity g, but broader data consistency still needs review. Added raw atmosphere field inspection to distinguish `atmosphere` from `atmosphere_type`.
 
 - Live raw body row keys include `atmosphere_composition` and numeric `atmosphere_type`; current parser was reading only descriptive `atmosphere`. Added a probe to inspect composition values so local CLI atmosphere filters can use the correct field.
+
+- Raw live atmosphere data: `atmosphere` is a descriptive label; `atmosphere_composition` is an array of `{name, share}`. Example Venus: CO2 96.5%; Earth: Nitrogen 77.89%, Oxygen 20.89%, Argon 0.93%; Io: Sulphur dioxide 90%.
+- Body normalizer now prefers a meaningful descriptive label, but when label is `No atmosphere` derives the CLI atmosphere category from the dominant composition. Added fixture tests and live assertions for Venus=Carbon dioxide, Earth=Nitrogen, Io=Sulphur dioxide.
