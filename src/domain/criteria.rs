@@ -221,6 +221,10 @@ mod tests {
             surface_pressure: Some(1.0),
             gravity: Some(1.0),
             atmosphere: Some("Nitrogen".to_owned()),
+            volcanism_type: None,
+            biological_signal_count: None,
+            biological_genera: None,
+            signals_updated_at: None,
         };
         assert!(criteria().matches(&body));
     }
@@ -240,6 +244,10 @@ mod tests {
             surface_pressure: Some(1.0),
             gravity: Some(1.0),
             atmosphere: Some("Nitrogen".to_owned()),
+            volcanism_type: None,
+            biological_signal_count: None,
+            biological_genera: None,
+            signals_updated_at: None,
         };
         assert!(criteria().matches(&body));
         body.is_mapped = Some(true);
