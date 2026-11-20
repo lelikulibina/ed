@@ -17,5 +17,5 @@ jobs:
         with:
           components: rustfmt
       - uses: Swatinem/rust-cache@v2
-      - name: Run two low-volume 1000-ly Spansh smoke searches
-        run: cargo test --locked --all-targets live_spansh_radius_1000_named_systems -- --ignored --nocapture
+      - name: Run one targeted Drojia body-search contract probe
+        run: cargo test --locked --all-targets live_drojia_water_rock_query -- --ignored --nocapture
