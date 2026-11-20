@@ -229,11 +229,13 @@ mod tests {
         body.surface_temperature = Some(200.0);
         body.gravity = Some(0.2);
         body.biological_signal_count = Some(2);
+        body.geological_signal_count = Some(1);
         body.biological_genera = Some(vec!["Osseus".to_owned(), "Tussock".to_owned()]);
 
         let summary = exobiology_summary(&body).unwrap().unwrap();
         assert!(summary.contains("Экзобиология — уточнение по родам Spansh"));
         assert!(summary.contains("Биологических сигналов Spansh: 2"));
+        assert!(summary.contains("Геологических сигналов Spansh: 1"));
         assert!(summary.contains("Роды Spansh: Osseus, Tussock"));
         assert!(summary.contains("Каталог видов неполный"));
         assert!(!summary.contains("Bacterium:"));
