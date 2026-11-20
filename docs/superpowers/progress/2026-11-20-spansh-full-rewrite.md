@@ -126,3 +126,6 @@
 - Добавил coverage test для каждого прежнего значения planet/atmosphere CLI enum. Также усилил live smoke: Venus должна возвращать ~93.19 pressure / 735 K / 0.904 g, Earth ~0.999 pressure / 288 K / 0.999 g. Это согласуется с атмосферными pressure units (atm), но остаётся проверкой на примерах, а не официальной спецификацией единиц.
 
 - Полный enum compatibility test выявил расхождение старого парсера и CLI help: help показывал `sulphur-dioxide`, но старый `AtmosphereType::from_str` принимал только `sulphur dioxide` / `sulfur dioxide` / `sulfurdioxide`. Добавлена поддержка обеих дефисных форм без удаления старых aliases; повторная проверка CI запущена.
+
+- После расширения enum regression test обнаружено, что прежний parser не принимал дефисную форму `sulphur-dioxide`, хотя CLI help её документировал. Добавлена совместимая поддержка дефисной формы; CI run `44667116048` прошёл Format, Clippy и Tests.
+- Добавлен отдельный mock test, проверяющий, что достижение лимита страниц возвращает `BodySearchError::PageLimit`, а не маскирует неполную выдачу как успешный пустой результат. CI для SHA `d5a146645aabb3441468d61dffbb4d7206dfad2c` выполняется.
