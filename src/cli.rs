@@ -136,11 +136,15 @@ mod tests {
     fn parses_exclude_biological_flag() {
         let args = Args::try_parse_from([
             "ed_planet_search",
-            "-S", "Sol",
-            "-P", "any",
-            "-A", "any",
+            "-S",
+            "Sol",
+            "-P",
+            "any",
+            "-A",
+            "any",
             "--exclude-biological",
-        ]).unwrap();
+        ])
+        .unwrap();
         assert!(args.exclude_biological);
     }
 
