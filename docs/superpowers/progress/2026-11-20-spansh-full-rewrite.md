@@ -80,3 +80,6 @@
 
 - Live 100-ly probe passed: `count=10000`; recall page 40 contained Alpha Centauri (system ID64 `1178708478315`) at 4.377120 ly from Sol. This validates the core nearby-system discovery path.
 - Added one final live probe for production page size 100 and the last page of the 10,000-row response (expected page index 99 / from 9900).
+
+- По живому 100-ly результату подтверждено, что первые 40 тел принадлежат Sol, а page 40 — Alpha Centauri (4.377 ly). В production search добавлено исключение центральной системы по ID64 с fallback по имени; mock-тест теперь проверяет, что подходящее тело Sol пропускается и поиск продолжается до соседней системы.
+- Live smoke дополнен проверкой, что первая страница размера 100 содержит landable body из системы, отличной от центра.
