@@ -20,7 +20,8 @@
 - Нижняя граница по планете равна нулю до подтверждения биологических сигналов; верхняя граница суммирует максимум каждого возможного рода.
 - First Logged отображается отдельным условным сценарием ×5. Вероятности не выдумываются.
 - Предварительная оценка добавлена в вывод результатов поиска. Вывод явно предупреждает, что кандидаты совпадают только по внесённым в справочник условиям и полный набор игровых условий пока не моделируется.
-- `Body` сохраняет `updated_at` из SearchBody и `updateTime` из dump Body. Если последнее обновление раньше `2022-01-01`, программа считает, что высадки ещё не было; если дата — 2022 год или позже, высадка могла быть. Это рабочая эвристика, а не прямой статус First Footfall от Spansh.
+- Удалена ошибочная эвристика First Footfall по дате обновления записи: `updated_at` / `updateTime` не являются датой высадки.
+- Добавлен флаг `--exclude-biological`: он исключает планеты с положительным количеством биологических сигналов и/или непустым списком `genuses` из Spansh. Это фильтр по зарегистрированной биологии, а не доказательство First Footfall.
 - Программа полностью автономна и не обращается к локальным файлам Elite Dangerous.
 - Добавлены интеграционные и доменные тесты на справочник, границы правил, неизвестный вулканизм, альтернативы рода, First Logged и оба формата Spansh biology metadata.
 
@@ -29,9 +30,9 @@
 - Контракт подтверждён официальными схемами Spansh: [api.openapi.json](https://github.com/spansh/elite_dangerous_schemas/blob/9355a09c054ebf0975a1e662a62dec46b303e990/api.openapi.json) и [model.openapi.json](https://github.com/spansh/elite_dangerous_schemas/blob/9355a09c054ebf0975a1e662a62dec46b303e990/model.openapi.json).
 - `GET /body/{id64}` возвращает `{record: SearchBody}`. В `SearchBody` есть `volcanism_type`, `signals[{name,count}]`, `signal_count`, `signals_updated_at`, `genuses[{name}]` и `landmarks`.
 - Dump `Body` использует camelCase: `volcanismType`, `signals.signals` с ключом `$SAA_SignalType_Biological;`, `signals.genuses` с Codex-токенами и `signals.updateTime`.
-- В Spansh-модели не обнаружены прямые поля First Footfall или First Logged. SearchBody `updated_at` и dump Body `updateTime` — время последнего обновления записи, а не флаг высадки. `is_mapped`, `landmarks` и отсутствие сигналов также не подтверждают First Footfall.
+- В Spansh-модели не обнаружены прямые поля First Footfall или First Logged. SearchBody `updated_at` и dump Body `updateTime` — время последнего обновления записи, а не флаг высадки. `is_mapped`, `landmarks`, наличие или отсутствие биосигналов не подтверждают First Footfall.
 - Прямого статуса First Footfall в Spansh нет. В коде не должно быть чтения игровых журналов или зависимости от запущенной игры.
-- First Footfall относится к планете, а First Logged — к конкретному виду на планете. Высадка другим командиром не доказывает, что бонус First Logged уже забран по всем видам. Spansh не сообщает статус продажи/первого логирования; ×5 остаётся условным сценарием. Дополнительно: [Frontier FAQ](https://store.steampowered.com/news/posts/?appids=359320&enddate=1614874210&feed=steam_community_announcements) описывает First Footfall как планетарный статус, отображаемый в System Map; обсуждение [First Footfall vs First Logged](https://steamcommunity.com/app/359320/discussions/0/693121295397729546/) подчёркивает различие этих событий.
+- First Footfall относится к планете, а First Logged — к конкретному виду на планете. Биосигналы и genuses не доказывают факт высадки, поскольку могут быть обнаружены с орбиты. Spansh не сообщает статус продажи/первого логирования; ×5 остаётся условным сценарием. Дополнительно: [Frontier FAQ](https://store.steampowered.com/news/posts/?appids=359320&enddate=1614874210&feed=steam_community_announcements) описывает First Footfall как планетарный статус, отображаемый в System Map; обсуждение [First Footfall vs First Logged](https://steamcommunity.com/app/359320/discussions/0/693121295397729546/) подчёркивает различие этих событий.
 - `parents` доступны в модели тела, но полноценный контекст главной звезды требует связать цепочку родителей с телами из system dump; пока не используется, так как текущая выборка видов не требует star rules.
 - Поиск планет и его фильтры не менялись.
 - Предпочтительные места обитания не превращаются в жёсткие ограничения: для Tussock и Cactoida поле `planet_types` оставлено пустым, если источник описывает только предпочтение/типичную среду.
@@ -44,7 +45,7 @@
 - Rust CI на коммите `826d3399` завершился успешно: `cargo fmt -- --check`, Clippy и `cargo test --locked --all-targets`.: `cargo fmt -- --check`, Clippy и `cargo test --locked --all-targets`.
 - Результат тестов: 66 unit-тестов пройдены, 4 ignored; 5 integration-тестов пройдены; ошибок нет.
 - Тесты построены на формах JSON из официальной OpenAPI-схемы; live API запрос не выполнялся, workflow Spansh Live Contract Smoke был пропущен.
-- Тесты проверяют классификацию последнего обновления относительно границы `2022-01-01`, включая дату непосредственно до и на границе.
+- Добавлены тесты флага `--exclude-biological` и локальной фильтрации по положительному biological signal count / непустому списку genuses.
 - Регрессионный тест на жёсткую фильтрацию предпочтительных планетных типов сначала упал на данных каталога, затем прошёл после исправления правил.
 - Тесты отдельно проверяют Water-rich как отличную от Water категорию и агрегацию альтернативных видов через максимум на род, а не суммой.
 
