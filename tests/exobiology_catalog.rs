@@ -58,3 +58,20 @@ fn catalog_has_no_duplicate_species_and_records_genus_constraints() {
             .contains(&Value::String("Water-rich".into()))
     );
 }
+
+#[test]
+fn genus_preferences_are_not_encoded_as_hard_planet_type_filters() {
+    let catalog = catalog();
+    let species = catalog["species"].as_array().expect("species array");
+
+    for (genus, name) in [("Tussock", "Virgam"), ("Cactoida", "Vermis")] {
+        let entry = species
+            .iter()
+            .find(|entry| entry["genus"] == genus && entry["species"] == name)
+            .expect("species rule");
+        assert!(
+            entry["planet_types"].as_array().unwrap().is_empty(),
+            "{genus} {name} has no exclusive planet-type requirement in the source table"
+        );
+    }
+}
