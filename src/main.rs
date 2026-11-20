@@ -1,4 +1,5 @@
 mod cli;
+mod domain;
 mod parser;
 #[allow(dead_code)]
 mod spansh;
