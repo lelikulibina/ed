@@ -515,6 +515,112 @@ mod tests {
         assert_eq!(payload["page"], 1);
     }
 
+
+    #[tokio::test]
+    async fn falls_back_to_direct_post_when_recall_reference_has_expired() {
+        use tokio::{
+            io::{AsyncReadExt, AsyncWriteExt},
+            net::TcpListener,
+        };
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let first = r#"{"guid":"expired-guid","count":2,"from":0,"results":[{
+            "name":"Mapped Body",
+            "id64":"1001",
+            "system_id64":"2001",
+            "system_name":"Nearby",
+            "subtype":"Rocky body",
+            "distance":1.0,
+            "is_landable":true,
+            "is_mapped":true,
+            "surface_temperature":250,
+            "surface_pressure":1.0,
+            "gravity":1.0,
+            "atmosphere":"Nitrogen"
+        }]}"#;
+        let second = r#"{"count":2,"from":1,"results":[{
+            "name":"Nearby Body",
+            "id64":"1002",
+            "system_id64":"2002",
+            "system_name":"Nearby",
+            "subtype":"Rocky body",
+            "distance":2.0,
+            "is_landable":true,
+            "is_mapped":false,
+            "surface_temperature":250,
+            "surface_pressure":1.0,
+            "gravity":1.0,
+            "atmosphere":"Nitrogen"
+        }]}"#;
+        let server = tokio::spawn(async move {
+            let responses = [
+                ("HTTP/1.1 200 OK", first),
+                ("HTTP/1.1 404 Not Found", ""),
+                ("HTTP/1.1 200 OK", second),
+            ];
+            let mut requests = Vec::new();
+            for (status, body) in responses {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                let mut bytes = [0_u8; 4096];
+                let size = socket.read(&mut bytes).await.unwrap();
+                requests.push(String::from_utf8_lossy(&bytes[..size]).to_string());
+                let response = format!(
+                    "{status}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                );
+                socket.write_all(response.as_bytes()).await.unwrap();
+            }
+            requests
+        });
+
+        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let center = ResolvedSystem {
+            id64: "42".to_owned(),
+            name: "Sol".to_owned(),
+            coordinates: super::super::query::Coordinates {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        };
+        let criteria = SearchCriteria::from_cli(
+            "any",
+            "any",
+            crate::domain::criteria::NumericRange {
+                min: 0.0,
+                max: 5000.0,
+            },
+            crate::domain::criteria::NumericRange {
+                min: 0.0,
+                max: 10.0,
+            },
+            crate::domain::criteria::NumericRange {
+                min: 0.0,
+                max: 10.0,
+            },
+            1,
+        )
+        .unwrap();
+
+        let results = BodySearch::new(client)
+            .with_limits(100.0, 1, 3)
+            .search(&center, &criteria)
+            .await
+            .unwrap();
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].name, "Nearby Body");
+        let requests = server.await.unwrap();
+        assert!(requests[0].starts_with("POST /api/bodies/search "));
+        assert!(requests[1].starts_with("GET /api/bodies/search/recall/expired-guid/1 "));
+        assert!(requests[2].starts_with("POST /api/bodies/search "));
+        let (_, request_body) = requests[2].split_once("\r\n\r\n").unwrap();
+        let payload: Value = serde_json::from_str(request_body).unwrap();
+        assert_eq!(payload["page"], 1);
+    }
+
     #[tokio::test]
     async fn returns_page_limit_error_instead_of_silent_partial_results() {
         use tokio::{
