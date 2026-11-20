@@ -1125,8 +1125,8 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "requires live network; one targeted diagnostic query"]
-    async fn live_drojia_water_rock_query() {
+    #[ignore = "requires live network; one targeted atmosphere-variant diagnostic"]
+    async fn live_drojia_water_rock_variants() {
         let client = SpanshClient::spansh(1).unwrap();
         let center = super::super::system::SystemResolver::new(client.clone())
             .resolve("Drojia ZB-Z b32-0")
@@ -1175,7 +1175,10 @@ mod tests {
                 body.is_landable
             );
         }
-        eprintln!("Drojia center resolved as {} (ID64={})", center.name, center.id64);
+        eprintln!(
+            "Drojia center resolved as {} (ID64={})",
+            center.name, center.id64
+        );
     }
 
     #[tokio::test]
