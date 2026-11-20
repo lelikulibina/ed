@@ -204,3 +204,50 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
+
+
+#[cfg(test)]
+mod cli_compatibility_tests {
+    use super::Args;
+    use clap::Parser;
+
+    #[test]
+    fn preserves_long_cli_flags_and_defaults() {
+        let args = Args::try_parse_from([
+            "ed_planet_search",
+            "--system", "Sol",
+            "--planet-type", "rocky body",
+            "--atmosphere-type", "water",
+        ])
+        .unwrap();
+
+        assert_eq!(args.system, "Sol");
+        assert_eq!(args.planet_type, "rocky body");
+        assert_eq!(args.atmosphere_type, "water");
+        assert_eq!(args.temperature, "0-5000");
+        assert_eq!(args.gravity, "0.1-1.0");
+        assert_eq!(args.pressure, "0.0-10.0");
+        assert_eq!(args.count, 5);
+    }
+
+    #[test]
+    fn preserves_short_cli_flags_and_custom_ranges() {
+        let args = Args::try_parse_from([
+            "ed_planet_search",
+            "-S", "Sol",
+            "-P", "any",
+            "-A", "any",
+            "-t", "100-900",
+            "-g", "0.2-0.8",
+            "-p", "0.0-2.5",
+            "-c", "12",
+        ])
+        .unwrap();
+
+        assert_eq!(args.system, "Sol");
+        assert_eq!(args.temperature, "100-900");
+        assert_eq!(args.gravity, "0.2-0.8");
+        assert_eq!(args.pressure, "0.0-2.5");
+        assert_eq!(args.count, 12);
+    }
+}
