@@ -49,7 +49,9 @@ fn footfall_evidence_summary(body: &Body) -> String {
     match body.footfall_evidence() {
         FootfallEvidence::FootfalledBeforeScan => format!(
             "журнал Scan.WasFootfalled=true ({}) — кто-то высадился до этого сканирования",
-            body.journal_scan_timestamp.as_deref().unwrap_or("дата неизвестна")
+            body.journal_scan_timestamp
+                .as_deref()
+                .unwrap_or("дата неизвестна")
         ),
         FootfallEvidence::UnfootfalledAtScan => format!(
             "журнал Scan.WasFootfalled=false ({}) — до этого сканирования высадки не было; хороший признак для бонуса, но не гарантия First Logged",
