@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
         pressure,
         args.count,
     )?
-    .with_exclude_with_bio_signals(args.exclude_with_bio_signals);
+    .with_bio_signal_exclusion(args.exclude_with_bio_signals);
 
     let client = SpanshClient::spansh(1)?;
     let search = SearchUseCase::new(client);
