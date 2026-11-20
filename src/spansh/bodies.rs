@@ -460,16 +460,22 @@ mod tests {
         use super::super::query::Coordinates;
 
         let client = SpanshClient::spansh(1).unwrap();
-        let mut query = BodySearchQuery::new(
-            Coordinates {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            1.0,
-            1,
-        )
-        .unwrap();
+        let center = super::super::system::SystemResolver::new(client.clone())
+            .resolve("Sol")
+            .await
+            .expect("Spansh system resolver must find Sol");
+        assert_eq!(center.name, "Sol");
+        eprintln!(
+            "Resolved live center: {} ID64={} coords=({}, {}, {})",
+            center.name,
+            center.id64,
+            center.coordinates.x,
+            center.coordinates.y,
+            center.coordinates.z
+        );
+
+        let mut query =
+            BodySearchQuery::new(center.coordinates, 1.0, 1).unwrap();
 
         let response = client
             .post_json("/api/bodies/search", &query.to_payload())
@@ -515,7 +521,24 @@ mod tests {
                 .expect("recall page request must succeed");
             let next =
                 parse_page(&recall).expect("recall response must match a supported page envelope");
-            eprintln!("Spansh recall page: {} rows", next.bodies.len());
+            eprintln!(
+                "Spansh recall page: {} rows, first body={:?}",
+                next.bodies.len(),
+                next.bodies.first().map(|body| (
+                    &body.name,
+                    &body.id64,
+                    &body.system_id64,
+                    &body.system_name,
+                    &body.subtype,
+                    body.distance_ly,
+                    body.is_landable,
+                    body.is_mapped,
+                    body.surface_temperature,
+                    body.surface_pressure,
+                    body.gravity,
+                    &body.atmosphere
+                ))
+            );
         } else {
             query.page = 1;
             let response = client
