@@ -45,6 +45,7 @@ impl BodySearch {
         }
     }
 
+    #[cfg(test)]
     pub fn with_limits(mut self, radius_ly: f64, page_size: u16, max_pages: u32) -> Self {
         self.radius_ly = radius_ly;
         self.page_size = page_size;
