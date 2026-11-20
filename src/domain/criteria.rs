@@ -100,7 +100,8 @@ fn normalize_atmosphere_type(value: &str) -> Result<String, CriteriaError> {
         "ammonia" => "Ammonia",
         "water" => "Water",
         "carbon dioxide" | "carbon-dioxide" | "carbondioxide" => "Carbon dioxide",
-        "sulphur dioxide" | "sulfur dioxide" | "sulfurdioxide" => "Sulphur dioxide",
+        "sulphur dioxide" | "sulphur-dioxide" | "sulfur dioxide" | "sulfur-dioxide"
+        | "sulfurdioxide" => "Sulphur dioxide",
         "nitrogen" => "Nitrogen",
         "water-rich" | "water rich" => "Water-rich",
         "methane-rich" | "methan-rich" | "methane rich" => "Methane-rich",
@@ -183,6 +184,7 @@ mod tests {
             "ammonia",
             "water",
             "carbon-dioxide",
+            "sulphur dioxide",
             "sulphur-dioxide",
             "nitrogen",
             "water-rich",
