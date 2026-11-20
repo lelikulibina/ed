@@ -320,8 +320,7 @@ mod tests {
     #[test]
     fn manual_mode_reprompts_after_invalid_surface_type() {
         let mut input = Cursor::new(
-            b"8\nSol\nnot-a-type\nrocky body\nwater\n100-200\n0.1-1.0\n0.1-1.0\n\n"
-                .to_vec(),
+            b"8\nSol\nnot-a-type\nrocky body\nwater\n100-200\n0.1-1.0\n0.1-1.0\n\n".to_vec(),
         );
         let mut output = Vec::new();
         match run_menu(&mut input, &mut output).unwrap() {
