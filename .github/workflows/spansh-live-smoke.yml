@@ -1,0 +1,20 @@
+name: Spansh Live Contract Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - refactor/spansh-api-architecture
+
+jobs:
+  live-smoke:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[spansh-live-smoke]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Run one live Spansh body-search contract probe
+        run: cargo test --locked --all-targets live_spansh_body_search_contract -- --ignored --nocapture
