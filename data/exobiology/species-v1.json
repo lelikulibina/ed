@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "currency": "CR",
+  "payout_model": {
+    "complete_sample_set": 3,
+    "first_logged_multiplier": 5,
+    "probabilities": null
+  },
+  "sources": [
+    "https://elite-dangerous.fandom.com/wiki/Exobiology_Sample_Values_and_Details",
+    "https://elite-dangerous.fandom.com/ru/wiki/Экзобиолог/Стоимость_образцов"
+  ],
+  "species": [
+    {
+      "genus": "Osseus",
+      "species": "Discus",
+      "base_value_cr": 12934900,
+      "planet_types": ["Rocky body", "High metal content world"],
+      "atmospheres": ["Water", "Water-rich"]
+    },
+    {
+      "genus": "Tussock",
+      "species": "Virgam",
+      "base_value_cr": 14313700,
+      "planet_types": ["Rocky body"],
+      "atmospheres": ["Water", "Water-rich"]
+    },
+    {
+      "genus": "Tussock",
+      "species": "Stigmasis",
+      "base_value_cr": 19010800,
+      "planet_types": ["Rocky body"],
+      "atmospheres": ["Sulphur dioxide"]
+    },
+    {
+      "genus": "Cactoida",
+      "species": "Vermis",
+      "base_value_cr": 16202800,
+      "planet_types": ["Rocky body", "High metal content world"],
+      "atmospheres": ["Water"]
+    },
+    {
+      "genus": "Clypeus",
+      "species": "Margaritus",
+      "base_value_cr": 11873200,
+      "planet_types": ["Rocky body", "High metal content world"],
+      "atmospheres": ["Water", "Carbon dioxide", "Carbon dioxide-rich"],
+      "temperature_min_k": 190,
+      "temperature_min_inclusive": false,
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false
+    },
+    {
+      "genus": "Recepta",
+      "species": "Deltahedronix",
+      "base_value_cr": 16202800,
+      "planet_types": ["Rocky body", "High metal content world"],
+      "atmospheres": ["Sulphur dioxide"],
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false
+    },
+    {
+      "genus": "Bacterium",
+      "species": "Cerbrus",
+      "base_value_cr": 1689800,
+      "planet_types": [],
+      "atmospheres": ["Water", "Sulphur dioxide"],
+      "volcanism": ["None"]
+    }
+  ]
+}
