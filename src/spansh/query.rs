@@ -153,7 +153,7 @@ mod tests {
                 z: 0.0
             }
             .validate(),
-            Err(QueryError::InvalidCoordinates)
+            Err(QueryError::Coordinates)
         );
         assert_eq!(
             BodySearchQuery::new(
@@ -165,7 +165,7 @@ mod tests {
                 0.0,
                 10
             ),
-            Err(QueryError::InvalidRadius)
+            Err(QueryError::Radius)
         );
     }
 }
