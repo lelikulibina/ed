@@ -195,6 +195,7 @@ mod tests {
             atmosphere: None,
             volcanism_type: None,
             biological_signal_count: None,
+            geological_signal_count: None,
             biological_genera: None,
             signals_updated_at: None,
         }
