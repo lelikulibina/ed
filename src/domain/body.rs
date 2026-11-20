@@ -395,6 +395,7 @@ mod tests {
             "distance": 12.5,
             "is_landable": true,
             "is_mapped": false,
+            "updated_at": "2021-05-18T23:59:59Z",
             "surface_temperature": null,
             "surface_pressure": "0.12",
             "gravity": 0.98,
@@ -408,6 +409,7 @@ mod tests {
         assert_eq!(body.surface_pressure, Some(0.12));
         assert_eq!(body.gravity, Some(0.98));
         assert_eq!(body.is_mapped, Some(false));
+        assert_eq!(body.last_updated_at.as_deref(), Some("2021-05-18T23:59:59Z"));
         assert_eq!(body.atmosphere.as_deref(), Some("Carbon dioxide"));
     }
 
@@ -417,7 +419,8 @@ mod tests {
             "body": {
                 "name": "A 1",
                 "id64": "9007199254740993",
-                "subtype": "Rocky body"
+                "subtype": "Rocky body",
+                "updateTime": "2026-11-20T00:00:00Z"
             },
             "system": {"id64": "123", "name": "A"},
             "distance": 2.5
@@ -426,6 +429,7 @@ mod tests {
         assert_eq!(body.id64.as_deref(), Some("9007199254740993"));
         assert_eq!(body.system_id64.as_deref(), Some("123"));
         assert_eq!(body.system_name.as_deref(), Some("A"));
+        assert_eq!(body.last_updated_at.as_deref(), Some("2026-11-20T00:00:00Z"));
         assert_eq!(body.distance_ly, Some(2.5));
     }
 
@@ -481,11 +485,13 @@ mod tests {
                 {"name": "Biological", "count": 3}
             ],
             "genuses": [{"name": "Tussocks"}, {"name": "Bacterial"}, {"name": "Clypeus"}],
-            "signals_updated_at": "2026-11-20T00:00:00Z"
+            "signals_updated_at": "2026-11-20T00:00:00Z",
+            "updated_at": "2026-11-20T00:01:00Z"
         }))
         .unwrap();
 
         assert_eq!(body.volcanism_type.as_deref(), Some("No volcanism"));
+        assert_eq!(body.last_updated_at.as_deref(), Some("2026-11-20T00:01:00Z"));
         assert_eq!(body.biological_signal_count, Some(3));
         assert_eq!(body.geological_signal_count, Some(0));
         assert_eq!(
