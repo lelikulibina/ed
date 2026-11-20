@@ -177,7 +177,10 @@ fn is_last_page(page: &ParsedPage, page_index: u32, page_size: u16) -> bool {
     // Spansh may cap the reported count at 10,000. Do not treat that
     // metadata (or a full capped final page) as proof that no later pages
     // exist: probe the next page and stop only when it is actually empty.
-    if page.total_count.is_some_and(|count| count >= PROVIDER_RESULT_LIMIT) {
+    if page
+        .total_count
+        .is_some_and(|count| count >= PROVIDER_RESULT_LIMIT)
+    {
         return false;
     }
 
