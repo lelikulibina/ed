@@ -91,12 +91,12 @@ fn first_candidate(value: &Value) -> Option<Candidate> {
     candidate_from_value(value)
 }
 
-
 fn exact_candidate(value: &Value, expected_name: &str) -> Option<Candidate> {
     let matches_name = |candidate: &Candidate| {
-        candidate.name.as_deref().is_some_and(|name| {
-            name.trim().eq_ignore_ascii_case(expected_name.trim())
-        })
+        candidate
+            .name
+            .as_deref()
+            .is_some_and(|name| name.trim().eq_ignore_ascii_case(expected_name.trim()))
     };
 
     for key in ["systems", "results", "values", "data"] {
