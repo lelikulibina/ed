@@ -49,9 +49,7 @@ impl Body {
                 })
                 .or_else(|| id_field(value, &["system_id64", "systemId64"])),
             system_name: string_field(root, &["system_name", "systemName"])
-                .or_else(|| {
-                    system.and_then(|value| string_field(value, &["name", "system_name"]))
-                })
+                .or_else(|| system.and_then(|value| string_field(value, &["name", "system_name"])))
                 .or_else(|| string_field(value, &["system_name", "systemName"])),
             subtype: string_field(root, &["subtype", "type"])
                 .or_else(|| string_field(value, &["subtype", "type"])),
@@ -65,8 +63,7 @@ impl Body {
                 .or_else(|| number_field(value, &["surface_temperature", "surface_temp"])),
             surface_pressure: number_field(root, &["surface_pressure", "pressure"])
                 .or_else(|| number_field(value, &["surface_pressure", "pressure"])),
-            gravity: number_field(root, &["gravity"])
-                .or_else(|| number_field(value, &["gravity"])),
+            gravity: number_field(root, &["gravity"]).or_else(|| number_field(value, &["gravity"])),
             atmosphere: string_field(root, &["atmosphere", "atmosphere_type"])
                 .or_else(|| string_field(value, &["atmosphere", "atmosphere_type"])),
         })
