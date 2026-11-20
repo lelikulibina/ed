@@ -132,3 +132,6 @@
 
 - Rust CI run `44667250884` на SHA `9bbeeac8ffc97243a106e6cfdb6d780281f13679`: Format, Clippy и Tests PASS; `40 passed, 0 failed, 1 ignored`. Включает полный набор прежних CLI enum значений, retry exhaustion и page-limit error tests.
 - Запускаю повторный live smoke с усиленными проверками физических значений Venus/Earth (давление, температура, гравитация).
+
+- Rust CI run `44667317592` на SHA `f65e8106a33d56fca3e64fa0d3d48ccf4454f2b3`: Format, Clippy, Tests PASS.
+- Повторный live smoke `44667317582` PASS на том же SHA: Venus assertions прошли (735 K, 93.1895 pressure, 0.9044 g, Carbon dioxide); Earth assertions прошли (288 K, 0.99908 pressure, 0.99906 g, Nitrogen). 100-ly поиск по-прежнему находит `2045 PC2` в Alpha Centauri, последняя страница 99 из 10 000 строк определяется корректно.
