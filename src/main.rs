@@ -166,7 +166,7 @@ async fn main() -> Result<()> {
             let fits_f32 =
                 |opt: Option<f32>, min: f32, max: f32| opt.is_some_and(|v| v >= min && v <= max);
             let fits_i32 =
-                |opt: Option<i32>, min: i32, max: i32| opt.map_or(false, |v| v >= min && v <= max);
+                |opt: Option<i32>, min: i32, max: i32| opt.is_some_and(|v| v >= min && v <= max);
 
             if fits_f32(planet.gravity, gmin, gmax)
                 && fits_f32(planet.pressure, pmin, pmax)
