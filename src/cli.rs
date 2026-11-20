@@ -78,6 +78,13 @@ pub(crate) struct Args {
         help = "Количество планет, которые необходимо найти"
     )]
     pub(crate) count: usize,
+
+    #[arg(
+        long = "exclude-biological",
+        default_value_t = false,
+        help = "Исключать планеты, для которых Spansh сообщает биологические сигналы или обнаруженные роды"
+    )]
+    pub(crate) exclude_biological: bool,
 }
 
 pub(crate) fn parse_range_f32(s: &str) -> Result<(f32, f32)> {
@@ -122,6 +129,19 @@ mod tests {
         assert_eq!(args.gravity, "0.1-1.0");
         assert_eq!(args.pressure, "0.0-10.0");
         assert_eq!(args.count, 5);
+        assert!(!args.exclude_biological);
+    }
+
+    #[test]
+    fn parses_exclude_biological_flag() {
+        let args = Args::try_parse_from([
+            "ed_planet_search",
+            "-S", "Sol",
+            "-P", "any",
+            "-A", "any",
+            "--exclude-biological",
+        ]).unwrap();
+        assert!(args.exclude_biological);
     }
 
     #[test]
