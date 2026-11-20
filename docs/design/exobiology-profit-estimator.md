@@ -30,6 +30,20 @@
 
 Часть условий не указана для некоторых видов и трактуется как отсутствие ограничения только если это явно следует из справочника. Неизвестное значение параметра не равно «подходит»: кандидат помечается как требующий проверки.
 
+## Подтверждённый контракт Spansh
+
+Схемы Spansh в репозитории [elite_dangerous_schemas](https://github.com/spansh/elite_dangerous_schemas) проверены на commit `9355a09c054ebf0975a1e662a62dec46b303e990`:
+
+- [api.openapi.json](https://github.com/spansh/elite_dangerous_schemas/blob/9355a09c054ebf0975a1e662a62dec46b303e990/api.openapi.json): `GET /body/{id64}` возвращает объект `{ "record": SearchBody }`.
+- [model.openapi.json](https://github.com/spansh/elite_dangerous_schemas/blob/9355a09c054ebf0975a1e662a62dec46b303e990/model.openapi.json): `SearchBody` содержит `volcanism_type`, `signals: [{name,count}]`, `signal_count`, `signals_updated_at`, `genuses: [{name}]` и `landmarks`.
+- В SearchBody биологические сигналы представлены записью `signals[].name == "Biological"`; `signal_count` — общее число сигналов и не заменяет биологический count.
+- Dump-модель `Body` использует camelCase: `volcanismType` и вложенный объект `signals` с картой `signals`, массивом Codex-токенов `genuses` и `updateTime`. Биологический count хранится под ключом `$SAA_SignalType_Biological;`.
+- Официальное значение отсутствия вулканизма — `No volcanism`. Если поле `volcanism_type` отсутствует, приложение оставляет его неизвестным, а не выводит отсутствие вулканизма автоматически.
+- В этих моделях нет полей First Footfall или First Logged. `is_mapped`, `landmarks` и отсутствие биосигналов не являются заменой этим статусам.
+- `parents` позволяют восстановить родительскую цепочку, но для правил по звезде может потребоваться загрузить тела системы из dump и связать их по ID64.
+
+Парсер `Body::from_json` поддерживает SearchBody и dump Body. Для genus names и Codex-токенов нормализуются известные соответствия, в частности Bacterial → Bacterium, Cactoids → Cactoida, Tussocks → Tussock.
+
 ## Три уровня оценки
 
 ### 1. Предварительный прогноз (FSS / параметры тела)
@@ -79,14 +93,15 @@ First Logged сценарий:
 
 ## Необходимые данные в модели
 
-Текущий `Body` хранит subtype, atmosphere, temperature, pressure, gravity, landability и mapped state. Для полноценной оценки надо исследовать и при необходимости добавить:
-- volcanism_type;
-- biological_signals / biological signal count (и, если доступно, genus names);
-- body star/system context: primary star class и признаки требуемых соседних тел;
-- first_footfall / посещённость, если источник действительно предоставляет достоверное поле;
-- сведения о подтверждённых видах/сборах, если будет подключён журнал игрока.
+Текущий `Body` уже хранит subtype, atmosphere, temperature (K), pressure, gravity, landability, mapped state, volcanism_type, biological signal count, genus list и signals update time. Контракт полей вулканизма и биологии подтверждён официальными схемами Spansh и реализован в парсере.
 
-Перед добавлением полей проверить фактическую форму Spansh body search и `GET /api/body/{id64}`. Не предполагать имена полей по догадке. Если search result не содержит сигналы, использовать body detail только для кандидатов и соблюдать ограничение частоты запросов.
+Для следующих этапов остаются:
+- body star/system context: восстановление primary star class и признаков требуемых соседних тел по parents и system dump;
+- first_footfall / First Logged: эти поля отсутствуют в Spansh-модели; нужен другой достоверный источник или журнал игрока;
+- landmarks / подтверждённые виды: использовать subtype из landmarks только как свидетельство уже известного вида, не как First Logged;
+- сведения о фактических сборах и бонусах, если будет подключён журнал игрока.
+
+Не предполагать имена полей по догадке. Любые новые поля сначала подтверждать схемой или реальным fixture.
 
 ## Источник вероятностей и качество прогноза
 
@@ -101,7 +116,7 @@ First Logged сценарий:
 
 ## План реализации
 
-1. Проверить реальные поля Spansh для биосигналов, вулканизма, звезды и first footfall; зафиксировать контракт тестовыми JSON fixtures.
+1. [x] Проверить поля Spansh для биосигналов и вулканизма; зафиксировать формы SearchBody и dump Body тестами по официальной схеме. Звёздный контекст и First Footfall требуют отдельных источников/связей.
 2. Создать доменный справочник видов и правил в отдельном versioned JSON-файле, не зашивать таблицу цен в алгоритм.
 3. Добавить движок сопоставления правил, учитывающий неизвестные параметры и альтернативные виды одного рода.
 4. Добавить расчёт диапазона базовой стоимости и отдельного First Logged x5 сценария.
