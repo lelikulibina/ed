@@ -300,18 +300,8 @@ mod tests {
         ))
         .unwrap();
 
-        assert!(
-            estimate
-                .genera
-                .iter()
-                .any(|genus| genus.genus == "Osseus")
-        );
-        assert!(
-            estimate
-                .genera
-                .iter()
-                .any(|genus| genus.genus == "Tussock")
-        );
+        assert!(estimate.genera.iter().any(|genus| genus.genus == "Osseus"));
+        assert!(estimate.genera.iter().any(|genus| genus.genus == "Tussock"));
         assert!(
             !estimate
                 .genera
