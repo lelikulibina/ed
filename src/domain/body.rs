@@ -105,6 +105,36 @@ fn atmosphere_from_values(root: &Value, value: &Value) -> Option<String> {
     dominant_component.or_else(|| label.map(|label| normalize_atmosphere_label(&label)))
 }
 
+/// Spansh stores atmosphere thickness/temperature as part of the label, while the
+/// CLI intentionally compares the normalized atmosphere family. Query all known
+/// label variants that collapse to the same family so server and local filters agree.
+pub fn atmosphere_filter_labels(value: &str) -> Vec<String> {
+    let prefixes = ["", "Thin ", "Thick ", "Hot ", "Hot thin ", "Hot thick "];
+    let mut candidates = prefixes
+        .iter()
+        .map(|prefix| format!("{prefix}{value}"))
+        .collect::<Vec<_>>();
+
+    candidates.extend(
+        [
+            "Ammonia and Oxygen",
+            "Thick Ammonia and Oxygen",
+            "Suitable for water-based life",
+            "Thick Suitable for water-based life",
+            "Thick No atmosphere",
+        ]
+        .into_iter()
+        .map(str::to_owned),
+    );
+
+    candidates.retain(|candidate| {
+        normalize_atmosphere_label(candidate).eq_ignore_ascii_case(value)
+    });
+    candidates.sort();
+    candidates.dedup();
+    candidates
+}
+
 fn normalize_atmosphere_label(value: &str) -> String {
     let normalized = value.trim().to_ascii_lowercase().replace('-', " ");
     let patterns = [
