@@ -444,6 +444,11 @@ mod tests {
         assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
         body.last_updated_at = Some("not-a-date".to_owned());
         assert_eq!(body.footfall_evidence(), FootfallEvidence::Unknown);
+
+        body.journal_was_footfalled = Some(true);
+        assert_eq!(body.footfall_evidence(), FootfallEvidence::FootfalledBeforeScan);
+        body.journal_was_footfalled = Some(false);
+        assert_eq!(body.footfall_evidence(), FootfallEvidence::UnfootfalledAtScan);
     }
 
     #[test]
