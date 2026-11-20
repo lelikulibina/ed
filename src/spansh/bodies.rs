@@ -125,7 +125,10 @@ impl BodySearch {
                         // unavailable. Direct POST pagination is live-confirmed.
                         query.page = next_page;
                         self.client
-                            .post_json("/api/bodies/search", &query.to_payload_with_criteria(criteria))
+                            .post_json(
+                                "/api/bodies/search",
+                                &query.to_payload_with_criteria(criteria),
+                            )
                             .await?
                     }
                     Err(error) => return Err(error.into()),
