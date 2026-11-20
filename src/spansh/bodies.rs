@@ -10,7 +10,7 @@ use super::{
     system::ResolvedSystem,
 };
 
-const DEFAULT_RADIUS_LY: f64 = 100.0;
+const DEFAULT_RADIUS_LY: f64 = 1_000.0;
 const PAGE_SIZE: u16 = 100;
 const MAX_PAGES: u32 = 100;
 
