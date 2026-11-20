@@ -83,7 +83,8 @@
 - [x] Live smoke: system search, detail envelope, body search, search_reference, recall pages 1 и 39, direct POST page 1, 100-ly neighboring systems, page size 100/page 99, live atmosphere normalization.
 - [x] Проверить последнюю страницу на выдаче count=40.
 - [x] Проверить live поиск на 10 000 результатов: page size 100, page 40 (Alpha Centauri) и последняя page 99.
-- [ ] Проверить, что происходит при выдаче свыше 10 000 (возможно provider cap).
+- [x] Если Spansh сообщает ровно/более 10 000 записей и выдача исчерпана до набора `--count`, вернуть явную ошибку `PotentialTruncation`, а не молча считать выборку полной.
+- [ ] Проверить, можно ли покрыть более 10 000 тел разбиением области поиска на непересекающиеся/перекрывающиеся запросы без пропусков и чрезмерного числа обращений.
 - [ ] Проверить единицы surface_pressure/gravity и все варианты subtype/atmosphere на реальных данных.
 - [ ] Проверить 400/429/5xx, исчерпание retry и временную недоступность recall.
 - [ ] Провести повторный review после этих проверок.
@@ -91,7 +92,7 @@
 ## Архитектурные решения и оставшиеся ограничения
 
 - Локальная БД и EDSM dump не используются.
-- Радиус по умолчанию — 100 св. л. (временная константа; старый CLI не имел radius-флага).
+- Радиус по умолчанию — 1000 св. л. (временная константа; старый CLI не имел radius-флага).
 - Spansh HTTP client: concurrency=1, минимум 1 секунда между началами запросов.
 - Live подтверждены Sol coordinates `(0,0,0)`, body search, response metadata `count/from/size`, `search_reference`, recall page 1 и direct POST page 1.
 - Полный контракт API не считается окончательно подтверждённым: последняя страница, большие выдачи, units и все enum values ещё требуют проверки.
