@@ -241,6 +241,11 @@ mod tests {
     use super::*;
 
     #[test]
+    fn default_search_radius_is_1000_light_years() {
+        assert_eq!(DEFAULT_RADIUS_LY, 1_000.0);
+    }
+
+    #[test]
     fn identifies_center_system_by_id64_and_falls_back_to_name() {
         let center = ResolvedSystem {
             id64: "42".to_owned(),
