@@ -24,6 +24,8 @@ pub enum BodySearchError {
     InvalidResponse,
     #[error("Spansh вернул некорректный объект планеты: {0}")]
     InvalidBody(String),
+    #[error("достигнут предел страниц поиска ({0}); результаты могут быть неполными")]
+    PageLimit(u32),
 }
 
 pub struct BodySearch {
@@ -65,6 +67,7 @@ impl BodySearch {
         let mut guid = find_guid(&initial);
         let mut seen = HashSet::new();
         let mut results = Vec::new();
+        let mut completed = false;
 
         for page_index in 0..self.max_pages {
             for body in page.bodies.drain(..) {
@@ -84,6 +87,7 @@ impl BodySearch {
             }
 
             if page.exhausted {
+                completed = true;
                 break;
             }
 
@@ -92,6 +96,7 @@ impl BodySearch {
                 // page request. Treat a short page as terminal; a full page
                 // is an explicit contract error to avoid silent truncation.
                 if page.last_page_size < usize::from(self.page_size) {
+                    completed = true;
                     break;
                 }
                 return Err(BodySearchError::InvalidResponse);
@@ -106,6 +111,9 @@ impl BodySearch {
             }
         }
 
+        if !completed && self.max_pages > 0 {
+            return Err(BodySearchError::PageLimit(self.max_pages));
+        }
         Ok(results)
     }
 }
@@ -119,7 +127,15 @@ struct ParsedPage {
 fn parse_page(value: &Value) -> Result<ParsedPage, BodySearchError> {
     let array = ["results", "bodies", "data", "items"]
         .iter()
-        .find_map(|key| value.get(key).and_then(Value::as_array))
+        .find_map(|key| {
+            value.get(key).and_then(|candidate| {
+                candidate.as_array().or_else(|| {
+                    ["results", "bodies", "items"]
+                        .iter()
+                        .find_map(|nested| candidate.get(nested).and_then(Value::as_array))
+                })
+            })
+        })
         .or_else(|| value.as_array())
         .ok_or(BodySearchError::InvalidResponse)?;
 
