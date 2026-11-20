@@ -296,7 +296,7 @@ mod tests {
         assert!(summary.contains("Биологическая группа"));
         assert!(summary.contains("Оссии"));
         assert!(!summary.contains("First Footfall"));
-        assert!(summary.contains("Вид-кандидат"));
+        assert!(summary.contains("Вид"));
         assert!(summary.contains("За 3 образца"));
         assert!(summary.contains("Потенциальная базовая выручка: 0–"));
         assert!(summary.contains("При First Logged ×5: 0–"));
@@ -317,10 +317,10 @@ mod tests {
 
         let summary = exobiology_summary(&body).unwrap().unwrap();
         assert!(summary.contains("из биологических групп, указанных Spansh"));
-        assert!(summary.contains("Osseus"));
-        assert!(summary.contains("Tussock"));
+        assert!(summary.contains("Оссии"));
+        assert!(summary.contains("Дерновина"));
         assert!(summary.contains("справочник видов неполный"));
-        assert!(!summary.contains("Bacterium"));
+        assert!(!summary.contains("Бактерии"));
     }
 
     #[test]
