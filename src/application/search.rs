@@ -39,7 +39,6 @@ impl SearchUseCase {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
