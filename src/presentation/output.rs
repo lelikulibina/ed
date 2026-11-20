@@ -18,7 +18,11 @@ pub fn print_results(bodies: &[Body]) {
             println!(
                 "  • {}{}\n    Тип: {}\n    Атмосфера: {}\n    Температура: {} K\n    Давление: {}\n    Гравитация: {} g\n    Расстояние от центра поиска: {} св. л.\n",
                 body.name,
-                if body.is_mapped == Some(true) { " [изучена]" } else { "" },
+                if body.is_mapped == Some(true) {
+                    " [изучена]"
+                } else {
+                    ""
+                },
                 body.subtype.as_deref().unwrap_or("неизвестно"),
                 body.atmosphere.as_deref().unwrap_or("неизвестно"),
                 display_number(body.surface_temperature),
