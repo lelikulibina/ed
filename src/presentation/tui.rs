@@ -273,12 +273,12 @@ pub fn run_tui() -> Result<Option<SearchConfig>> {
                     }
                     app.error = None;
                 }
-                // Отдельные клавиши выбора профиля не конфликтуют с редактированием полей.
-                KeyCode::Char('[') if app.screen == Screen::Presets => {
+                // Стрелки управляют списком профилей; Tab отдельно переводит фокус в поля.
+                KeyCode::Up if app.screen == Screen::Presets => {
                     app.selected = (app.selected + PRESETS.len() - 1) % PRESETS.len();
                     app.error = None;
                 }
-                KeyCode::Char(']') if app.screen == Screen::Presets => {
+                KeyCode::Down if app.screen == Screen::Presets => {
                     app.selected = (app.selected + 1) % PRESETS.len();
                     app.error = None;
                 }
@@ -358,7 +358,7 @@ fn draw(f: &mut ratatui::Frame<'_>, app: &App) {
     profile_state.select(Some(app.selected));
     f.render_stateful_widget(
         List::new(profile_items).highlight_symbol(" ").block(
-            Block::default().title(" 01 / ПРОФИЛЬ  [ [ / ] ] ")
+            Block::default().title(" 01 / ПРОФИЛЬ  [ ↑ / ↓ ] ")
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Blue))
         ),
@@ -381,7 +381,7 @@ fn draw(f: &mut ratatui::Frame<'_>, app: &App) {
     let footer = Line::from(vec![
         Span::styled(" TAB ", Style::default().fg(Color::Black).bg(Color::Cyan).add_modifier(Modifier::BOLD)),
         Span::raw(" поле  "),
-        Span::styled(" [ / ] ", Style::default().fg(Color::Black).bg(Color::Blue).add_modifier(Modifier::BOLD)),
+        Span::styled(" ↑ / ↓ ", Style::default().fg(Color::Black).bg(Color::Blue).add_modifier(Modifier::BOLD)),
         Span::raw(" профиль  "),
         Span::styled(" F2 ", Style::default().fg(Color::Black).bg(Color::Magenta).add_modifier(Modifier::BOLD)),
         Span::raw(" ручной режим  "),
