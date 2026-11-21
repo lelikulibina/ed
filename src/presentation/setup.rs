@@ -12,7 +12,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap},
 };
 
 use crate::{
@@ -316,7 +316,7 @@ impl App {
             Step::Filters => self.step = Step::General,
             Step::Review => self.step = Step::Filters,
         }
-        self.row = 0;
+        self.row = if self.step == Step::Profiles { self.profile } else { 0 };
         self.error = None;
         true
     }
@@ -548,7 +548,13 @@ fn draw_profiles(frame: &mut ratatui::Frame<'_>, area: Rect, app: &App, compact:
         format!("{}✦  Своя настройка", if app.profile == PRESETS.len() { "▸ " } else { "  " }),
         if app.profile == PRESETS.len() { Style::default().fg(Color::Black).bg(Color::Magenta).add_modifier(Modifier::BOLD) } else { Style::default().fg(Color::Magenta) }
     ))))).collect::<Vec<_>>();
-    frame.render_widget(List::new(items).block(panel(" ВЫБЕРИТЕ ПРОФИЛЬ ", Color::Blue)), panes[0]);
+    let mut state = ListState::default();
+    state.select(Some(app.profile));
+    frame.render_stateful_widget(
+        List::new(items).block(panel(" ВЫБЕРИТЕ ПРОФИЛЬ ", Color::Blue)),
+        panes[0],
+        &mut state,
+    );
 
     let mut info = Vec::new();
     if app.profile < PRESETS.len() {
@@ -695,10 +701,16 @@ fn draw_choice(frame: &mut ratatui::Frame<'_>, area: Rect, choice: &Choice) {
         } else if selected { Style::default().fg(Color::Green) } else { Style::default().fg(Color::White) };
         ListItem::new(Line::from(Span::styled(format!("{marker} {check} {option}"), style)))
     }).collect::<Vec<_>>();
-    frame.render_widget(List::new(items).block(panel(
-        match choice.field { ChoiceField::Surface => " ТИПЫ ПОВЕРХНОСТИ ", ChoiceField::Atmosphere => " АТМОСФЕРА " },
-        Color::Cyan
-    )), popup);
+    let mut state = ListState::default();
+    state.select(Some(choice.cursor));
+    frame.render_stateful_widget(
+        List::new(items).block(panel(
+            match choice.field { ChoiceField::Surface => " ТИПЫ ПОВЕРХНОСТИ ", ChoiceField::Atmosphere => " АТМОСФЕРА " },
+            Color::Cyan
+        )),
+        popup,
+        &mut state,
+    );
 }
 
 fn centered(width: u16, height: u16, area: Rect) -> Rect {
