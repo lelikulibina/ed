@@ -597,7 +597,11 @@ fn draw(frame: &mut ratatui::Frame<'_>, app: &App) {
         .split(area);
 
     let (step_number, step_name, subtitle) = match app.step {
-        Step::Profiles => ("01", "ПРОФИЛЬ", "Выберите сценарий поиска или свою настройку"),
+        Step::Profiles => (
+            "01",
+            "ПРОФИЛЬ",
+            "Выберите сценарий поиска или свою настройку",
+        ),
         Step::General => ("02", "ОБЩЕЕ", "Система, лимит результатов и исключения"),
         Step::Filters => ("03", "КРИТЕРИИ", "Физические параметры подходящих миров"),
         Step::Review => ("04", "ЗАПУСК", "Проверьте параметры перед поиском"),
@@ -618,8 +622,16 @@ fn draw(frame: &mut ratatui::Frame<'_>, app: &App) {
         progress.push(Span::styled(
             *label,
             Style::default()
-                .fg(if index == active { Color::Cyan } else { Color::DarkGray })
-                .add_modifier(if index == active { Modifier::BOLD } else { Modifier::empty() }),
+                .fg(if index == active {
+                    Color::Cyan
+                } else {
+                    Color::DarkGray
+                })
+                .add_modifier(if index == active {
+                    Modifier::BOLD
+                } else {
+                    Modifier::empty()
+                }),
         ));
     }
 
@@ -632,8 +644,16 @@ fn draw(frame: &mut ratatui::Frame<'_>, app: &App) {
                     .bg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled("  EXPLORER  ", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
-            Span::styled(format!("ШАГ {step_number}/04  {step_name}"), Style::default().fg(Color::LightCyan)),
+            Span::styled(
+                "  EXPLORER  ",
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                format!("ШАГ {step_number}/04  {step_name}"),
+                Style::default().fg(Color::LightCyan),
+            ),
         ]),
         Line::from(progress),
         Line::from(Span::styled(subtitle, Style::default().fg(Color::Gray))),
@@ -648,13 +668,18 @@ fn draw(frame: &mut ratatui::Frame<'_>, app: &App) {
     }
 
     let footer = match app.modal.as_ref() {
-        Some(Modal::Edit(_)) => "←/→ курсор   Home/End начало/конец   Enter сохранить   Esc отменить",
-        Some(Modal::Choice(Choice { field: ChoiceField::Surface, .. })) => {
-            "↑/↓ выбор   Space отметить несколько   Enter применить   Esc отменить"
+        Some(Modal::Edit(_)) => {
+            "←/→ курсор   Home/End начало/конец   Enter сохранить   Esc отменить"
         }
+        Some(Modal::Choice(Choice {
+            field: ChoiceField::Surface,
+            ..
+        })) => "↑/↓ выбор   Space отметить несколько   Enter применить   Esc отменить",
         Some(Modal::Choice(_)) => "↑/↓ выбор   Space отметить   Enter применить   Esc отменить",
         Some(Modal::Help) => "Esc / Enter / ? — закрыть справку",
-        None => "↑/↓ перемещение   Enter открыть / продолжить   Space выбрать   ? справка   Esc назад",
+        None => {
+            "↑/↓ перемещение   Enter открыть / продолжить   Space выбрать   ? справка   Esc назад"
+        }
     };
     frame.render_widget(
         Paragraph::new(footer)
@@ -1001,7 +1026,12 @@ fn draw_help(frame: &mut ratatui::Frame<'_>, area: Rect) {
     let popup = centered(76, 68, area);
     frame.render_widget(Clear, popup);
     let help = vec![
-        Line::from(Span::styled("УПРАВЛЕНИЕ ED", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))),
+        Line::from(Span::styled(
+            "УПРАВЛЕНИЕ ED",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )),
         Line::from(""),
         Line::from("↑ / ↓       Перемещение по пунктам"),
         Line::from("Enter       Открыть параметр или перейти дальше"),
