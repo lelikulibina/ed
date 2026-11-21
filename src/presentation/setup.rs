@@ -109,6 +109,34 @@ impl Default for App {
 }
 
 impl App {
+    fn from_config(config: SearchConfig) -> Self {
+        let criteria = config.criteria;
+        let mut surfaces = if criteria.planet_types.is_empty() {
+            vec![criteria.planet_type]
+        } else {
+            criteria.planet_types
+        };
+        if surfaces.is_empty() {
+            surfaces.push("any".into());
+        }
+
+        Self {
+            step: Step::General,
+            profile: PRESETS.len(),
+            row: 0,
+            system: config.system,
+            count: criteria.count.to_string(),
+            bio: criteria.exclude_with_bio_signals,
+            surfaces,
+            atmosphere: criteria.atmosphere_type,
+            temperature: format!("{}-{}", criteria.temperature.min, criteria.temperature.max),
+            gravity: format!("{}-{}", criteria.gravity.min, criteria.gravity.max),
+            pressure: format!("{}-{}", criteria.pressure.min, criteria.pressure.max),
+            modal: None,
+            error: None,
+        }
+    }
+
     fn choose_profile(&mut self) {
         if self.profile < PRESETS.len() {
             let p = &PRESETS[self.profile];
@@ -356,9 +384,9 @@ impl Drop for TerminalSession {
     }
 }
 
-pub fn run_setup() -> Result<Option<SearchConfig>> {
+pub fn run_setup(initial: Option<SearchConfig>) -> Result<Option<SearchConfig>> {
     let mut session = TerminalSession::enter()?;
-    let mut app = App::default();
+    let mut app = initial.map(App::from_config).unwrap_or_default();
     loop {
         session.terminal.draw(|frame| draw(frame, &app))?;
         let Event::Key(key) = event::read()? else { continue };
