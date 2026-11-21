@@ -658,5 +658,4 @@ mod tests {
         let state = ResultsState::new(&[]);
         assert!(!state.help_open);
     }
-
 }
