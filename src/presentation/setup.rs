@@ -1211,4 +1211,32 @@ mod tests {
         app.temperature = "200-100".into();
         assert!(app.selection().is_err());
     }
+    #[test]
+    fn all_seven_profiles_keep_their_domain_ranges_and_surface_semantics() {
+        let expected = [
+            ("Rocky body", "Carbon dioxide", 190.0, 195.0, 0.042, 0.237),
+            ("Rocky body", "Carbon dioxide", 180.0, 190.0, 0.042, 0.275),
+            ("Rocky body", "Water", 395.0, 450.0, 0.040, 0.063),
+            ("Rocky body", "Ammonia", 165.0, 175.0, 0.040, 0.340),
+            ("Icy body", "Argon", 50.0, 150.0, 0.167, 0.272),
+            ("Rocky body", "Sulphur dioxide", 132.0, 195.0, 0.044, 0.275),
+            ("Icy body", "Oxygen", 145.0, 270.0, 0.238, 0.275),
+        ];
+
+        assert_eq!(PRESETS.len(), expected.len());
+        for (preset, (surface, atmosphere, t_min, t_max, p_min, p_max)) in
+            PRESETS.iter().zip(expected)
+        {
+            assert!(preset.surface_types.contains(&surface));
+            assert_eq!(preset.atmosphere, atmosphere);
+            assert_eq!(preset.temperature, NumericRange { min: t_min, max: t_max });
+            assert_eq!(preset.pressure, NumericRange { min: p_min, max: p_max });
+        }
+
+        assert_eq!(
+            PRESETS[2].surface_types,
+            &["Rocky body", "High metal content world"]
+        );
+    }
+
 }
