@@ -754,8 +754,14 @@ fn draw_results(
     };
 
     let items = bodies.iter().map(|body| {
-        let mapped = if body.is_mapped == Some(true) { " [картографирована]" } else { "" };
-        ListItem::new(format!("{}{}", body.name, mapped))
+        let mapped = if body.is_mapped == Some(true) { "  [картографирована]" } else { "" };
+        let label = format!("{}{}", body.name, mapped);
+        let style = if body.is_mapped == Some(true) {
+            Style::default().fg(Color::LightGreen)
+        } else {
+            Style::default().fg(Color::White)
+        };
+        ListItem::new(label).style(style)
     }).collect::<Vec<_>>();
     let mut state = ListState::default();
     if !bodies.is_empty() {
