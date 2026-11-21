@@ -16,15 +16,10 @@ use ratatui::{
 };
 
 use crate::{
-    application::presets::{PRESETS, SearchPreset},
+    application::{config::SearchConfig, presets::{PRESETS, SearchPreset}},
     cli::{parse_range_f32, parse_range_i32},
     domain::criteria::{NumericRange, SearchCriteria},
 };
-
-pub struct TuiSelection {
-    pub system: String,
-    pub criteria: SearchCriteria,
-}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Screen {
@@ -148,7 +143,7 @@ impl App {
         self.focus = 0;
         self.error = None;
     }
-    fn selection(&self) -> Result<TuiSelection> {
+    fn selection(&self) -> Result<SearchConfig> {
         if self.system.trim().is_empty() {
             return Err(anyhow!("Укажите центральную систему"));
         }
@@ -199,10 +194,7 @@ impl App {
                 .criteria(5, self.bio)?
                 .with_count(count)?
         };
-        Ok(TuiSelection {
-            system: self.system.trim().into(),
-            criteria,
-        })
+        SearchConfig::new(self.system.clone(), criteria).map_err(Into::into)
     }
 }
 
@@ -243,7 +235,7 @@ impl Drop for TerminalSession {
     }
 }
 
-pub fn run_tui() -> Result<Option<TuiSelection>> {
+pub fn run_tui() -> Result<Option<SearchConfig>> {
     let mut term = TerminalSession::enter()?;
     let mut app = App::default();
     loop {
