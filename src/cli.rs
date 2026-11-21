@@ -99,9 +99,9 @@ impl Args {
         let (temperature_min, temperature_max) =
             parse_range_i32(&self.temperature).context("Температура: ожидается диапазон min-max в K")?;
         let (gravity_min, gravity_max) =
-            parse_range_f32(&self.gravity).context("Гравитация: ожидается диапазон min-max в g")?;
+            parse_range_f64(&self.gravity).context("Гравитация: ожидается диапазон min-max в g")?;
         let (pressure_min, pressure_max) =
-            parse_range_f32(&self.pressure).context("Давление: ожидается диапазон min-max в atm")?;
+            parse_range_f64(&self.pressure).context("Давление: ожидается диапазон min-max в atm")?;
 
         let temperature = NumericRange::new(
             f64::from(temperature_min),
@@ -109,13 +109,13 @@ impl Args {
         )
         .ok_or_else(|| anyhow!("Некорректный диапазон температуры: {}", self.temperature))?;
         let gravity = NumericRange::new(
-            f64::from(gravity_min),
-            f64::from(gravity_max),
+            gravity_min,
+            gravity_max,
         )
         .ok_or_else(|| anyhow!("Некорректный диапазон гравитации: {}", self.gravity))?;
         let pressure = NumericRange::new(
-            f64::from(pressure_min),
-            f64::from(pressure_max),
+            pressure_min,
+            pressure_max,
         )
         .ok_or_else(|| anyhow!("Некорректный диапазон давления: {}", self.pressure))?;
 
@@ -133,7 +133,7 @@ impl Args {
     }
 }
 
-pub(crate) fn parse_range_f32(s: &str) -> Result<(f32, f32)> {
+pub(crate) fn parse_range_f64(s: &str) -> Result<(f64, f64)> {
     let parts: Vec<&str> = s.split('-').collect();
     if parts.len() != 2 {
         Err(anyhow!("Неверный диапазон: {}", s))
