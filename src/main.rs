@@ -9,24 +9,25 @@ use std::io::IsTerminal;
 use anyhow::{Result, anyhow};
 use clap::Parser;
 
-use application::search::SearchUseCase;
+use application::{
+    config::SearchConfig,
+    search::SearchUseCase,
+};
 use cli::{Args, parse_range_f32, parse_range_i32};
 use domain::criteria::{NumericRange, SearchCriteria};
-use presentation::{output::print_results, tui};
+use presentation::tui;
 use spansh::SpanshClient;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let (system, criteria) = if std::env::args_os().len() == 1 {
+    let config = if std::env::args_os().len() == 1 {
         if !std::io::stdin().is_terminal() || !std::io::stdout().is_terminal() {
-            return Err(anyhow!(
-                "Интерактивное меню требует терминал. Для запуска без TUI укажите --system, --planet-type и --atmosphere-type. Используйте --help для справки."
-            ));
+            return Err(anyhow!("Для работы ED: Planet Search требуется интерактивный терминал."));
         }
-        match tui::run_tui()? {
-            Some(selection) => (selection.system, selection.criteria),
-            None => return Ok(()),
-        }
+        let Some(selection) = tui::run_tui()? else {
+            return Ok(());
+        };
+        SearchConfig::new(selection.system, selection.criteria)?
     } else {
         let args = Args::parse();
         let (temperature_min, temperature_max) = parse_range_i32(&args.temperature)?;
@@ -49,32 +50,22 @@ async fn main() -> Result<()> {
             args.count,
         )?
         .with_bio_signal_exclusion(args.exclude_with_bio_signals);
-        (args.system, criteria)
+        SearchConfig::new(args.system, criteria)?
     };
 
-    run_search(&system, &criteria).await
+    if !std::io::stdout().is_terminal() {
+        return Err(anyhow!("Для отображения результатов требуется интерактивный терминал."));
+    }
+
+    let results = run_search(&config).await?;
+    tui::show_results(&results)
 }
 
-async fn run_search(system: &str, criteria: &SearchCriteria) -> Result<()> {
+async fn run_search(config: &SearchConfig) -> Result<Vec<domain::body::Body>> {
     let client = SpanshClient::spansh(1)?;
     let search = SearchUseCase::new(client);
 
-    println!("Разрешаю центральную систему «{}»...", system);
-    let center = search.resolve_center(system).await?;
-    if !center.name.eq_ignore_ascii_case(system.trim()) {
-        println!(
-            "ВНИМАНИЕ: точное совпадение «{}» не найдено в Spansh. Используется ближайшее совпадение из ответа API: «{}».",
-            system, center.name
-        );
-    }
-    println!(
-        "Центр поиска: {} (ID64: {}), координаты: ({:.3}, {:.3}, {:.3})",
-        center.name, center.id64, center.coordinates.x, center.coordinates.y, center.coordinates.z
-    );
-
-    println!("Ищу подходящие планеты в радиусе 1000 св. л....");
-    let results = search.execute(&center, criteria).await?;
-    print_results(&results);
-
-    Ok(())
+    let center = search.resolve_center(&config.system).await?;
+    let results = search.execute(&center, &config.criteria).await?;
+    Ok(results)
 }
