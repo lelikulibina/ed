@@ -24,10 +24,10 @@ async fn main() -> Result<()> {
         if !std::io::stdin().is_terminal() || !std::io::stdout().is_terminal() {
             return Err(anyhow!("Для работы ED: Planet Search требуется интерактивный терминал."));
         }
-        let Some(selection) = tui::run_tui()? else {
+        let Some(config) = tui::run_tui()? else {
             return Ok(());
         };
-        SearchConfig::new(selection.system, selection.criteria)?
+        config
     } else {
         let args = Args::parse();
         let (temperature_min, temperature_max) = parse_range_i32(&args.temperature)?;
