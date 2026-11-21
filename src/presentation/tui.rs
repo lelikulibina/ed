@@ -32,14 +32,14 @@ enum Screen { Presets, Manual, Confirm }
 enum Field { System, Count, Bio, Planet, Atmosphere, Temperature, Gravity, Pressure }
 
 struct App {
-    screen: Screen, selected: usize, focus: usize,
+    screen: Screen, manual_mode: bool, selected: usize, focus: usize,
     system: String, count: String, bio: bool,
     planet: String, atmosphere: String, temperature: String, gravity: String, pressure: String,
     error: Option<String>,
 }
 impl Default for App {
     fn default() -> Self {
-        Self { screen: Screen::Presets, selected: 0, focus: 0, system: "Sol".into(), count: "5".into(), bio: false,
+        Self { screen: Screen::Presets, manual_mode: false, selected: 0, focus: 0, system: "Sol".into(), count: "5".into(), bio: false,
             planet: "any".into(), atmosphere: "any".into(), temperature: "0-5000".into(), gravity: "0.1-1.0".into(), pressure: "0-10".into(), error: None }
     }
 }
@@ -65,13 +65,13 @@ impl App {
         self.planet=p.surface_types.join("|"); self.atmosphere=p.atmosphere.into();
         self.temperature=format!("{:.0}-{:.0}",p.temperature.min,p.temperature.max);
         self.gravity="0.1-1.0".into(); self.pressure=format!("{}-{}",p.pressure.min,p.pressure.max);
-        self.screen=Screen::Presets; self.focus=0; self.error=None;
+        self.screen=Screen::Presets; self.manual_mode=false; self.focus=0; self.error=None;
     }
     fn selection(&self)->Result<TuiSelection>{
         if self.system.trim().is_empty(){return Err(anyhow!("Укажите центральную систему"));}
         let count=self.count.trim().parse::<usize>().context("Количество результатов должно быть целым числом")?;
         if count==0{return Err(anyhow!("Количество результатов должно быть больше нуля"));}
-        let criteria=if self.screen==Screen::Manual {
+        let criteria=if self.manual_mode {
             let (a,b)=parse_range_i32(&self.temperature).context("Температура: диапазон min-max в K")?;
             let (c,d)=parse_range_f32(&self.gravity).context("Гравитация: диапазон min-max в g")?;
             let (e,f)=parse_range_f32(&self.pressure).context("Давление: диапазон min-max в atm")?;
@@ -117,7 +117,7 @@ pub fn run_tui()->Result<Option<TuiSelection>>{
                 KeyCode::Down if app.screen==Screen::Presets&&app.focus==0=>app.selected=(app.selected+1)%PRESETS.len(),
                 KeyCode::Tab=>app.move_focus(1),KeyCode::BackTab=>app.move_focus(-1),
                 KeyCode::F(5)=>match app.selection(){Ok(_)=>{app.screen=Screen::Confirm;app.error=None;},Err(e)=>app.error=Some(e.to_string())},
-                KeyCode::Char('m') if app.screen==Screen::Presets=>{app.screen=Screen::Manual;app.focus=0;app.error=None;},
+                KeyCode::Char('m') if app.screen==Screen::Presets=>{app.screen=Screen::Manual;app.manual_mode=true;app.focus=0;app.error=None;},
                 KeyCode::Enter if app.screen==Screen::Presets&&app.focus==0=>app.load_preset(),
                 code=>app.edit(code),
             }
