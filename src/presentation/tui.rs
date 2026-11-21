@@ -77,8 +77,14 @@ fn centered(x: u16, y: u16, a: Rect) -> Rect {
         .split(v[1])[1]
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SearchUiAction {
+    BackToSetup,
+    Exit,
+}
+
 /// Выполняет асинхронный поиск, не блокируя полноэкранный интерфейс.
-pub async fn run_search_ui<F>(future: F) -> Result<()>
+pub async fn run_search_ui<F>(future: F) -> Result<SearchUiAction>
 where
     F: std::future::Future<Output = Result<Vec<crate::domain::body::Body>>> + Send + 'static,
 {
@@ -98,13 +104,17 @@ where
         session.terminal.draw(draw_searching)?;
         if event::poll(Duration::from_millis(100))? {
             if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press
-                    && (key.code == KeyCode::Esc
-                        || (key.code == KeyCode::Char('q')
-                            && key.modifiers.contains(KeyModifiers::CONTROL)))
-                {
-                    task.abort();
-                    return Ok(());
+                if key.kind == KeyEventKind::Press {
+                    if key.code == KeyCode::Esc {
+                        task.abort();
+                        return Ok(SearchUiAction::BackToSetup);
+                    }
+                    if key.code == KeyCode::Char('q')
+                        && key.modifiers.contains(KeyModifiers::CONTROL)
+                    {
+                        task.abort();
+                        return Ok(SearchUiAction::Exit);
+                    }
                 }
             }
         }
@@ -116,12 +126,17 @@ where
     }
 }
 
-fn show_error_in_session(session: &mut TerminalSession, message: &str) -> Result<()> {
+fn show_error_in_session(
+    session: &mut TerminalSession,
+    message: &str,
+) -> Result<SearchUiAction> {
     loop {
         session.terminal.draw(|frame| {
             let panel = centered(75, 40, frame.area());
             frame.render_widget(
-                Paragraph::new(format!("Поиск не выполнен\n\n{message}\n\nEnter / Esc — вернуться и закрыть"))
+                Paragraph::new(format!(
+                    "Поиск не выполнен\n\n{message}\n\nEnter / Esc — вернуться к настройкам   Ctrl+Q — выход"
+                ))
                     .alignment(Alignment::Center)
                     .wrap(Wrap { trim: true })
                     .block(Block::default().title(" ОШИБКА ПОИСКА ").borders(Borders::ALL).border_style(Style::default().fg(Color::Red))),
@@ -129,8 +144,15 @@ fn show_error_in_session(session: &mut TerminalSession, message: &str) -> Result
             );
         })?;
         if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press && matches!(key.code, KeyCode::Enter | KeyCode::Esc | KeyCode::Char('q')) {
-                return Ok(());
+            if key.kind == KeyEventKind::Press {
+                if matches!(key.code, KeyCode::Enter | KeyCode::Esc) {
+                    return Ok(SearchUiAction::BackToSetup);
+                }
+                if key.code == KeyCode::Char('q')
+                    && key.modifiers.contains(KeyModifiers::CONTROL)
+                {
+                    return Ok(SearchUiAction::Exit);
+                }
             }
         }
     }
@@ -158,7 +180,7 @@ fn draw_searching(frame: &mut ratatui::Frame<'_>) {
 fn show_results_in_session(
     session: &mut TerminalSession,
     bodies: &[crate::domain::body::Body],
-) -> Result<()> {
+) -> Result<SearchUiAction> {
     use std::time::Duration;
 
     let mut sorted_bodies = bodies.to_vec();
@@ -180,13 +202,13 @@ fn show_results_in_session(
         if key.kind != KeyEventKind::Press { continue; }
 
         match key.code {
-            KeyCode::Char('q') if key.modifiers.contains(KeyModifiers::CONTROL) => return Ok(()),
+            KeyCode::Char('q') if key.modifiers.contains(KeyModifiers::CONTROL) => return Ok(SearchUiAction::Exit),
             KeyCode::Esc => {
                 if details_open {
                     details_open = false;
                     detail_scroll = 0;
                 } else {
-                    return Ok(());
+                    return Ok(SearchUiAction::BackToSetup);
                 }
             }
             KeyCode::Enter => {
@@ -352,7 +374,7 @@ fn draw_results(
     let hint = if details_open {
         "↑/↓ прокрутка   Enter/Esc — к списку   Space — отметить планету   Ctrl+Q — выход".to_owned()
     } else {
-        format!("↑/↓ планета   ←/→ сортировка: {sort_label}   Enter — подробности   Space — отметить   Esc — выход")
+        format!("↑/↓ планета   ←/→ сортировка: {sort_label}   Enter — подробности   Space — отметить   Esc — настройки   Ctrl+Q — выход")
     };
     frame.render_widget(
         Paragraph::new(hint)
