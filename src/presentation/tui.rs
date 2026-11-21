@@ -2,7 +2,7 @@ use std::io::{self, Stdout};
 
 use anyhow::{Context, Result, anyhow};
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEventKind},
+    event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -111,7 +111,7 @@ pub fn run_tui()->Result<Option<TuiSelection>>{
                 continue;
             }
             match k.code{
-                KeyCode::Char('q') if app.screen==Screen::Presets && app.focused()==Some(Field::Bio)=>return Ok(None),
+                KeyCode::Char('q') if k.modifiers.contains(KeyModifiers::CONTROL)=>return Ok(None),
                 KeyCode::Esc=>{if app.screen==Screen::Manual{app.screen=Screen::Presets;}else{return Ok(None);}app.error=None;},
                 KeyCode::Up if app.screen==Screen::Presets&&app.focus==0=>app.selected=(app.selected+PRESETS.len()-1)%PRESETS.len(),
                 KeyCode::Down if app.screen==Screen::Presets&&app.focus==0=>app.selected=(app.selected+1)%PRESETS.len(),
@@ -136,7 +136,7 @@ fn draw(f:&mut ratatui::Frame<'_>,app:&App){
     f.render_stateful_widget(List::new(items).block(Block::default().title(" ПРОФИЛИ ↑/↓ ").borders(Borders::ALL)),cols[0],&mut state);
     let right=if wide{Layout::default().direction(Direction::Vertical).constraints([Constraint::Percentage(48),Constraint::Percentage(52)]).split(cols[1])}else{cols.clone()};
     draw_details(f,right[0],&PRESETS[app.selected]);draw_form(f,right[1],app);
-    f.render_widget(Paragraph::new("↑/↓ профиль  Tab поле  Space переключатель  F2 ручная настройка  F5 поиск  Esc назад  q выход").alignment(Alignment::Center).style(Style::default().fg(Color::Gray)).block(Block::default().borders(Borders::ALL)),root[2]);
+    f.render_widget(Paragraph::new("↑/↓ профиль  Tab поле  Space переключатель  F2 ручная настройка  F5 поиск  Esc назад  Ctrl+Q выход").alignment(Alignment::Center).style(Style::default().fg(Color::Gray)).block(Block::default().borders(Borders::ALL)),root[2]);
     if let Some(e)=&app.error{let r=centered(70,22,area);f.render_widget(Clear,r);f.render_widget(Paragraph::new(e.as_str()).wrap(Wrap{trim:true}).block(Block::default().title(" Ошибка ").borders(Borders::ALL).border_style(Style::default().fg(Color::Red))),r);}
     if app.screen==Screen::Confirm{
         let r=centered(72,55,area);f.render_widget(Clear,r);
