@@ -131,18 +131,6 @@ impl App {
         }
         self.error = None;
     }
-    fn load_preset(&mut self) {
-        let p = &PRESETS[self.selected];
-        self.planet = p.surface_types.join("|");
-        self.atmosphere = p.atmosphere.into();
-        self.temperature = format!("{:.0}-{:.0}", p.temperature.min, p.temperature.max);
-        self.gravity = "0.1-1.0".into();
-        self.pressure = format!("{}-{}", p.pressure.min, p.pressure.max);
-        self.screen = Screen::Presets;
-        self.manual_mode = false;
-        self.focus = 0;
-        self.error = None;
-    }
     fn selection(&self) -> Result<SearchConfig> {
         if self.system.trim().is_empty() {
             return Err(anyhow!("Укажите центральную систему"));
@@ -296,9 +284,6 @@ pub fn run_tui() -> Result<Option<SearchConfig>> {
                     app.manual_mode = true;
                     app.focus = 0;
                     app.error = None;
-                }
-                KeyCode::Enter if app.screen == Screen::Presets && app.focus == 0 => {
-                    app.load_preset()
                 }
                 code => app.edit(code),
             }
@@ -501,11 +486,10 @@ mod tests {
     use super::*;
     #[test]
     fn profile_three_keeps_or_surface_types() {
-        let mut a = App {
+        let a = App {
             selected: 2,
             ..App::default()
         };
-        a.load_preset();
         let s = a.selection().unwrap();
         assert_eq!(
             s.criteria.planet_types,
