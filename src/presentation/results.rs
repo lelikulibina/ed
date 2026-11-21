@@ -1,10 +1,120 @@
+use std::cmp::Ordering;
+
 use crate::domain::body::Body;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SortColumn {
+    Name,
+    Surface,
+    Atmosphere,
+    Temperature,
+    Pressure,
+    Gravity,
+    Distance,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SortDirection {
+    Ascending,
+    Descending,
+}
+
+pub fn format_optional(value: Option<f64>, precision: usize, suffix: &str) -> String {
+    match value.filter(|value| value.is_finite()) {
+        Some(value) => format!("{value:.precision$}{suffix}"),
+        None => "—".to_owned(),
+    }
+}
+
+fn compare_optional<T: Ord>(
+    left: Option<T>,
+    right: Option<T>,
+    direction: SortDirection,
+) -> Ordering {
+    match (left, right) {
+        (Some(left), Some(right)) => {
+            let order = left.cmp(&right);
+            match direction {
+                SortDirection::Ascending => order,
+                SortDirection::Descending => order.reverse(),
+            }
+        }
+        (Some(_), None) => Ordering::Less,
+        (None, Some(_)) => Ordering::Greater,
+        (None, None) => Ordering::Equal,
+    }
+}
+
+fn compare_optional_number(
+    left: Option<f64>,
+    right: Option<f64>,
+    direction: SortDirection,
+) -> Ordering {
+    compare_optional(
+        left.filter(|value| value.is_finite()).map(f64::to_bits),
+        right.filter(|value| value.is_finite()).map(f64::to_bits),
+        direction,
+    )
+    .then_with(|| {
+        match (
+            left.filter(|value| value.is_finite()),
+            right.filter(|value| value.is_finite()),
+        ) {
+            (Some(left), Some(right)) => {
+                let order = left.total_cmp(&right);
+                match direction {
+                    SortDirection::Ascending => order,
+                    SortDirection::Descending => order.reverse(),
+                }
+            }
+            _ => Ordering::Equal,
+        }
+    })
+}
+
+fn compare_text(
+    left: Option<&str>,
+    right: Option<&str>,
+    direction: SortDirection,
+) -> Ordering {
+    compare_optional(
+        left.map(str::to_lowercase),
+        right.map(str::to_lowercase),
+        direction,
+    )
+}
+
+pub fn sort_bodies(bodies: &mut [Body], column: SortColumn, direction: SortDirection) {
+    bodies.sort_by(|left, right| match column {
+        SortColumn::Name => compare_text(Some(&left.name), Some(&right.name), direction),
+        SortColumn::Surface => {
+            compare_text(left.subtype.as_deref(), right.subtype.as_deref(), direction)
+        }
+        SortColumn::Atmosphere => {
+            compare_text(left.atmosphere.as_deref(), right.atmosphere.as_deref(), direction)
+        }
+        SortColumn::Temperature => compare_optional_number(
+            left.surface_temperature,
+            right.surface_temperature,
+            direction,
+        ),
+        SortColumn::Pressure => {
+            compare_optional_number(left.surface_pressure, right.surface_pressure, direction)
+        }
+        SortColumn::Gravity => {
+            compare_optional_number(left.gravity, right.gravity, direction)
+        }
+        SortColumn::Distance => {
+            compare_optional_number(left.distance_ly, right.distance_ly, direction)
+        }
+    });
+}
 
 #[cfg(test)]
 mod tests {
-    use super::super::{SortColumn, SortDirection, format_optional, sort_bodies};
+    use super::{SortColumn, SortDirection, format_optional, sort_bodies};
 
-    use super::*;
+    use crate::domain::body::Body;
 
     fn body(
         name: &str,
