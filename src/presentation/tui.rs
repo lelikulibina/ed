@@ -1,4 +1,4 @@
-use std::io::{self, Stdout};
+use std::{collections::HashSet, io::{self, Stdout}};
 
 use anyhow::{Context, Result, anyhow};
 use crossterm::{
@@ -166,33 +166,57 @@ fn show_results_in_session(
     sort_bodies(&mut sorted_bodies, sort_mode);
     let mut selected = 0usize;
     let mut detail_scroll = 0u16;
+    let mut details_open = false;
+    let mut marked = HashSet::<String>::new();
+
     loop {
         session.terminal.draw(|frame| {
-            draw_results(frame, &sorted_bodies, selected, detail_scroll, sort_mode)
+            draw_results(frame, &sorted_bodies, selected, detail_scroll, sort_mode, &marked, details_open)
         })?;
         if !event::poll(Duration::from_millis(100))? {
             continue;
         }
-        let Event::Key(key) = event::read()? else {
-            continue;
-        };
-        if key.kind != KeyEventKind::Press {
-            continue;
-        }
+        let Event::Key(key) = event::read()? else { continue };
+        if key.kind != KeyEventKind::Press { continue; }
+
         match key.code {
             KeyCode::Char('q') if key.modifiers.contains(KeyModifiers::CONTROL) => return Ok(()),
-            KeyCode::Esc | KeyCode::Char('q') => return Ok(()),
-            KeyCode::Up if !bodies.is_empty() => selected = selected.saturating_sub(1),
-            KeyCode::Down if !bodies.is_empty() => selected = (selected + 1).min(bodies.len() - 1),
-            KeyCode::Home => selected = 0,
-            KeyCode::End if !bodies.is_empty() => selected = bodies.len() - 1,
-            KeyCode::PageUp => detail_scroll = detail_scroll.saturating_sub(8),
-            KeyCode::PageDown => detail_scroll = detail_scroll.saturating_add(8),
-            KeyCode::Char('s') => {
+            KeyCode::Esc => {
+                if details_open {
+                    details_open = false;
+                    detail_scroll = 0;
+                } else {
+                    return Ok(());
+                }
+            }
+            KeyCode::Enter => {
+                details_open = !details_open;
+                detail_scroll = 0;
+            }
+            KeyCode::Up if details_open => detail_scroll = detail_scroll.saturating_sub(1),
+            KeyCode::Down if details_open => detail_scroll = detail_scroll.saturating_add(1),
+            KeyCode::PageUp if details_open => detail_scroll = detail_scroll.saturating_sub(8),
+            KeyCode::PageDown if details_open => detail_scroll = detail_scroll.saturating_add(8),
+            KeyCode::Up if !sorted_bodies.is_empty() => selected = selected.saturating_sub(1),
+            KeyCode::Down if !sorted_bodies.is_empty() => selected = (selected + 1).min(sorted_bodies.len() - 1),
+            KeyCode::Left if !details_open => {
+                sort_mode = (sort_mode + 4) % 5;
+                sort_bodies(&mut sorted_bodies, sort_mode);
+                selected = 0;
+            }
+            KeyCode::Right if !details_open => {
                 sort_mode = (sort_mode + 1) % 5;
                 sort_bodies(&mut sorted_bodies, sort_mode);
                 selected = 0;
-                detail_scroll = 0;
+            }
+            KeyCode::Home if !details_open => selected = 0,
+            KeyCode::End if !details_open && !sorted_bodies.is_empty() => selected = sorted_bodies.len() - 1,
+            KeyCode::Char(' ') => {
+                if let Some(body) = sorted_bodies.get(selected) {
+                    if !marked.remove(&body.name) {
+                        marked.insert(body.name.clone());
+                    }
+                }
             }
             _ => {}
         }
@@ -228,6 +252,8 @@ fn draw_results(
     selected: usize,
     detail_scroll: u16,
     sort_mode: usize,
+    marked: &HashSet<String>,
+    details_open: bool,
 ) {
     use ratatui::widgets::{List, ListItem};
 
@@ -238,7 +264,7 @@ fn draw_results(
         .split(area);
 
     frame.render_widget(
-        Paragraph::new(format!("ED: PLANET SEARCH  /  РЕЗУЛЬТАТЫ: {}", bodies.len()))
+        Paragraph::new(format!("ED: PLANET SEARCH  /  РЕЗУЛЬТАТЫ: {}  /  ОТМЕЧЕНО: {}", bodies.len(), marked.len()))
             .alignment(Alignment::Center)
             .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
             .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::Cyan))),
@@ -258,9 +284,11 @@ fn draw_results(
             .split(root[1])
     };
 
+    if !details_open {
     let items = bodies.iter().map(|body| {
+        let marked_label = if marked.contains(&body.name) { "★ " } else { "" };
         let mapped = if body.is_mapped == Some(true) { "  [картографирована]" } else { "" };
-        let label = format!("{}{}", body.name, mapped);
+        let label = format!("{marked_label}{}{mapped}", body.name);
         let style = if body.is_mapped == Some(true) {
             Style::default().fg(Color::LightGreen)
         } else {
@@ -282,6 +310,7 @@ fn draw_results(
         panes[0],
         &mut state,
     );
+    }
 
     let detail = bodies.get(selected).map_or_else(
         || "Подходящие планеты не найдены.".to_owned(),
@@ -314,16 +343,19 @@ fn draw_results(
             Block::default().title(" ПОДРОБНОСТИ ПЛАНЕТЫ ")
                 .borders(Borders::ALL).border_style(Style::default().fg(Color::Magenta)),
         ),
-        panes[1],
+        if details_open { root[1] } else { panes[1] },
     );
     let sort_label = ["расстояние", "температура", "гравитация", "давление", "название"]
         .get(sort_mode)
         .copied()
         .unwrap_or("расстояние");
+    let hint = if details_open {
+        "↑/↓ прокрутка   Enter/Esc — к списку   Space — отметить планету   Ctrl+Q — выход".to_owned()
+    } else {
+        format!("↑/↓ планета   ←/→ сортировка: {sort_label}   Enter — подробности   Space — отметить   Esc — выход")
+    };
     frame.render_widget(
-        Paragraph::new(format!(
-            "↑/↓ планета   S сортировка: {sort_label}   PgUp/PgDn подробности   Home/End список   Esc/Q выход"
-        ))
+        Paragraph::new(hint)
             .alignment(Alignment::Center)
             .style(Style::default().fg(Color::Gray))
             .block(Block::default().borders(Borders::TOP).border_style(Style::default().fg(Color::DarkGray))),
