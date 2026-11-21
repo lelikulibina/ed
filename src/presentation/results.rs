@@ -247,6 +247,157 @@ pub fn cell_value(body: &Body, column: SortColumn) -> String {
     }
 }
 
+pub fn body_summary_lines(body: &Body) -> Vec<ratatui::text::Line<'static>> {
+    use ratatui::text::Line;
+
+    vec![
+        Line::from(body.name.clone()),
+        Line::from(format!(
+            "Система: {}",
+            body.system_name.as_deref().unwrap_or("нет данных")
+        )),
+        Line::from(format!(
+            "Поверхность: {}",
+            body.subtype.as_deref().unwrap_or("—")
+        )),
+        Line::from(format!(
+            "Атмосфера: {}",
+            body.atmosphere.as_deref().unwrap_or("—")
+        )),
+        Line::from(format!(
+            "Температура: {}",
+            format_optional(body.surface_temperature, 1, " K")
+        )),
+        Line::from(format!(
+            "Расстояние: {}",
+            format_optional(body.distance_ly, 1, " св. л.")
+        )),
+        Line::from(format!(
+            "Картографирована: {}",
+            optional_bool(body.is_mapped)
+        )),
+        Line::from(format!(
+            "Биологические сигналы: {}",
+            optional_count(body.biological_signal_count)
+        )),
+    ]
+}
+
+pub fn body_detail_lines(body: &Body) -> Vec<ratatui::text::Line<'static>> {
+    use ratatui::text::Line;
+
+    let mut lines = vec![
+        Line::from("ИДЕНТИФИКАЦИЯ"),
+        Line::from(format!("Планета: {}", body.name)),
+        Line::from(format!(
+            "Система: {}",
+            body.system_name.as_deref().unwrap_or("нет данных")
+        )),
+        Line::from(format!(
+            "ID тела: {}",
+            body.id64.as_deref().unwrap_or("нет данных")
+        )),
+        Line::from(format!(
+            "Тип поверхности: {}",
+            body.subtype.as_deref().unwrap_or("нет данных")
+        )),
+        Line::from(""),
+        Line::from("ФИЗИКА"),
+        Line::from(format!(
+            "Атмосфера: {}",
+            body.atmosphere.as_deref().unwrap_or("нет данных")
+        )),
+        Line::from(format!(
+            "Температура: {}",
+            format_optional(body.surface_temperature, 2, " K")
+        )),
+        Line::from(format!(
+            "Давление: {}",
+            format_optional(body.surface_pressure, 4, " atm")
+        )),
+        Line::from(format!(
+            "Гравитация: {}",
+            format_optional(body.gravity, 3, " g")
+        )),
+        Line::from(format!(
+            "Расстояние: {}",
+            format_optional(body.distance_ly, 2, " св. л.")
+        )),
+        Line::from(format!(
+            "Можно приземлиться: {}",
+            optional_bool(body.is_landable)
+        )),
+        Line::from(""),
+        Line::from("ИССЛЕДОВАНИЕ"),
+        Line::from(format!(
+            "Картографирована: {}",
+            optional_bool(body.is_mapped)
+        )),
+        Line::from(format!(
+            "Обновление записи: {}",
+            body.last_updated_at.as_deref().unwrap_or("нет данных")
+        )),
+        Line::from(format!(
+            "Биологические сигналы Spansh: {}",
+            optional_count(body.biological_signal_count)
+        )),
+        Line::from(format!(
+            "Геологические сигналы Spansh: {}",
+            optional_count(body.geological_signal_count)
+        )),
+        Line::from(format!(
+            "Обновление сигналов: {}",
+            body.signals_updated_at.as_deref().unwrap_or("нет данных")
+        )),
+        Line::from(""),
+        Line::from("ЭКЗОБИОЛОГИЯ"),
+        Line::from(format!(
+            "Биологические группы: {}",
+            body.biological_genera
+                .as_ref()
+                .filter(|genera| !genera.is_empty())
+                .map_or_else(
+                    || "не указаны".to_owned(),
+                    |genera| genera
+                        .iter()
+                        .map(|genus| crate::presentation::output::russian_group_name(genus))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+        )),
+    ];
+
+    match crate::presentation::output::exobiology_summary(body) {
+        Ok(Some(summary)) => lines.extend(summary.lines().map(Line::from)),
+        Ok(None) => lines.push(Line::from("Подходящие виды в справочнике не найдены.")),
+        Err(error) => lines.push(Line::from(format!(
+            "Ошибка расчёта экзобиологии: {error}"
+        ))),
+    }
+
+    lines.extend([
+        Line::from(""),
+        Line::from("ГЕОЛОГИЯ"),
+        Line::from(format!(
+            "Вулканизм: {}",
+            body.volcanism_type.as_deref().unwrap_or("нет данных")
+        )),
+    ]);
+    lines
+}
+
+fn optional_bool(value: Option<bool>) -> &'static str {
+    match value {
+        Some(true) => "да",
+        Some(false) => "нет",
+        None => "нет данных",
+    }
+}
+
+fn optional_count(value: Option<u32>) -> String {
+    value.map_or_else(|| "нет данных".to_owned(), |value| value.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
