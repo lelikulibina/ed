@@ -563,11 +563,64 @@ mod tests {
     }
 }
 
-/// Показывает результаты поиска в полноэкранном интерфейсе Ratatui.
-pub fn show_results(bodies: &[crate::domain::body::Body]) -> Result<()> {
+/// Выполняет асинхронный поиск, не блокируя полноэкранный интерфейс.
+pub async fn run_search_ui<F>(future: F) -> Result<()>
+where
+    F: std::future::Future<Output = Result<Vec<crate::domain::body::Body>>> + Send + 'static,
+{
     use std::time::Duration;
 
     let mut session = TerminalSession::enter()?;
+    let task = tokio::spawn(future);
+
+    let bodies = loop {
+        if task.is_finished() {
+            break task.await.context("Задача поиска аварийно завершилась")??;
+        }
+
+        session.terminal.draw(draw_searching)?;
+        if event::poll(Duration::from_millis(100))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press
+                    && (key.code == KeyCode::Esc
+                        || (key.code == KeyCode::Char('q')
+                            && key.modifiers.contains(KeyModifiers::CONTROL)))
+                {
+                    task.abort();
+                    return Ok(());
+                }
+            }
+        }
+    };
+
+    show_results_in_session(&mut session, &bodies)
+}
+
+fn draw_searching(frame: &mut ratatui::Frame<'_>) {
+    let area = frame.area();
+    let panel = centered(70, 35, area);
+    frame.render_widget(
+        Paragraph::new(
+            "Выполняется поиск планет\n\nРазрешение центральной системы и загрузка результатов Spansh.\n\nИнтерфейс остаётся активным. Esc — отменить поиск.",
+        )
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: true })
+        .block(
+            Block::default()
+                .title(" ED: PLANET SEARCH ")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Cyan)),
+        ),
+        panel,
+    );
+}
+
+fn show_results_in_session(
+    session: &mut TerminalSession,
+    bodies: &[crate::domain::body::Body],
+) -> Result<()> {
+    use std::time::Duration;
+
     let mut selected = 0usize;
     loop {
         session.terminal.draw(|frame| draw_results(frame, bodies, selected))?;
@@ -583,12 +636,8 @@ pub fn show_results(bodies: &[crate::domain::body::Body]) -> Result<()> {
         match key.code {
             KeyCode::Char('q') if key.modifiers.contains(KeyModifiers::CONTROL) => return Ok(()),
             KeyCode::Esc | KeyCode::Char('q') => return Ok(()),
-            KeyCode::Up if !bodies.is_empty() => {
-                selected = selected.saturating_sub(1);
-            }
-            KeyCode::Down if !bodies.is_empty() => {
-                selected = (selected + 1).min(bodies.len() - 1);
-            }
+            KeyCode::Up if !bodies.is_empty() => selected = selected.saturating_sub(1),
+            KeyCode::Down if !bodies.is_empty() => selected = (selected + 1).min(bodies.len() - 1),
             KeyCode::Home => selected = 0,
             KeyCode::End if !bodies.is_empty() => selected = bodies.len() - 1,
             _ => {}
