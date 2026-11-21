@@ -30,6 +30,6 @@ mod tests {
 
     #[test]
     fn rejects_zero_result_count_even_if_criteria_was_mutated() {
-        assert!(SearchConfig::new("Sol", criteria(5).with_count(0).unwrap_err().into()).is_err());
+        let mut invalid = criteria(5);\n        invalid.count = 0;\n        assert!(SearchConfig::new("Sol", invalid).is_err());
     }
 }
