@@ -11,7 +11,7 @@ use ratatui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
+    widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table, TableState, Wrap},
 };
 
 use crate::application::config::SearchConfig;
@@ -320,7 +320,10 @@ fn draw_results(
 ) {
     use super::{
         layout::{LayoutMode, layout_mode},
-        results::{SortColumn, body_detail_lines, body_summary_lines, cell_value, visible_columns},
+        results::{
+            SortColumn, body_detail_lines, body_summary_lines, cell_value, results_help_lines,
+            visible_columns,
+        },
     };
 
     let area = frame.area();
