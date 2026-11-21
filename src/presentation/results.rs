@@ -250,8 +250,8 @@ pub fn cell_value(body: &Body, column: SortColumn) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        LayoutMode, ResultsState, SortColumn, SortDirection, body_identity, format_optional,
-        sort_bodies, visible_columns,
+        LayoutMode, ResultsState, SortColumn, SortDirection, body_detail_lines, body_identity,
+        body_summary_lines, format_optional, sort_bodies, visible_columns,
     };
     use crate::domain::body::Body;
 
@@ -413,4 +413,57 @@ mod tests {
         let wide = visible_columns(LayoutMode::Wide);
         assert_eq!(wide.len(), 7);
     }
+    fn lines_text(lines: &[ratatui::text::Line<'static>]) -> String {
+        lines
+            .iter()
+            .map(|line| {
+                line.spans
+                    .iter()
+                    .map(|span| span.content.as_ref())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\\n")
+    }
+
+    #[test]
+    fn summary_distinguishes_false_zero_and_unknown_values() {
+        let mut planet = body("A 1", None, None, None, None, None, None);
+        planet.is_mapped = Some(false);
+        planet.biological_signal_count = Some(0);
+
+        let summary = lines_text(&body_summary_lines(&planet));
+        assert!(summary.contains("Картографирована: нет"));
+        assert!(summary.contains("Биологические сигналы: 0"));
+        assert!(summary.contains("Температура: —"));
+    }
+
+    #[test]
+    fn details_do_not_invent_first_footfall_or_volcanism_status() {
+        let mut planet = body("A 1", Some("Icy body"), None, None, None, None, None);
+        planet.is_landable = Some(false);
+        planet.biological_signal_count = Some(0);
+        planet.geological_signal_count = None;
+        planet.volcanism_type = None;
+
+        let details = lines_text(&body_detail_lines(&planet));
+        assert!(details.contains("Можно приземлиться: нет"));
+        assert!(details.contains("Биологические сигналы Spansh: 0"));
+        assert!(details.contains("Геологические сигналы Spansh: нет данных"));
+        assert!(details.contains("Вулканизм: нет данных"));
+        assert!(!details.contains("First Footfall"));
+        assert!(!details.contains("нет вулканизма"));
+    }
+
+    #[test]
+    fn details_include_known_volcanism_and_biological_genera() {
+        let mut planet = body("A 1", Some("Rocky body"), Some("Water"), Some(410.0), None, None, None);
+        planet.volcanism_type = Some("Water Magma".to_owned());
+        planet.biological_genera = Some(vec!["Osseus".to_owned()]);
+
+        let details = lines_text(&body_detail_lines(&planet));
+        assert!(details.contains("Вулканизм: Water Magma"));
+        assert!(details.contains("Оссии"));
+    }
+
 }
