@@ -259,7 +259,7 @@ fn restore_selection(
         .and_then(|identity| {
             bodies
                 .iter()
-                .position(|body| body_identity(body) == identity)
+                .position(|body| super::results::body_identity(body) == identity)
         })
         .unwrap_or(0);
 }
