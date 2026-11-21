@@ -77,6 +77,7 @@ pub struct ResultsState {
     pub marked: HashSet<String>,
     pub details_open: bool,
     pub detail_scroll: u16,
+    pub help_open: bool,
 }
 
 impl ResultsState {
@@ -88,6 +89,7 @@ impl ResultsState {
             marked: HashSet::new(),
             details_open: false,
             detail_scroll: 0,
+            help_open: false,
         }
     }
 
@@ -233,6 +235,24 @@ pub fn sort_bodies(bodies: &mut [Body], column: SortColumn, direction: SortDirec
             compare_optional_number(left.distance_ly, right.distance_ly, direction)
         }
     });
+}
+
+pub fn results_help_lines() -> Vec<ratatui::text::Line<'static>> {
+    use ratatui::text::Line;
+
+    vec![
+        Line::from("УПРАВЛЕНИЕ РЕЗУЛЬТАТАМИ"),
+        Line::from(""),
+        Line::from("↑ / ↓       Выбрать предыдущую / следующую планету"),
+        Line::from("Home / End  Перейти к началу / концу таблицы"),
+        Line::from("s           Следующий столбец сортировки"),
+        Line::from("r           Изменить направление сортировки"),
+        Line::from("Space       Отметить / снять отметку с планеты"),
+        Line::from("Enter       Открыть подробности выбранной планеты"),
+        Line::from("Esc         Закрыть подробности или вернуться к настройкам"),
+        Line::from("?           Закрыть / открыть эту справку"),
+        Line::from("Ctrl+Q      Завершить приложение"),
+    ]
 }
 
 pub fn cell_value(body: &Body, column: SortColumn) -> String {
