@@ -17,7 +17,7 @@ use ratatui::{
 
 use crate::{
     application::{config::SearchConfig, presets::{PRESETS, SearchPreset}},
-    cli::{parse_range_f32, parse_range_i32},
+    cli::parse_range_i32,
     domain::criteria::{NumericRange, SearchCriteria},
 };
 
@@ -34,6 +34,17 @@ const ATMOSPHERES: [&str; 17] = [
     "Methane", "Helium", "Silicate vapour", "Neon-rich", "Argon-rich",
     "Neon", "Argon", "Oxygen",
 ];
+
+fn parse_range_f64(value: &str) -> Result<(f64, f64)> {
+    let mut parts = value.split('-');
+    let min = parts.next().unwrap_or_default().parse::<f64>()?;
+    let max = parts.next().ok_or_else(|| anyhow!("Ожидается диапазон min-max"))?.parse::<f64>()?;
+    if parts.next().is_some() {
+        return Err(anyhow!("Ожидается диапазон min-max"));
+    }
+    Ok((min, max))
+}
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Step { Profiles, General, Filters, Review }
@@ -232,9 +243,9 @@ impl App {
         }
         let (t_min, t_max) = parse_range_i32(&self.temperature)
             .context("Температура: ожидается диапазон min-max в K")?;
-        let (g_min, g_max) = parse_range_f32(&self.gravity)
+        let (g_min, g_max) = parse_range_f64(&self.gravity)
             .context("Гравитация: ожидается диапазон min-max в g")?;
-        let (p_min, p_max) = parse_range_f32(&self.pressure)
+        let (p_min, p_max) = parse_range_f64(&self.pressure)
             .context("Давление: ожидается диапазон min-max в atm")?;
 
         let surfaces = if self.surfaces.is_empty() { vec!["any".to_owned()] } else { self.surfaces.clone() };
@@ -243,8 +254,8 @@ impl App {
             primary,
             &self.atmosphere,
             NumericRange::new(t_min.into(), t_max.into()).ok_or_else(|| anyhow!("Некорректная температура"))?,
-            NumericRange::new(g_min.into(), g_max.into()).ok_or_else(|| anyhow!("Некорректная гравитация"))?,
-            NumericRange::new(p_min.into(), p_max.into()).ok_or_else(|| anyhow!("Некорректное давление"))?,
+            NumericRange::new(g_min, g_max).ok_or_else(|| anyhow!("Некорректная гравитация"))?,
+            NumericRange::new(p_min, p_max).ok_or_else(|| anyhow!("Некорректное давление"))?,
             count,
         )?;
         if surfaces.iter().any(|v| v != "any") {
