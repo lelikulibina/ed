@@ -400,7 +400,7 @@ fn optional_count(value: Option<u32>) -> String {
 mod tests {
     use super::{
         LayoutMode, ResultsState, SortColumn, SortDirection, body_detail_lines, body_identity,
-        body_summary_lines, format_optional, sort_bodies, visible_columns,
+        body_summary_lines, format_optional, results_help_lines, sort_bodies, visible_columns,
     };
     use crate::domain::body::Body;
 
@@ -623,4 +623,20 @@ mod tests {
         assert!(details.contains("Вулканизм: Water Magma"));
         assert!(details.contains("Оссии"));
     }
+    #[test]
+    fn result_help_lists_navigation_and_all_primary_actions() {
+        let help = lines_text(&results_help_lines());
+        assert!(help.contains("↑/↓"));
+        assert!(help.contains("Space"));
+        assert!(help.contains("Enter"));
+        assert!(help.contains("Esc"));
+        assert!(help.contains("Ctrl+Q"));
+    }
+
+    #[test]
+    fn results_state_starts_with_help_closed() {
+        let state = ResultsState::new(&[]);
+        assert!(!state.help_open);
+    }
+
 }
