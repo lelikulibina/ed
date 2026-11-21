@@ -281,5 +281,4 @@ mod tests {
         assert!(lines[3].contains("Discus"));
         assert!(lines.last().unwrap().contains("└"));
     }
-
 }
