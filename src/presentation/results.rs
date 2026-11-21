@@ -42,7 +42,10 @@ mod tests {
         assert_eq!(format_optional(Some(190.0), 2, " K"), "190.00 K");
         assert_eq!(format_optional(Some(0.042), 3, " atm"), "0.042 atm");
         assert_eq!(format_optional(Some(0.1), 3, " g"), "0.100 g");
-        assert_eq!(format_optional(Some(12.5), 2, " св. л."), "12.50 св. л.");
+        assert_eq!(
+            format_optional(Some(12.5), 2, " св. л."),
+            "12.50 св. л."
+        );
     }
 
     #[test]
@@ -55,9 +58,25 @@ mod tests {
     #[test]
     fn sorts_all_columns_in_both_directions_and_keeps_missing_values_last() {
         let mut bodies = vec![
-            body("Beta", Some("Icy body"), Some("Water"), Some(200.0), Some(0.2), Some(0.4), Some(20.0)),
+            body(
+                "Beta",
+                Some("Icy body"),
+                Some("Water"),
+                Some(200.0),
+                Some(0.2),
+                Some(0.4),
+                Some(20.0),
+            ),
             body("Gamma", None, None, None, None, None, None),
-            body("Alpha", Some("Rocky body"), Some("Ammonia"), Some(100.0), Some(0.1), Some(0.2), Some(10.0)),
+            body(
+                "Alpha",
+                Some("Rocky body"),
+                Some("Ammonia"),
+                Some(100.0),
+                Some(0.1),
+                Some(0.2),
+                Some(10.0),
+            ),
         ];
 
         for column in [
@@ -70,15 +89,35 @@ mod tests {
             SortColumn::Distance,
         ] {
             sort_bodies(&mut bodies, column, SortDirection::Ascending);
-            assert_eq!(bodies.last().unwrap().name, "Gamma", "ascending {column:?}");
+            assert_eq!(
+                bodies.last().unwrap().name,
+                "Gamma",
+                "ascending {column:?}"
+            );
 
             sort_bodies(&mut bodies, column, SortDirection::Descending);
-            assert_eq!(bodies.last().unwrap().name, "Gamma", "descending {column:?}");
+            assert_eq!(
+                bodies.last().unwrap().name,
+                "Gamma",
+                "descending {column:?}"
+            );
         }
 
         sort_bodies(&mut bodies, SortColumn::Name, SortDirection::Ascending);
-        assert_eq!(bodies.iter().map(|body| body.name.as_str()).collect::<Vec<_>>(), vec!["Alpha", "Beta", "Gamma"]);
+        assert_eq!(
+            bodies
+                .iter()
+                .map(|body| body.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["Alpha", "Beta", "Gamma"]
+        );
         sort_bodies(&mut bodies, SortColumn::Name, SortDirection::Descending);
-        assert_eq!(bodies.iter().map(|body| body.name.as_str()).collect::<Vec<_>>(), vec!["Beta", "Alpha", "Gamma"]);
+        assert_eq!(
+            bodies
+                .iter()
+                .map(|body| body.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["Beta", "Alpha", "Gamma"]
+        );
     }
 }
