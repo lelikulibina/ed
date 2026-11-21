@@ -368,7 +368,7 @@ pub fn body_detail_lines(body: &Body) -> Vec<ratatui::text::Line<'static>> {
     ];
 
     match crate::presentation::output::exobiology_summary(body) {
-        Ok(Some(summary)) => lines.extend(summary.lines().map(Line::from)),
+        Ok(Some(summary)) => lines.extend(summary.lines().map(|line| Line::from(line.to_owned()))),
         Ok(None) => lines.push(Line::from("Подходящие виды в справочнике не найдены.")),
         Err(error) => lines.push(Line::from(format!("Ошибка расчёта экзобиологии: {error}"))),
     }
