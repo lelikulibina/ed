@@ -614,8 +614,9 @@ fn show_results_in_session(
     use std::time::Duration;
 
     let mut selected = 0usize;
+    let mut detail_scroll = 0u16;
     loop {
-        session.terminal.draw(|frame| draw_results(frame, bodies, selected))?;
+        session.terminal.draw(|frame| draw_results(frame, bodies, selected, detail_scroll))?;
         if !event::poll(Duration::from_millis(100))? {
             continue;
         }
@@ -632,6 +633,8 @@ fn show_results_in_session(
             KeyCode::Down if !bodies.is_empty() => selected = (selected + 1).min(bodies.len() - 1),
             KeyCode::Home => selected = 0,
             KeyCode::End if !bodies.is_empty() => selected = bodies.len() - 1,
+            KeyCode::PageUp => detail_scroll = detail_scroll.saturating_sub(8),
+            KeyCode::PageDown => detail_scroll = detail_scroll.saturating_add(8),
             _ => {}
         }
     }
@@ -641,6 +644,7 @@ fn draw_results(
     frame: &mut ratatui::Frame<'_>,
     bodies: &[crate::domain::body::Body],
     selected: usize,
+    detail_scroll: u16,
 ) {
     use ratatui::widgets::{List, ListItem};
 
@@ -712,13 +716,13 @@ fn draw_results(
         },
     );
     frame.render_widget(
-        Paragraph::new(detail).wrap(Wrap { trim: false }).block(
+        Paragraph::new(detail).scroll((detail_scroll, 0)).wrap(Wrap { trim: false }).block(
             Block::default().title(" ПОДРОБНОСТИ ПЛАНЕТЫ ").borders(Borders::ALL),
         ),
         panes[1],
     );
     frame.render_widget(
-        Paragraph::new("↑/↓ выбор планеты   Home/End начало/конец   Esc или Q назад/выход")
+        Paragraph::new("↑/↓ планета   PgUp/PgDn подробности   Home/End список   Esc/Q выход")
             .alignment(Alignment::Center)
             .style(Style::default().fg(Color::Gray)),
         root[2],
