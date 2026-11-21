@@ -696,7 +696,6 @@ mod tests {
             field: ChoiceField::Surface,
             cursor: 1,
             selected: vec![true, false, false, false, false],
-            original: vec![true, false, false, false, false],
         };
         App::toggle_choice(&mut choice);
         assert_eq!(choice.selected, vec![false, true, false, false, false]);
