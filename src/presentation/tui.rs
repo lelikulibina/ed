@@ -91,6 +91,7 @@ where
 
     let mut session = TerminalSession::enter()?;
     let task = tokio::spawn(future);
+    let mut help_open = false;
 
     let outcome = loop {
         if task.is_finished() {
@@ -100,12 +101,16 @@ where
             };
         }
 
-        session.terminal.draw(draw_searching)?;
+        session
+            .terminal
+            .draw(|frame| draw_searching(frame, help_open))?;
         if event::poll(Duration::from_millis(100))?
             && let Event::Key(key) = event::read()?
             && key.kind == KeyEventKind::Press
         {
-            if key.code == KeyCode::Esc {
+            if key.code == KeyCode::Char('?') {
+                help_open = !help_open;
+            } else if key.code == KeyCode::Esc {
                 task.abort();
                 return Ok(SearchUiAction::BackToSetup);
             } else if key.code == KeyCode::Char('q')
@@ -151,12 +156,24 @@ fn show_error_in_session(session: &mut TerminalSession, message: &str) -> Result
     }
 }
 
-fn draw_searching(frame: &mut ratatui::Frame<'_>) {
+fn draw_searching(frame: &mut ratatui::Frame<'_>, help_open: bool) {
+    use super::layout::{LayoutMode, layout_mode};
+
     let area = frame.area();
+    if layout_mode(area) == LayoutMode::TooSmall {
+        frame.render_widget(
+            Paragraph::new("Поиск выполняется. Увеличьте окно терминала; Esc отменяет поиск.")
+                .alignment(Alignment::Center)
+                .wrap(Wrap { trim: true }),
+            area,
+        );
+        return;
+    }
+
     let panel = centered(70, 35, area);
     frame.render_widget(
         Paragraph::new(
-            "Выполняется поиск планет\n\nРазрешение центральной системы и загрузка результатов Spansh.\n\nИнтерфейс остаётся активным. Esc — отменить поиск.",
+            "Выполняется поиск планет\n\nРазрешение центральной системы и загрузка результатов Spansh.\n\nИнтерфейс остаётся активным. Esc — отменить поиск. ? — справка.",
         )
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: true })
@@ -168,6 +185,18 @@ fn draw_searching(frame: &mut ratatui::Frame<'_>) {
         ),
         panel,
     );
+
+    if help_open {
+        let popup = centered(72, 52, area);
+        frame.render_widget(Clear, popup);
+        frame.render_widget(
+            Paragraph::new("ПОИСК\n\nEsc — отменить поиск и вернуться к настройкам\nCtrl+Q — завершить приложение\n? — закрыть справку")
+                .alignment(Alignment::Center)
+                .wrap(Wrap { trim: true })
+                .block(Block::default().title(" СПРАВКА ").borders(Borders::ALL)),
+            popup,
+        );
+    }
 }
 
 fn show_results_in_session(
@@ -195,8 +224,16 @@ fn show_results_in_session(
         if key.kind != KeyEventKind::Press {
             continue;
         }
+        if state.help_open
+            && !matches!(key.code, KeyCode::Esc | KeyCode::Enter | KeyCode::Char('?'))
+        {
+            continue;
+        }
 
         match key.code {
+            KeyCode::Esc if state.help_open => state.help_open = false,
+            KeyCode::Char('?') => state.help_open = !state.help_open,
+            KeyCode::Enter if state.help_open => state.help_open = false,
             KeyCode::Char('q') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 return Ok(SearchUiAction::Exit);
             }
@@ -437,4 +474,15 @@ fn draw_results(
         Paragraph::new(hint).style(Style::default().fg(Color::Gray)),
         root[2],
     );
+
+    if state.help_open {
+        let popup = centered(78, 70, area);
+        frame.render_widget(Clear, popup);
+        frame.render_widget(
+            Paragraph::new(results_help_lines())
+                .wrap(Wrap { trim: true })
+                .block(Block::default().title(" СПРАВКА ").borders(Borders::ALL)),
+            popup,
+        );
+    }
 }
