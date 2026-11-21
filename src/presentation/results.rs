@@ -50,26 +50,21 @@ fn compare_optional_number(
     right: Option<f64>,
     direction: SortDirection,
 ) -> Ordering {
-    compare_optional(
-        left.filter(|value| value.is_finite()).map(f64::to_bits),
-        right.filter(|value| value.is_finite()).map(f64::to_bits),
-        direction,
-    )
-    .then_with(|| {
-        match (
-            left.filter(|value| value.is_finite()),
-            right.filter(|value| value.is_finite()),
-        ) {
-            (Some(left), Some(right)) => {
-                let order = left.total_cmp(&right);
-                match direction {
-                    SortDirection::Ascending => order,
-                    SortDirection::Descending => order.reverse(),
-                }
+    match (
+        left.filter(|value| value.is_finite()),
+        right.filter(|value| value.is_finite()),
+    ) {
+        (Some(left), Some(right)) => {
+            let order = left.total_cmp(&right);
+            match direction {
+                SortDirection::Ascending => order,
+                SortDirection::Descending => order.reverse(),
             }
-            _ => Ordering::Equal,
         }
-    })
+        (Some(_), None) => Ordering::Less,
+        (None, Some(_)) => Ordering::Greater,
+        (None, None) => Ordering::Equal,
+    }
 }
 
 fn compare_text(
@@ -152,10 +147,7 @@ mod tests {
         assert_eq!(format_optional(Some(190.0), 2, " K"), "190.00 K");
         assert_eq!(format_optional(Some(0.042), 3, " atm"), "0.042 atm");
         assert_eq!(format_optional(Some(0.1), 3, " g"), "0.100 g");
-        assert_eq!(
-            format_optional(Some(12.5), 2, " св. л."),
-            "12.50 св. л."
-        );
+        assert_eq!(format_optional(Some(12.5), 2, " св. л."), "12.50 св. л.");
     }
 
     #[test]
@@ -199,11 +191,7 @@ mod tests {
             SortColumn::Distance,
         ] {
             sort_bodies(&mut bodies, column, SortDirection::Ascending);
-            assert_eq!(
-                bodies.last().unwrap().name,
-                "Gamma",
-                "ascending {column:?}"
-            );
+            assert_eq!(bodies.last().unwrap().name, "Gamma", "ascending {column:?}");
 
             sort_bodies(&mut bodies, column, SortDirection::Descending);
             assert_eq!(
