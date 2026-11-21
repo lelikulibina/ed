@@ -176,10 +176,7 @@ fn show_results_in_session(
 ) -> Result<SearchUiAction> {
     use std::time::Duration;
 
-    use super::{
-        layout::{LayoutMode, layout_mode},
-        results::{ResultsState, SortColumn, body_identity, sort_bodies},
-    };
+    use super::results::{ResultsState, body_identity, sort_bodies};
 
     let mut sorted_bodies = bodies.to_vec();
     let mut state = ResultsState::new(&sorted_bodies);
@@ -254,7 +251,6 @@ fn show_results_in_session(
             }
             _ => {}
         }
-        let _ = layout_mode(session.terminal.size()?);
     }
 }
 
