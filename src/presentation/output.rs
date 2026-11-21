@@ -70,7 +70,7 @@ pub fn print_results(bodies: &[Body]) {
     }
 }
 
-fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
+pub(crate) fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
     let estimate = exobiology::estimate(body)?;
 
     if estimate.biological_signal_count == Some(0) {
@@ -208,7 +208,7 @@ fn render_table(headers: &[&str], rows: &[Vec<String>]) -> Vec<String> {
     output
 }
 
-fn russian_group_name(name: &str) -> &str {
+pub(crate) fn russian_group_name(name: &str) -> &str {
     match name {
         "Aleoida" => "Алеоиды",
         "Bacterium" => "Бактерии",
