@@ -461,7 +461,7 @@ fn draw(frame: &mut ratatui::Frame<'_>, app: &App) {
         Step::Review => draw_review(frame, root[1], app),
     }
 
-    let footer = match app.modal {
+    let footer = match app.modal.as_ref() {
         Some(Modal::Edit(_)) => "←/→ курсор   Home/End начало/конец   Enter сохранить   Esc отменить",
         Some(Modal::Choice(Choice { field: ChoiceField::Surface, .. })) => "↑/↓ выбор   Space отметить (можно несколько)   Enter применить   Esc отменить",
         Some(Modal::Choice(_)) => "↑/↓ выбор   Space отметить   Enter применить   Esc отменить",
