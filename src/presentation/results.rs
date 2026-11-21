@@ -66,7 +66,7 @@ impl SortDirection {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ResultsState {
     pub selected: usize,
     pub sort_column: SortColumn,
