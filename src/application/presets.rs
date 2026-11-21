@@ -198,5 +198,4 @@ mod tests {
             assert_eq!(preset.potential_value_cr, row.8);
         }
     }
-
 }
