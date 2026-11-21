@@ -1,7 +1,4 @@
-use std::{
-    collections::HashSet,
-    io::{self, Stdout},
-};
+use std::io::{self, Stdout};
 
 use anyhow::{Context, Result, anyhow};
 use crossterm::{
@@ -14,7 +11,7 @@ use ratatui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, ListState, Paragraph, Wrap},
+    widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
 };
 
 use crate::application::config::SearchConfig;
@@ -179,26 +176,19 @@ fn show_results_in_session(
 ) -> Result<SearchUiAction> {
     use std::time::Duration;
 
+    use super::{
+        layout::{LayoutMode, layout_mode},
+        results::{ResultsState, SortColumn, body_identity, sort_bodies},
+    };
+
     let mut sorted_bodies = bodies.to_vec();
-    let mut sort_mode = 0usize;
-    sort_bodies(&mut sorted_bodies, sort_mode);
-    let mut selected = 0usize;
-    let mut detail_scroll = 0u16;
-    let mut details_open = false;
-    let mut marked = HashSet::<String>::new();
+    let mut state = ResultsState::new(&sorted_bodies);
+    sort_bodies(&mut sorted_bodies, state.sort_column, state.sort_direction);
 
     loop {
-        session.terminal.draw(|frame| {
-            draw_results(
-                frame,
-                &sorted_bodies,
-                selected,
-                detail_scroll,
-                sort_mode,
-                &marked,
-                details_open,
-            )
-        })?;
+        session
+            .terminal
+            .draw(|frame| draw_results(frame, &sorted_bodies, &state))?;
         if !event::poll(Duration::from_millis(100))? {
             continue;
         }
@@ -214,88 +204,101 @@ fn show_results_in_session(
                 return Ok(SearchUiAction::Exit);
             }
             KeyCode::Esc => {
-                if details_open {
-                    details_open = false;
-                    detail_scroll = 0;
+                if state.details_open {
+                    state.details_open = false;
+                    state.detail_scroll = 0;
                 } else {
                     return Ok(SearchUiAction::BackToSetup);
                 }
             }
             KeyCode::Enter => {
-                details_open = !details_open;
-                detail_scroll = 0;
+                state.details_open = !state.details_open;
+                state.detail_scroll = 0;
             }
-            KeyCode::Up if details_open => detail_scroll = detail_scroll.saturating_sub(1),
-            KeyCode::Down if details_open => detail_scroll = detail_scroll.saturating_add(1),
-            KeyCode::PageUp if details_open => detail_scroll = detail_scroll.saturating_sub(8),
-            KeyCode::PageDown if details_open => detail_scroll = detail_scroll.saturating_add(8),
-            KeyCode::Up if !sorted_bodies.is_empty() => selected = selected.saturating_sub(1),
-            KeyCode::Down if !sorted_bodies.is_empty() => {
-                selected = (selected + 1).min(sorted_bodies.len() - 1)
+            KeyCode::Up if state.details_open => {
+                state.detail_scroll = state.detail_scroll.saturating_sub(1);
             }
-            KeyCode::Left if !details_open => {
-                sort_mode = (sort_mode + 4) % 5;
-                sort_bodies(&mut sorted_bodies, sort_mode);
-                selected = 0;
+            KeyCode::Down if state.details_open => {
+                state.detail_scroll = state.detail_scroll.saturating_add(1);
             }
-            KeyCode::Right if !details_open => {
-                sort_mode = (sort_mode + 1) % 5;
-                sort_bodies(&mut sorted_bodies, sort_mode);
-                selected = 0;
+            KeyCode::PageUp if state.details_open => {
+                state.detail_scroll = state.detail_scroll.saturating_sub(8);
             }
-            KeyCode::Home if !details_open => selected = 0,
-            KeyCode::End if !details_open && !sorted_bodies.is_empty() => {
-                selected = sorted_bodies.len() - 1
+            KeyCode::PageDown if state.details_open => {
+                state.detail_scroll = state.detail_scroll.saturating_add(8);
             }
-            KeyCode::Char(' ') => {
-                if let Some(body) = sorted_bodies.get(selected)
-                    && !marked.remove(&body.name)
-                {
-                    marked.insert(body.name.clone());
+            KeyCode::Up => state.select_previous(),
+            KeyCode::Down => state.select_next(sorted_bodies.len()),
+            KeyCode::Home if !state.details_open => state.select_first(),
+            KeyCode::End if !state.details_open => state.select_last(sorted_bodies.len()),
+            KeyCode::Char('s') if !state.details_open => {
+                let selected_identity = sorted_bodies
+                    .get(state.selected)
+                    .map(body_identity);
+                state.sort_column = state.sort_column.next();
+                sort_bodies(&mut sorted_bodies, state.sort_column, state.sort_direction);
+                restore_selection(&mut state, &sorted_bodies, selected_identity.as_deref());
+            }
+            KeyCode::Char('r') if !state.details_open => {
+                let selected_identity = sorted_bodies
+                    .get(state.selected)
+                    .map(body_identity);
+                state.sort_direction.toggle();
+                sort_bodies(&mut sorted_bodies, state.sort_column, state.sort_direction);
+                restore_selection(&mut state, &sorted_bodies, selected_identity.as_deref());
+            }
+            KeyCode::Char(' ') if !state.details_open => {
+                if let Some(body) = sorted_bodies.get(state.selected) {
+                    state.toggle_mark(body);
                 }
             }
             _ => {}
         }
+        let _ = layout_mode(session.terminal.size()?);
     }
 }
 
-fn sort_bodies(bodies: &mut [crate::domain::body::Body], mode: usize) {
-    use std::cmp::Ordering;
-
-    fn compare_optional(left: Option<f64>, right: Option<f64>) -> Ordering {
-        match (left, right) {
-            (Some(a), Some(b)) => a.total_cmp(&b),
-            (Some(_), None) => Ordering::Less,
-            (None, Some(_)) => Ordering::Greater,
-            (None, None) => Ordering::Equal,
-        }
-    }
-
-    bodies.sort_by(|left, right| match mode {
-        0 => compare_optional(left.distance_ly, right.distance_ly),
-        1 => compare_optional(left.surface_temperature, right.surface_temperature),
-        2 => compare_optional(left.gravity, right.gravity),
-        3 => compare_optional(left.surface_pressure, right.surface_pressure),
-        _ => left.name.to_lowercase().cmp(&right.name.to_lowercase()),
-    });
+fn restore_selection(
+    state: &mut super::results::ResultsState,
+    bodies: &[crate::domain::body::Body],
+    identity: Option<&str>,
+) {
+    state.selected = identity
+        .and_then(|identity| {
+            bodies
+                .iter()
+                .position(|body| body_identity(body) == identity)
+        })
+        .unwrap_or(0);
 }
 
 fn draw_results(
     frame: &mut ratatui::Frame<'_>,
     bodies: &[crate::domain::body::Body],
-    selected: usize,
-    detail_scroll: u16,
-    sort_mode: usize,
-    marked: &HashSet<String>,
-    details_open: bool,
+    state: &super::results::ResultsState,
 ) {
-    use ratatui::widgets::{List, ListItem};
+    use super::{
+        layout::{LayoutMode, layout_mode},
+        results::{SortColumn, cell_value, visible_columns},
+    };
 
     let area = frame.area();
+    let mode = layout_mode(area);
+    if mode == LayoutMode::TooSmall {
+        frame.render_widget(
+            Paragraph::new("Терминал слишком мал. Увеличьте окно минимум до 64×18.")
+                .alignment(Alignment::Center)
+                .wrap(Wrap { trim: true })
+                .style(Style::default().fg(Color::Yellow)),
+            area,
+        );
+        return;
+    }
+
     let root = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(2),
             Constraint::Min(5),
             Constraint::Length(2),
         ])
@@ -303,67 +306,101 @@ fn draw_results(
 
     frame.render_widget(
         Paragraph::new(format!(
-            "ED: PLANET SEARCH  /  РЕЗУЛЬТАТЫ: {}  /  ОТМЕЧЕНО: {}",
+            "ED  /  PLANET SEARCH     РЕЗУЛЬТАТЫ {}     ОТМЕЧЕНО {}",
             bodies.len(),
-            marked.len()
+            state.marked.len()
         ))
-        .alignment(Alignment::Center)
         .style(
             Style::default()
-                .fg(Color::Cyan)
+                .fg(Color::LightCyan)
                 .add_modifier(Modifier::BOLD),
-        )
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Cyan)),
         ),
         root[0],
     );
 
-    let wide = area.width >= 100;
-    let panes = if wide {
-        Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(42), Constraint::Percentage(58)])
-            .split(root[1])
+    if state.details_open {
+        let detail = bodies
+            .get(state.selected)
+            .map_or_else(|| "Подходящие планеты не найдены.".to_owned(), body_detail_text);
+        frame.render_widget(
+            Paragraph::new(detail)
+                .scroll((state.detail_scroll, 0))
+                .wrap(Wrap { trim: false })
+                .block(
+                    Block::default()
+                        .title(" ПОДРОБНОСТИ ПЛАНЕТЫ ")
+                        .borders(Borders::LEFT)
+                        .border_style(Style::default().fg(Color::Magenta)),
+                ),
+            root[1],
+        );
     } else {
-        Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
-            .split(root[1])
-    };
+        let columns = visible_columns(mode);
+        let (table_area, inspector_area) = if mode == LayoutMode::Wide {
+            let panes = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(66), Constraint::Percentage(34)])
+                .split(root[1]);
+            (panes[0], Some(panes[1]))
+        } else {
+            (root[1], None)
+        };
 
-    if !details_open {
-        let items = bodies
-            .iter()
-            .map(|body| {
-                let marked_label = if marked.contains(&body.name) {
-                    "★ "
+        if bodies.is_empty() {
+            frame.render_widget(
+                Paragraph::new("Совпадений не найдено. Измените критерии и повторите поиск.")
+                    .alignment(Alignment::Center)
+                    .wrap(Wrap { trim: true })
+                    .style(Style::default().fg(Color::Gray)),
+                table_area,
+            );
+        } else {
+            let header = Row::new(columns.iter().map(|column| {
+                let marker = if *column == state.sort_column {
+                    state.sort_direction.indicator()
                 } else {
                     ""
                 };
-                let mapped = if body.is_mapped == Some(true) {
-                    "  [картографирована]"
-                } else {
-                    ""
-                };
-                let label = format!("{marked_label}{}{mapped}", body.name);
-                let style = if body.is_mapped == Some(true) {
+                Cell::from(format!("{}{marker}", column.label()))
+            }))
+            .style(
+                Style::default()
+                    .fg(Color::LightCyan)
+                    .add_modifier(Modifier::BOLD),
+            );
+
+            let rows = bodies.iter().map(|body| {
+                let mut cells = columns
+                    .iter()
+                    .map(|column| Cell::from(cell_value(body, *column)))
+                    .collect::<Vec<_>>();
+                if let Some(first) = cells.first_mut()
+                    && state.is_marked(body)
+                {
+                    *first = Cell::from(format!("★ {}", cell_value(body, SortColumn::Name)));
+                }
+                Row::new(cells).style(if body.is_mapped == Some(true) {
                     Style::default().fg(Color::LightGreen)
                 } else {
                     Style::default().fg(Color::White)
-                };
-                ListItem::new(label).style(style)
-            })
-            .collect::<Vec<_>>();
-        let mut state = ListState::default();
-        if !bodies.is_empty() {
-            state.select(Some(selected.min(bodies.len() - 1)));
-        }
-        frame.render_stateful_widget(
-            List::new(items)
-                .highlight_style(
+                })
+            });
+
+            let widths = columns
+                .iter()
+                .map(|column| match column {
+                    SortColumn::Name => Constraint::Min(18),
+                    SortColumn::Surface | SortColumn::Atmosphere => Constraint::Length(15),
+                    SortColumn::Temperature | SortColumn::Pressure => Constraint::Length(11),
+                    SortColumn::Gravity => Constraint::Length(9),
+                    SortColumn::Distance => Constraint::Length(12),
+                })
+                .collect::<Vec<_>>();
+
+            let table = Table::new(rows, widths)
+                .header(header)
+                .column_spacing(1)
+                .row_highlight_style(
                     Style::default()
                         .fg(Color::Black)
                         .bg(Color::LightCyan)
@@ -372,126 +409,107 @@ fn draw_results(
                 .highlight_symbol("▸ ")
                 .block(
                     Block::default()
-                        .title(" НАЙДЕННЫЕ ПЛАНЕТЫ ")
-                        .borders(Borders::ALL)
-                        .border_style(Style::default().fg(Color::Blue)),
-                ),
-            panes[0],
-            &mut state,
-        );
+                        .title(" НАЙДЕННЫЕ МИРЫ ")
+                        .borders(Borders::BOTTOM)
+                        .border_style(Style::default().fg(Color::DarkGray)),
+                );
+            let mut table_state = TableState::default();
+            table_state.select(Some(state.selected.min(bodies.len() - 1)));
+            frame.render_stateful_widget(table, table_area, &mut table_state);
+        }
+
+        if let Some(inspector_area) = inspector_area {
+            let content = bodies
+                .get(state.selected)
+                .map_or_else(|| "Нет выбранной планеты.".to_owned(), body_summary_text);
+            frame.render_widget(
+                Paragraph::new(content)
+                    .wrap(Wrap { trim: true })
+                    .block(
+                        Block::default()
+                            .title(" ИНСПЕКТОР ")
+                            .borders(Borders::LEFT)
+                            .border_style(Style::default().fg(Color::DarkGray)),
+                    ),
+                inspector_area,
+            );
+        }
     }
 
-    let detail = bodies.get(selected).map_or_else(
-        || "Подходящие планеты не найдены.".to_owned(),
-        |body| {
-            let mut lines = vec![
-                format!("Планета: {}", body.name),
-                format!(
-                    "Система: {}",
-                    body.system_name.as_deref().unwrap_or("нет данных")
-                ),
-                format!("Тип: {}", body.subtype.as_deref().unwrap_or("нет данных")),
-                format!(
-                    "Атмосфера: {}",
-                    body.atmosphere.as_deref().unwrap_or("нет данных")
-                ),
-                format!(
-                    "Температура: {}",
-                    body.surface_temperature
-                        .map_or_else(|| "нет данных".to_owned(), |v| format!("{v:.2} K"))
-                ),
-                format!(
-                    "Давление: {}",
-                    body.surface_pressure
-                        .map_or_else(|| "нет данных".to_owned(), |v| format!("{v:.4} atm"))
-                ),
-                format!(
-                    "Гравитация: {}",
-                    body.gravity
-                        .map_or_else(|| "нет данных".to_owned(), |v| format!("{v:.3} g"))
-                ),
-                format!(
-                    "Расстояние: {}",
-                    body.distance_ly
-                        .map_or_else(|| "нет данных".to_owned(), |v| format!("{v:.2} св. л."))
-                ),
-                format!(
-                    "Биологические сигналы Spansh: {}",
-                    body.biological_signal_count
-                        .map_or_else(|| "нет данных".to_owned(), |v| v.to_string())
-                ),
-                format!(
-                    "Геологические сигналы Spansh: {}",
-                    body.geological_signal_count
-                        .map_or_else(|| "нет данных".to_owned(), |v| v.to_string())
-                ),
-                format!(
-                    "Биологические группы: {}",
-                    body.biological_genera
-                        .as_ref()
-                        .filter(|v| !v.is_empty())
-                        .map_or_else(
-                            || "не указаны".to_owned(),
-                            |v| v
-                                .iter()
-                                .map(|g| crate::presentation::output::russian_group_name(g))
-                                .collect::<Vec<_>>()
-                                .join(", ")
-                        )
-                ),
-                format!(
-                    "Вулканизм: {}",
-                    body.volcanism_type.as_deref().unwrap_or("нет данных")
-                ),
-                String::new(),
-            ];
-            match crate::presentation::output::exobiology_summary(body) {
-                Ok(Some(summary)) => lines.extend(summary.lines().map(str::to_owned)),
-                Ok(None) => lines.push("Подходящие виды в справочнике не найдены.".to_owned()),
-                Err(error) => lines.push(format!("Ошибка расчёта экзобиологии: {error}")),
-            }
-            lines.join("\n")
-        },
-    );
-    frame.render_widget(
-        Paragraph::new(detail)
-            .scroll((detail_scroll, 0))
-            .wrap(Wrap { trim: false })
-            .block(
-                Block::default()
-                    .title(" ПОДРОБНОСТИ ПЛАНЕТЫ ")
-                    .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Magenta)),
-            ),
-        if details_open { root[1] } else { panes[1] },
-    );
-    let sort_label = [
-        "расстояние",
-        "температура",
-        "гравитация",
-        "давление",
-        "название",
-    ]
-    .get(sort_mode)
-    .copied()
-    .unwrap_or("расстояние");
-    let hint = if details_open {
-        "↑/↓ прокрутка   Enter/Esc — к списку   Space — отметить планету   Ctrl+Q — выход"
-            .to_owned()
+    let hint = if state.details_open {
+        "↑/↓ прокрутка   PgUp/PgDn страница   Esc — к таблице   Ctrl+Q — выход"
     } else {
-        format!(
-            "↑/↓ планета   ←/→ сортировка: {sort_label}   Enter — подробности   Space — отметить   Esc — настройки   Ctrl+Q — выход"
-        )
+        "↑/↓ выбор   s сортировка   r направление   Space отметить   Enter подробности   Esc настройки   Ctrl+Q выход"
     };
     frame.render_widget(
-        Paragraph::new(hint)
-            .alignment(Alignment::Center)
-            .style(Style::default().fg(Color::Gray))
-            .block(
-                Block::default()
-                    .borders(Borders::TOP)
-                    .border_style(Style::default().fg(Color::DarkGray)),
-            ),
+        Paragraph::new(hint).style(Style::default().fg(Color::Gray)),
         root[2],
     );
+}
+
+fn body_summary_text(body: &crate::domain::body::Body) -> String {
+    use super::results::format_optional;
+
+    format!(
+        "{}\n{}\n\nПоверхность  {}\nАтмосфера    {}\nТемпература  {}\nРасстояние   {}\n\nКартографирована  {}\nБиосигналы        {}",
+        body.name,
+        body.system_name.as_deref().unwrap_or("Система неизвестна"),
+        body.subtype.as_deref().unwrap_or("—"),
+        body.atmosphere.as_deref().unwrap_or("—"),
+        format_optional(body.surface_temperature, 1, " K"),
+        format_optional(body.distance_ly, 1, " св. л."),
+        match body.is_mapped {
+            Some(true) => "да",
+            Some(false) => "нет",
+            None => "нет данных",
+        },
+        body.biological_signal_count.map_or_else(|| "нет данных".to_owned(), |v| v.to_string())
+    )
+}
+
+fn body_detail_text(body: &crate::domain::body::Body) -> String {
+    use super::results::format_optional;
+
+    let mut lines = vec![
+        format!("{}  /  {}", body.name, body.system_name.as_deref().unwrap_or("система неизвестна")),
+        format!("ID тела: {}", body.id64.as_deref().unwrap_or("нет данных")),
+        format!("Тип поверхности: {}", body.subtype.as_deref().unwrap_or("нет данных")),
+        format!("Атмосфера: {}", body.atmosphere.as_deref().unwrap_or("нет данных")),
+        format!("Температура: {}", format_optional(body.surface_temperature, 2, " K")),
+        format!("Давление: {}", format_optional(body.surface_pressure, 4, " atm")),
+        format!("Гравитация: {}", format_optional(body.gravity, 3, " g")),
+        format!("Расстояние: {}", format_optional(body.distance_ly, 2, " св. л.")),
+        format!("Можно приземлиться: {}", optional_bool(body.is_landable)),
+        format!("Картографирована: {}", optional_bool(body.is_mapped)),
+        format!("Обновление записи: {}", body.last_updated_at.as_deref().unwrap_or("нет данных")),
+        format!("Биологические сигналы Spansh: {}", body.biological_signal_count.map_or_else(|| "нет данных".to_owned(), |v| v.to_string())),
+        format!("Геологические сигналы Spansh: {}", body.geological_signal_count.map_or_else(|| "нет данных".to_owned(), |v| v.to_string())),
+        format!(
+            "Биологические группы: {}",
+            body.biological_genera
+                .as_ref()
+                .filter(|genera| !genera.is_empty())
+                .map_or_else(|| "не указаны".to_owned(), |genera| genera
+                    .iter()
+                    .map(|genus| crate::presentation::output::russian_group_name(genus))
+                    .collect::<Vec<_>>()
+                    .join(", "))
+        ),
+        format!("Вулканизм: {}", body.volcanism_type.as_deref().unwrap_or("нет данных")),
+        String::new(),
+    ];
+    match crate::presentation::output::exobiology_summary(body) {
+        Ok(Some(summary)) => lines.extend(summary.lines().map(str::to_owned)),
+        Ok(None) => lines.push("Подходящие виды в справочнике не найдены.".to_owned()),
+        Err(error) => lines.push(format!("Ошибка расчёта экзобиологии: {error}")),
+    }
+    lines.join("\n")
+}
+
+fn optional_bool(value: Option<bool>) -> &'static str {
+    match value {
+        Some(true) => "да",
+        Some(false) => "нет",
+        None => "нет данных",
+    }
 }
