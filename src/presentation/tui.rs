@@ -54,8 +54,8 @@ impl Drop for TerminalSession {
     }
 }
 
-pub fn run_tui() -> Result<Option<SearchConfig>> {
-    super::setup::run_setup()
+pub fn run_tui(initial: Option<SearchConfig>) -> Result<Option<SearchConfig>> {
+    super::setup::run_setup(initial)
 }
 
 fn centered(x: u16, y: u16, a: Rect) -> Rect {
