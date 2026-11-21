@@ -96,28 +96,19 @@ impl Args {
     /// Преобразует аргументы командной строки в ту же конфигурацию,
     /// которую использует интерактивный интерфейс.
     pub(crate) fn into_search_config(self) -> Result<SearchConfig> {
-        let (temperature_min, temperature_max) =
-            parse_range_i32(&self.temperature).context("Температура: ожидается диапазон min-max в K")?;
+        let (temperature_min, temperature_max) = parse_range_i32(&self.temperature)
+            .context("Температура: ожидается диапазон min-max в K")?;
         let (gravity_min, gravity_max) =
             parse_range_f64(&self.gravity).context("Гравитация: ожидается диапазон min-max в g")?;
-        let (pressure_min, pressure_max) =
-            parse_range_f64(&self.pressure).context("Давление: ожидается диапазон min-max в atm")?;
+        let (pressure_min, pressure_max) = parse_range_f64(&self.pressure)
+            .context("Давление: ожидается диапазон min-max в atm")?;
 
-        let temperature = NumericRange::new(
-            f64::from(temperature_min),
-            f64::from(temperature_max),
-        )
-        .ok_or_else(|| anyhow!("Некорректный диапазон температуры: {}", self.temperature))?;
-        let gravity = NumericRange::new(
-            gravity_min,
-            gravity_max,
-        )
-        .ok_or_else(|| anyhow!("Некорректный диапазон гравитации: {}", self.gravity))?;
-        let pressure = NumericRange::new(
-            pressure_min,
-            pressure_max,
-        )
-        .ok_or_else(|| anyhow!("Некорректный диапазон давления: {}", self.pressure))?;
+        let temperature = NumericRange::new(f64::from(temperature_min), f64::from(temperature_max))
+            .ok_or_else(|| anyhow!("Некорректный диапазон температуры: {}", self.temperature))?;
+        let gravity = NumericRange::new(gravity_min, gravity_max)
+            .ok_or_else(|| anyhow!("Некорректный диапазон гравитации: {}", self.gravity))?;
+        let pressure = NumericRange::new(pressure_min, pressure_max)
+            .ok_or_else(|| anyhow!("Некорректный диапазон давления: {}", self.pressure))?;
 
         let criteria = SearchCriteria::from_cli(
             &self.planet_type,
