@@ -564,6 +564,7 @@ mod tests {
         let wide = visible_columns(LayoutMode::Wide);
         assert_eq!(wide.len(), 7);
     }
+
     fn lines_text(lines: &[ratatui::text::Line<'static>]) -> String {
         lines
             .iter()
@@ -574,7 +575,7 @@ mod tests {
                     .collect::<String>()
             })
             .collect::<Vec<_>>()
-            .join("\\n")
+            .join("\n")
     }
 
     #[test]
@@ -608,7 +609,15 @@ mod tests {
 
     #[test]
     fn details_include_known_volcanism_and_biological_genera() {
-        let mut planet = body("A 1", Some("Rocky body"), Some("Water"), Some(410.0), None, None, None);
+        let mut planet = body(
+            "A 1",
+            Some("Rocky body"),
+            Some("Water"),
+            Some(410.0),
+            None,
+            None,
+            None,
+        );
         planet.volcanism_type = Some("Water Magma".to_owned());
         planet.biological_genera = Some(vec!["Osseus".to_owned()]);
 
