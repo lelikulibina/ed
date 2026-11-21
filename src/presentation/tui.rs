@@ -229,66 +229,7 @@ impl Drop for TerminalSession {
 }
 
 pub fn run_tui() -> Result<Option<SearchConfig>> {
-    let mut term = TerminalSession::enter()?;
-    let mut app = App::default();
-    loop {
-        term.terminal.draw(|f| draw(f, &app))?;
-        if let Event::Key(k) = event::read()? {
-            if k.kind != KeyEventKind::Press {
-                continue;
-            }
-            if app.screen == Screen::Confirm {
-                match k.code {
-                    KeyCode::Enter => return app.selection().map(Some),
-                    KeyCode::Esc | KeyCode::Char('n') => {
-                        app.screen = Screen::Presets;
-                        app.error = None;
-                    }
-                    KeyCode::Char('q') => return Ok(None),
-                    _ => {}
-                }
-                continue;
-            }
-            match k.code {
-                KeyCode::Char('q') if k.modifiers.contains(KeyModifiers::CONTROL) => {
-                    return Ok(None);
-                }
-                KeyCode::Esc => {
-                    if app.screen == Screen::Manual {
-                        app.screen = Screen::Presets;
-                    } else {
-                        return Ok(None);
-                    }
-                    app.error = None;
-                }
-                // Стрелки управляют списком профилей; Tab отдельно переводит фокус в поля.
-                KeyCode::Up if app.screen == Screen::Presets => {
-                    app.selected = (app.selected + PRESETS.len() - 1) % PRESETS.len();
-                    app.error = None;
-                }
-                KeyCode::Down if app.screen == Screen::Presets => {
-                    app.selected = (app.selected + 1) % PRESETS.len();
-                    app.error = None;
-                }
-                KeyCode::Tab => app.move_focus(1),
-                KeyCode::BackTab => app.move_focus(-1),
-                KeyCode::F(5) => match app.selection() {
-                    Ok(_) => {
-                        app.screen = Screen::Confirm;
-                        app.error = None;
-                    }
-                    Err(e) => app.error = Some(e.to_string()),
-                },
-                KeyCode::F(2) if app.screen == Screen::Presets => {
-                    app.screen = Screen::Manual;
-                    app.manual_mode = true;
-                    app.focus = 0;
-                    app.error = None;
-                }
-                code => app.edit(code),
-            }
-        }
-    }
+    super::setup::run_setup()
 }
 
 fn draw(f: &mut ratatui::Frame<'_>, app: &App) {
