@@ -646,7 +646,7 @@ mod tests {
     #[test]
     fn result_help_lists_navigation_and_all_primary_actions() {
         let help = lines_text(&results_help_lines());
-        assert!(help.contains("↑/↓"));
+        assert!(help.contains("↑ / ↓"));
         assert!(help.contains("Space"));
         assert!(help.contains("Enter"));
         assert!(help.contains("Esc"));
