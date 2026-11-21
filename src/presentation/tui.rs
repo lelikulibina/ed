@@ -237,8 +237,7 @@ fn show_results_in_session(
         }
         if state.help_open
             && !matches!(key.code, KeyCode::Esc | KeyCode::Enter | KeyCode::Char('?'))
-            && !(key.code == KeyCode::Char('q')
-                && key.modifiers.contains(KeyModifiers::CONTROL))
+            && !(key.code == KeyCode::Char('q') && key.modifiers.contains(KeyModifiers::CONTROL))
         {
             continue;
         }
