@@ -248,10 +248,10 @@ fn show_results_in_session(
                 selected = sorted_bodies.len() - 1
             }
             KeyCode::Char(' ') => {
-                if let Some(body) = sorted_bodies.get(selected) {
-                    if !marked.remove(&body.name) {
-                        marked.insert(body.name.clone());
-                    }
+                if let Some(body) = sorted_bodies.get(selected)
+                    && !marked.remove(&body.name)
+                {
+                    marked.insert(body.name.clone());
                 }
             }
             _ => {}
