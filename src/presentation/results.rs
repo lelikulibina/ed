@@ -325,7 +325,14 @@ mod tests {
             ),
         ];
 
-        for column in SortColumn::ALL {
+        for column in [
+            SortColumn::Surface,
+            SortColumn::Atmosphere,
+            SortColumn::Temperature,
+            SortColumn::Pressure,
+            SortColumn::Gravity,
+            SortColumn::Distance,
+        ] {
             sort_bodies(&mut bodies, column, SortDirection::Ascending);
             assert_eq!(bodies.last().unwrap().name, "Gamma", "ascending {column:?}");
 
