@@ -745,6 +745,41 @@ mod tests {
     }
 
     #[test]
+    fn cli_configuration_prefills_the_wizard_without_changing_criteria() {
+        let mut criteria = SearchCriteria::from_cli(
+            "Rocky body",
+            "Water",
+            NumericRange { min: 395.0, max: 450.0 },
+            NumericRange { min: 0.1, max: 1.0 },
+            NumericRange { min: 0.040, max: 0.063 },
+            6,
+        )
+        .unwrap()
+        .with_bio_signal_exclusion(true);
+        criteria.planet_types = vec![
+            "Rocky body".into(),
+            "High metal content world".into(),
+        ];
+        let config = SearchConfig::new("Sol", criteria).unwrap();
+
+        let app = App::from_config(config.clone());
+        assert_eq!(app.step, Step::General);
+        assert_eq!(app.profile, PRESETS.len());
+        assert_eq!(app.selection().unwrap(), config);
+    }
+
+    #[test]
+    fn returning_to_profiles_keeps_the_current_profile_cursor() {
+        let mut app = App::default();
+        app.move_row(4);
+        app.choose_profile();
+        assert!(app.back());
+        assert_eq!(app.step, Step::Profiles);
+        assert_eq!(app.row, 4);
+        assert_eq!(app.profile, 4);
+    }
+
+    #[test]
     fn selected_preset_preserves_profile_three_or_surface_types_and_gravity() {
         let mut app = App { profile: 2, ..App::default() };
         app.choose_profile();
