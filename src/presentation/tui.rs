@@ -75,11 +75,13 @@ impl App {
             let (a,b)=parse_range_i32(&self.temperature).context("Температура: диапазон min-max в K")?;
             let (c,d)=parse_range_f32(&self.gravity).context("Гравитация: диапазон min-max в g")?;
             let (e,f)=parse_range_f32(&self.pressure).context("Давление: диапазон min-max в atm")?;
-            let mut c=SearchCriteria::from_cli(&self.planet,&self.atmosphere,
+            let surface_types=self.planet.split('|').map(str::trim).filter(|s|!s.is_empty()).collect::<Vec<_>>();
+            let primary_surface=surface_types.first().copied().unwrap_or("any");
+            let mut c=SearchCriteria::from_cli(primary_surface,&self.atmosphere,
                 NumericRange::new(a.into(),b.into()).ok_or_else(||anyhow!("Некорректная температура"))?,
                 NumericRange::new(c.into(),d.into()).ok_or_else(||anyhow!("Некорректная гравитация"))?,
                 NumericRange::new(e.into(),f.into()).ok_or_else(||anyhow!("Некорректное давление"))?,count)?;
-            if self.planet.contains('|'){c.planet_types=self.planet.split('|').map(str::trim).filter(|s|!s.is_empty()).map(str::to_owned).collect();c.planet_type=c.planet_types.first().cloned().unwrap_or_else(||"any".into());}
+            if self.planet.contains('|'){c.planet_types=surface_types.iter().map(|s|(*s).to_owned()).collect();c.planet_type=c.planet_types.first().cloned().unwrap_or_else(||"any".into());}
             c.with_bio_signal_exclusion(self.bio)
         } else { PRESETS[self.selected].criteria(count,self.bio)? };
         Ok(TuiSelection{system:self.system.trim().into(),criteria})
