@@ -235,9 +235,7 @@ fn show_results_in_session(
                 restore_selection(&mut state, &sorted_bodies, selected_identity.as_deref());
             }
             KeyCode::Char('r') if !state.details_open => {
-                let selected_identity = sorted_bodies
-                    .get(state.selected)
-                    .map(body_identity);
+                let selected_identity = sorted_bodies.get(state.selected).map(body_identity);
                 state.sort_direction.toggle();
                 sort_bodies(&mut sorted_bodies, state.sort_column, state.sort_direction);
                 restore_selection(&mut state, &sorted_bodies, selected_identity.as_deref());
@@ -494,9 +492,20 @@ fn body_detail_text(body: &crate::domain::body::Body) -> String {
         ),
         format!("Можно приземлиться: {}", optional_bool(body.is_landable)),
         format!("Картографирована: {}", optional_bool(body.is_mapped)),
-        format!("Обновление записи: {}", body.last_updated_at.as_deref().unwrap_or("нет данных")),
-        format!("Биологические сигналы Spansh: {}", body.biological_signal_count.map_or_else(|| "нет данных".to_owned(), |v| v.to_string())),
-        format!("Геологические сигналы Spansh: {}", body.geological_signal_count.map_or_else(|| "нет данных".to_owned(), |v| v.to_string())),
+        format!(
+            "Обновление записи: {}",
+            body.last_updated_at.as_deref().unwrap_or("нет данных")
+        ),
+        format!(
+            "Биологические сигналы Spansh: {}",
+            body.biological_signal_count
+                .map_or_else(|| "нет данных".to_owned(), |v| v.to_string())
+        ),
+        format!(
+            "Геологические сигналы Spansh: {}",
+            body.geological_signal_count
+                .map_or_else(|| "нет данных".to_owned(), |v| v.to_string())
+        ),
         format!(
             "Биологические группы: {}",
             body.biological_genera
