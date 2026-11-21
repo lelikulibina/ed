@@ -1,6 +1,8 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::HashSet};
 
 use crate::domain::body::Body;
+
+use super::layout::LayoutMode;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortColumn {
@@ -13,10 +15,139 @@ pub enum SortColumn {
     Distance,
 }
 
+impl SortColumn {
+    pub const ALL: [Self; 7] = [
+        Self::Name,
+        Self::Surface,
+        Self::Atmosphere,
+        Self::Temperature,
+        Self::Pressure,
+        Self::Gravity,
+        Self::Distance,
+    ];
+
+    pub fn next(self) -> Self {
+        let index = Self::ALL.iter().position(|column| *column == self).unwrap_or(0);
+        Self::ALL[(index + 1) % Self::ALL.len()]
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Name => "Планета",
+            Self::Surface => "Поверхность",
+            Self::Atmosphere => "Атмосфера",
+            Self::Temperature => "Темп., K",
+            Self::Pressure => "Давл., atm",
+            Self::Gravity => "Грав., g",
+            Self::Distance => "Расст., св. л.",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortDirection {
     Ascending,
     Descending,
+}
+
+impl SortDirection {
+    pub fn toggle(&mut self) {
+        *self = match self {
+            Self::Ascending => Self::Descending,
+            Self::Descending => Self::Ascending,
+        };
+    }
+
+    pub fn indicator(self) -> &'static str {
+        match self {
+            Self::Ascending => " ↑",
+            Self::Descending => " ↓",
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct ResultsState {
+    pub selected: usize,
+    pub sort_column: SortColumn,
+    pub sort_direction: SortDirection,
+    pub marked: HashSet<String>,
+    pub details_open: bool,
+    pub detail_scroll: u16,
+}
+
+impl ResultsState {
+    pub fn new(_bodies: &[Body]) -> Self {
+        Self {
+            selected: 0,
+            sort_column: SortColumn::Distance,
+            sort_direction: SortDirection::Ascending,
+            marked: HashSet::new(),
+            details_open: false,
+            detail_scroll: 0,
+        }
+    }
+
+    pub fn select_next(&mut self, len: usize) {
+        if len > 0 {
+            self.selected = self.selected.saturating_add(1).min(len - 1);
+        } else {
+            self.selected = 0;
+        }
+    }
+
+    pub fn select_previous(&mut self) {
+        self.selected = self.selected.saturating_sub(1);
+    }
+
+    pub fn select_first(&mut self) {
+        self.selected = 0;
+    }
+
+    pub fn select_last(&mut self, len: usize) {
+        self.selected = len.saturating_sub(1);
+    }
+
+    pub fn toggle_mark(&mut self, body: &Body) {
+        let identity = body_identity(body);
+        if !self.marked.remove(&identity) {
+            self.marked.insert(identity);
+        }
+    }
+
+    pub fn is_marked(&self, body: &Body) -> bool {
+        self.marked.contains(&body_identity(body))
+    }
+}
+
+pub fn body_identity(body: &Body) -> String {
+    if let Some(id64) = body.id64.as_deref() {
+        return format!("body:{id64}");
+    }
+    let system = body
+        .system_id64
+        .as_deref()
+        .or(body.system_name.as_deref())
+        .unwrap_or("unknown-system");
+    format!("system:{system}/body:{}", body.name)
+}
+
+pub fn visible_columns(mode: LayoutMode) -> Vec<SortColumn> {
+    match mode {
+        LayoutMode::Wide => SortColumn::ALL.to_vec(),
+        LayoutMode::Medium => vec![
+            SortColumn::Name,
+            SortColumn::Surface,
+            SortColumn::Atmosphere,
+            SortColumn::Temperature,
+            SortColumn::Distance,
+        ],
+        LayoutMode::Compact | LayoutMode::TooSmall => vec![
+            SortColumn::Name,
+            SortColumn::Temperature,
+            SortColumn::Distance,
+        ],
+    }
 }
 
 pub fn format_optional(value: Option<f64>, precision: usize, suffix: &str) -> String {
@@ -67,7 +198,11 @@ fn compare_optional_number(
     }
 }
 
-fn compare_text(left: Option<&str>, right: Option<&str>, direction: SortDirection) -> Ordering {
+fn compare_text(
+    left: Option<&str>,
+    right: Option<&str>,
+    direction: SortDirection,
+) -> Ordering {
     compare_optional(
         left.map(str::to_lowercase),
         right.map(str::to_lowercase),
@@ -81,11 +216,9 @@ pub fn sort_bodies(bodies: &mut [Body], column: SortColumn, direction: SortDirec
         SortColumn::Surface => {
             compare_text(left.subtype.as_deref(), right.subtype.as_deref(), direction)
         }
-        SortColumn::Atmosphere => compare_text(
-            left.atmosphere.as_deref(),
-            right.atmosphere.as_deref(),
-            direction,
-        ),
+        SortColumn::Atmosphere => {
+            compare_text(left.atmosphere.as_deref(), right.atmosphere.as_deref(), direction)
+        }
         SortColumn::Temperature => compare_optional_number(
             left.surface_temperature,
             right.surface_temperature,
@@ -94,20 +227,33 @@ pub fn sort_bodies(bodies: &mut [Body], column: SortColumn, direction: SortDirec
         SortColumn::Pressure => {
             compare_optional_number(left.surface_pressure, right.surface_pressure, direction)
         }
-        SortColumn::Gravity => compare_optional_number(left.gravity, right.gravity, direction),
+        SortColumn::Gravity => {
+            compare_optional_number(left.gravity, right.gravity, direction)
+        }
         SortColumn::Distance => {
             compare_optional_number(left.distance_ly, right.distance_ly, direction)
         }
     });
 }
 
+pub fn cell_value(body: &Body, column: SortColumn) -> String {
+    match column {
+        SortColumn::Name => body.name.clone(),
+        SortColumn::Surface => body.subtype.as_deref().unwrap_or("—").to_owned(),
+        SortColumn::Atmosphere => body.atmosphere.as_deref().unwrap_or("—").to_owned(),
+        SortColumn::Temperature => format_optional(body.surface_temperature, 1, ""),
+        SortColumn::Pressure => format_optional(body.surface_pressure, 3, ""),
+        SortColumn::Gravity => format_optional(body.gravity, 3, ""),
+        SortColumn::Distance => format_optional(body.distance_ly, 1, ""),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        LayoutMode, ResultsState, SortColumn, SortDirection, format_optional, sort_bodies,
-        visible_columns,
+        LayoutMode, ResultsState, SortColumn, SortDirection, body_identity, format_optional,
+        sort_bodies, visible_columns,
     };
-
     use crate::domain::body::Body;
 
     fn body(
@@ -180,43 +326,26 @@ mod tests {
             ),
         ];
 
-        for column in [
-            SortColumn::Name,
-            SortColumn::Surface,
-            SortColumn::Atmosphere,
-            SortColumn::Temperature,
-            SortColumn::Pressure,
-            SortColumn::Gravity,
-            SortColumn::Distance,
-        ] {
+        for column in SortColumn::ALL {
             sort_bodies(&mut bodies, column, SortDirection::Ascending);
             assert_eq!(bodies.last().unwrap().name, "Gamma", "ascending {column:?}");
 
             sort_bodies(&mut bodies, column, SortDirection::Descending);
-            assert_eq!(
-                bodies.last().unwrap().name,
-                "Gamma",
-                "descending {column:?}"
-            );
+            assert_eq!(bodies.last().unwrap().name, "Gamma", "descending {column:?}");
         }
 
         sort_bodies(&mut bodies, SortColumn::Name, SortDirection::Ascending);
         assert_eq!(
-            bodies
-                .iter()
-                .map(|body| body.name.as_str())
-                .collect::<Vec<_>>(),
+            bodies.iter().map(|body| body.name.as_str()).collect::<Vec<_>>(),
             vec!["Alpha", "Beta", "Gamma"]
         );
         sort_bodies(&mut bodies, SortColumn::Name, SortDirection::Descending);
         assert_eq!(
-            bodies
-                .iter()
-                .map(|body| body.name.as_str())
-                .collect::<Vec<_>>(),
+            bodies.iter().map(|body| body.name.as_str()).collect::<Vec<_>>(),
             vec!["Beta", "Alpha", "Gamma"]
         );
     }
+
     #[test]
     fn results_state_handles_empty_and_single_item_navigation() {
         let mut state = ResultsState::new(&[]);
@@ -251,6 +380,7 @@ mod tests {
 
         state.toggle_mark(&first);
         assert_eq!(state.marked.len(), 1);
+        assert_eq!(body_identity(&first), "system:system-1/body:A 1");
     }
 
     #[test]
@@ -270,5 +400,4 @@ mod tests {
         let wide = visible_columns(LayoutMode::Wide);
         assert_eq!(wide.len(), 7);
     }
-
 }
