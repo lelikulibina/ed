@@ -16,22 +16,20 @@ use spansh::SpanshClient;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = if std::env::args_os().len() == 1 {
-        ensure_interactive_terminal()?;
-        let Some(config) = tui::run_tui()? else {
-            return Ok(());
-        };
-        config
+    // Clap обрабатывает --help и --version до проверки TTY.
+    // Аргументы командной строки становятся начальными значениями мастера,
+    // но не обходят единый интерфейс настройки и запуска.
+    let initial_config = if std::env::args_os().len() == 1 {
+        None
     } else {
-        // Clap обрабатывает --help и --version до проверки TTY,
-        // поэтому справка доступна и в неинтерактивном окружении.
-        let config = Args::parse().into_search_config()?;
-        ensure_interactive_terminal()?;
-        config
+        Some(Args::parse().into_search_config()?)
     };
 
-    // Оба способа задания критериев сходятся в одной точке:
-    // поиск и отображение результатов всегда проходят через TUI.
+    ensure_interactive_terminal()?;
+    let Some(config) = tui::run_tui(initial_config)? else {
+        return Ok(());
+    };
+
     tui::run_search_ui(async move { run_search(config).await }).await
 }
 
