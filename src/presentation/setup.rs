@@ -15,6 +15,8 @@ use ratatui::{
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap},
 };
 
+use super::layout::{LayoutMode, layout_mode};
+
 use crate::{
     application::{
         config::SearchConfig,
@@ -105,6 +107,7 @@ struct Choice {
 enum Modal {
     Edit(Editor),
     Choice(Choice),
+    Help,
 }
 
 struct App {
@@ -535,11 +538,17 @@ pub fn run_setup(initial: Option<SearchConfig>) -> Result<Option<SearchConfig>> 
                         _ => app.modal = Some(Modal::Choice(choice)),
                     }
                 }
+                Modal::Help => {
+                    if !matches!(key.code, KeyCode::Esc | KeyCode::Enter | KeyCode::Char('?')) {
+                        app.modal = Some(Modal::Help);
+                    }
+                }
             }
             continue;
         }
 
         match key.code {
+            KeyCode::Char('?') => app.modal = Some(Modal::Help),
             KeyCode::Esc => {
                 if !app.back() {
                     return Ok(None);
@@ -566,38 +575,53 @@ pub fn run_setup(initial: Option<SearchConfig>) -> Result<Option<SearchConfig>> 
 
 fn draw(frame: &mut ratatui::Frame<'_>, app: &App) {
     let area = frame.area();
-    let compact = area.width < 86 || area.height < 24;
+    let mode = layout_mode(area);
+    if mode == LayoutMode::TooSmall {
+        frame.render_widget(
+            Paragraph::new("Окно терминала слишком мало. Увеличьте его минимум до 64×18.")
+                .alignment(Alignment::Center)
+                .wrap(Wrap { trim: true })
+                .style(Style::default().fg(Color::Yellow)),
+            area,
+        );
+        return;
+    }
+
     let root = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(4),
-            Constraint::Min(8),
             Constraint::Length(3),
+            Constraint::Min(8),
+            Constraint::Length(2),
         ])
         .split(area);
 
     let (step_number, step_name, subtitle) = match app.step {
-        Step::Profiles => (
-            "01",
-            "ПРОФИЛЬ",
-            "Выберите готовый сценарий или начните с чистых критериев",
-        ),
-        Step::General => (
-            "02",
-            "ОБЩЕЕ",
-            "Укажите систему, лимит результатов и правила исключения",
-        ),
-        Step::Filters => (
-            "03",
-            "ФИЛЬТРЫ",
-            "Настройте физические параметры подходящих миров",
-        ),
-        Step::Review => (
-            "04",
-            "ПРОВЕРКА",
-            "Убедитесь, что критерии поиска заданы правильно",
-        ),
+        Step::Profiles => ("01", "ПРОФИЛЬ", "Выберите сценарий поиска или свою настройку"),
+        Step::General => ("02", "ОБЩЕЕ", "Система, лимит результатов и исключения"),
+        Step::Filters => ("03", "КРИТЕРИИ", "Физические параметры подходящих миров"),
+        Step::Review => ("04", "ЗАПУСК", "Проверьте параметры перед поиском"),
     };
+
+    let active = match app.step {
+        Step::Profiles => 0,
+        Step::General => 1,
+        Step::Filters => 2,
+        Step::Review => 3,
+    };
+    let steps = ["ПРОФИЛЬ", "ОБЩЕЕ", "КРИТЕРИИ", "ЗАПУСК"];
+    let mut progress = Vec::new();
+    for (index, label) in steps.iter().enumerate() {
+        if index > 0 {
+            progress.push(Span::styled("  /  ", Style::default().fg(Color::DarkGray)));
+        }
+        progress.push(Span::styled(
+            *label,
+            Style::default()
+                .fg(if index == active { Color::Cyan } else { Color::DarkGray })
+                .add_modifier(if index == active { Modifier::BOLD } else { Modifier::empty() }),
+        ));
+    }
 
     let header = vec![
         Line::from(vec![
@@ -608,61 +632,34 @@ fn draw(frame: &mut ratatui::Frame<'_>, app: &App) {
                     .bg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled(
-                "  EXPLORER  ",
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(" / PLANET SEARCH", Style::default().fg(Color::LightCyan)),
-            Span::raw("                                      "),
-            Span::styled(
-                format!("ШАГ {step_number}/04  {step_name}"),
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-            ),
+            Span::styled("  EXPLORER  ", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::styled(format!("ШАГ {step_number}/04  {step_name}"), Style::default().fg(Color::LightCyan)),
         ]),
+        Line::from(progress),
         Line::from(Span::styled(subtitle, Style::default().fg(Color::Gray))),
     ];
-    frame.render_widget(
-        Paragraph::new(header).block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Cyan)),
-        ),
-        root[0],
-    );
+    frame.render_widget(Paragraph::new(header), root[0]);
 
     match app.step {
-        Step::Profiles => draw_profiles(frame, root[1], app, compact),
+        Step::Profiles => draw_profiles(frame, root[1], app, mode),
         Step::General => draw_general(frame, root[1], app),
         Step::Filters => draw_filters(frame, root[1], app),
         Step::Review => draw_review(frame, root[1], app),
     }
 
     let footer = match app.modal.as_ref() {
-        Some(Modal::Edit(_)) => {
-            "←/→ курсор   Home/End начало/конец   Enter сохранить   Esc отменить"
+        Some(Modal::Edit(_)) => "←/→ курсор   Home/End начало/конец   Enter сохранить   Esc отменить",
+        Some(Modal::Choice(Choice { field: ChoiceField::Surface, .. })) => {
+            "↑/↓ выбор   Space отметить несколько   Enter применить   Esc отменить"
         }
-        Some(Modal::Choice(Choice {
-            field: ChoiceField::Surface,
-            ..
-        })) => "↑/↓ выбор   Space отметить (можно несколько)   Enter применить   Esc отменить",
         Some(Modal::Choice(_)) => "↑/↓ выбор   Space отметить   Enter применить   Esc отменить",
-        None => {
-            "↑/↓ перемещение   Enter открыть / продолжить   Space переключить / выбрать   Esc назад"
-        }
+        Some(Modal::Help) => "Esc / Enter / ? — закрыть справку",
+        None => "↑/↓ перемещение   Enter открыть / продолжить   Space выбрать   ? справка   Esc назад",
     };
     frame.render_widget(
         Paragraph::new(footer)
             .alignment(Alignment::Center)
-            .style(Style::default().fg(Color::Gray))
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::DarkGray)),
-            ),
+            .style(Style::default().fg(Color::Gray)),
         root[2],
     );
 
@@ -685,12 +682,13 @@ fn draw(frame: &mut ratatui::Frame<'_>, app: &App) {
         match modal {
             Modal::Edit(editor) => draw_editor(frame, area, editor),
             Modal::Choice(choice) => draw_choice(frame, area, choice),
+            Modal::Help => draw_help(frame, area),
         }
     }
 }
 
-fn draw_profiles(frame: &mut ratatui::Frame<'_>, area: Rect, app: &App, compact: bool) {
-    let panes = if compact {
+fn draw_profiles(frame: &mut ratatui::Frame<'_>, area: Rect, app: &App, mode: LayoutMode) {
+    let panes = if mode == LayoutMode::Compact {
         Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Percentage(72), Constraint::Percentage(28)])
@@ -739,7 +737,7 @@ fn draw_profiles(frame: &mut ratatui::Frame<'_>, area: Rect, app: &App, compact:
     let mut state = ListState::default();
     state.select(Some(app.profile));
     frame.render_stateful_widget(
-        List::new(items).block(panel(" ВЫБЕРИТЕ ПРОФИЛЬ ", Color::Blue)),
+        List::new(items).block(section("ПРОФИЛИ ПОИСКА", Color::Blue)),
         panes[0],
         &mut state,
     );
@@ -769,7 +767,7 @@ fn draw_profiles(frame: &mut ratatui::Frame<'_>, area: Rect, app: &App, compact:
     frame.render_widget(
         Paragraph::new(info)
             .wrap(Wrap { trim: true })
-            .block(panel(" ПАРАМЕТРЫ ПРОФИЛЯ ", Color::Magenta)),
+            .block(section("ПАРАМЕТРЫ ПРОФИЛЯ", Color::Magenta)),
         panes[1],
     );
 }
@@ -837,7 +835,7 @@ fn draw_general(frame: &mut ratatui::Frame<'_>, area: Rect, app: &App) {
         action_line(3, app.row, "Продолжить к фильтрам  →"),
     ];
     frame.render_widget(
-        Paragraph::new(rows).block(panel(" ПАРАМЕТРЫ ЗАПУСКА ", Color::Cyan)),
+        Paragraph::new(rows).block(section("ПАРАМЕТРЫ ЗАПУСКА", Color::Cyan)),
         area,
     );
 }
@@ -881,7 +879,7 @@ fn draw_filters(frame: &mut ratatui::Frame<'_>, area: Rect, app: &App) {
         )),
     ];
     frame.render_widget(
-        Paragraph::new(rows).block(panel(" КРИТЕРИИ ПЛАНЕТЫ ", Color::Magenta)),
+        Paragraph::new(rows).block(section("КРИТЕРИИ ПЛАНЕТЫ", Color::Magenta)),
         area,
     );
 }
@@ -931,7 +929,7 @@ fn draw_review(frame: &mut ratatui::Frame<'_>, area: Rect, app: &App) {
         )));
     }
     frame.render_widget(
-        Paragraph::new(rows).block(panel(" ПРОВЕРКА ПЕРЕД ЗАПУСКОМ ", Color::Green)),
+        Paragraph::new(rows).block(section("ПРОВЕРКА ПЕРЕД ЗАПУСКОМ", Color::Green)),
         area,
     );
 }
@@ -990,6 +988,39 @@ fn kv(label: &str, value: String, color: Color) -> Line<'static> {
             Style::default().fg(color).add_modifier(Modifier::BOLD),
         ),
     ])
+}
+
+fn section(title: &'static str, color: Color) -> Block<'static> {
+    Block::default()
+        .title(title)
+        .borders(Borders::BOTTOM)
+        .border_style(Style::default().fg(color))
+}
+
+fn draw_help(frame: &mut ratatui::Frame<'_>, area: Rect) {
+    let popup = centered(76, 68, area);
+    frame.render_widget(Clear, popup);
+    let help = vec![
+        Line::from(Span::styled("УПРАВЛЕНИЕ ED", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))),
+        Line::from(""),
+        Line::from("↑ / ↓       Перемещение по пунктам"),
+        Line::from("Enter       Открыть параметр или перейти дальше"),
+        Line::from("Space       Выбрать профиль / переключить настройку"),
+        Line::from("Esc         Назад или закрыть окно"),
+        Line::from("?           Открыть / закрыть эту справку"),
+        Line::from(""),
+        Line::from("В критериях несколько типов поверхности объединяются через OR."),
+        Line::from("Вулканизм не используется как фильтр поиска."),
+        Line::from("Температура — K, давление — atm, гравитация — g."),
+        Line::from(""),
+        Line::from("Enter / Esc — закрыть"),
+    ];
+    frame.render_widget(
+        Paragraph::new(help)
+            .wrap(Wrap { trim: true })
+            .block(panel(" СПРАВКА ", Color::Cyan)),
+        popup,
+    );
 }
 
 fn panel(title: &'static str, color: Color) -> Block<'static> {
