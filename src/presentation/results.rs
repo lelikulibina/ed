@@ -27,7 +27,10 @@ impl SortColumn {
     ];
 
     pub fn next(self) -> Self {
-        let index = Self::ALL.iter().position(|column| *column == self).unwrap_or(0);
+        let index = Self::ALL
+            .iter()
+            .position(|column| *column == self)
+            .unwrap_or(0);
         Self::ALL[(index + 1) % Self::ALL.len()]
     }
 
@@ -198,11 +201,7 @@ fn compare_optional_number(
     }
 }
 
-fn compare_text(
-    left: Option<&str>,
-    right: Option<&str>,
-    direction: SortDirection,
-) -> Ordering {
+fn compare_text(left: Option<&str>, right: Option<&str>, direction: SortDirection) -> Ordering {
     compare_optional(
         left.map(str::to_lowercase),
         right.map(str::to_lowercase),
@@ -216,9 +215,11 @@ pub fn sort_bodies(bodies: &mut [Body], column: SortColumn, direction: SortDirec
         SortColumn::Surface => {
             compare_text(left.subtype.as_deref(), right.subtype.as_deref(), direction)
         }
-        SortColumn::Atmosphere => {
-            compare_text(left.atmosphere.as_deref(), right.atmosphere.as_deref(), direction)
-        }
+        SortColumn::Atmosphere => compare_text(
+            left.atmosphere.as_deref(),
+            right.atmosphere.as_deref(),
+            direction,
+        ),
         SortColumn::Temperature => compare_optional_number(
             left.surface_temperature,
             right.surface_temperature,
@@ -227,9 +228,7 @@ pub fn sort_bodies(bodies: &mut [Body], column: SortColumn, direction: SortDirec
         SortColumn::Pressure => {
             compare_optional_number(left.surface_pressure, right.surface_pressure, direction)
         }
-        SortColumn::Gravity => {
-            compare_optional_number(left.gravity, right.gravity, direction)
-        }
+        SortColumn::Gravity => compare_optional_number(left.gravity, right.gravity, direction),
         SortColumn::Distance => {
             compare_optional_number(left.distance_ly, right.distance_ly, direction)
         }
@@ -331,12 +330,19 @@ mod tests {
             assert_eq!(bodies.last().unwrap().name, "Gamma", "ascending {column:?}");
 
             sort_bodies(&mut bodies, column, SortDirection::Descending);
-            assert_eq!(bodies.last().unwrap().name, "Gamma", "descending {column:?}");
+            assert_eq!(
+                bodies.last().unwrap().name,
+                "Gamma",
+                "descending {column:?}"
+            );
         }
 
         sort_bodies(&mut bodies, SortColumn::Name, SortDirection::Ascending);
         assert_eq!(
-            bodies.iter().map(|body| body.name.as_str()).collect::<Vec<_>>(),
+            bodies
+                .iter()
+                .map(|body| body.name.as_str())
+                .collect::<Vec<_>>(),
             vec!["Alpha", "Beta", "Gamma"]
         );
         sort_bodies(&mut bodies, SortColumn::Name, SortDirection::Descending);
@@ -353,15 +359,8 @@ mod tests {
         state.select_previous();
         assert_eq!(state.selected, 0);
 
-        let mut state = ResultsState::new(&[body(
-            "Only planet",
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        )]);
+        let mut state =
+            ResultsState::new(&[body("Only planet", None, None, None, None, None, None)]);
         state.select_next(1);
         assert_eq!(state.selected, 0);
     }
@@ -388,7 +387,11 @@ mod tests {
         let compact = visible_columns(LayoutMode::Compact);
         assert_eq!(
             compact,
-            vec![SortColumn::Name, SortColumn::Temperature, SortColumn::Distance]
+            vec![
+                SortColumn::Name,
+                SortColumn::Temperature,
+                SortColumn::Distance
+            ]
         );
 
         let medium = visible_columns(LayoutMode::Medium);
