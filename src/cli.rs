@@ -1,5 +1,10 @@
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use clap::Parser;
+
+use crate::{
+    application::config::SearchConfig,
+    domain::criteria::{NumericRange, SearchCriteria},
+};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -85,6 +90,47 @@ pub(crate) struct Args {
         help = "Исключать планеты, у которых Spansh зарегистрировал хотя бы один биологический сигнал или указал биологические группы"
     )]
     pub(crate) exclude_with_bio_signals: bool,
+}
+
+impl Args {
+    /// Преобразует аргументы командной строки в ту же конфигурацию,
+    /// которую использует интерактивный интерфейс.
+    pub(crate) fn into_search_config(self) -> Result<SearchConfig> {
+        let (temperature_min, temperature_max) =
+            parse_range_i32(&self.temperature).context("Температура: ожидается диапазон min-max в K")?;
+        let (gravity_min, gravity_max) =
+            parse_range_f32(&self.gravity).context("Гравитация: ожидается диапазон min-max в g")?;
+        let (pressure_min, pressure_max) =
+            parse_range_f32(&self.pressure).context("Давление: ожидается диапазон min-max в atm")?;
+
+        let temperature = NumericRange::new(
+            f64::from(temperature_min),
+            f64::from(temperature_max),
+        )
+        .ok_or_else(|| anyhow!("Некорректный диапазон температуры: {}", self.temperature))?;
+        let gravity = NumericRange::new(
+            f64::from(gravity_min),
+            f64::from(gravity_max),
+        )
+        .ok_or_else(|| anyhow!("Некорректный диапазон гравитации: {}", self.gravity))?;
+        let pressure = NumericRange::new(
+            f64::from(pressure_min),
+            f64::from(pressure_max),
+        )
+        .ok_or_else(|| anyhow!("Некорректный диапазон давления: {}", self.pressure))?;
+
+        let criteria = SearchCriteria::from_cli(
+            &self.planet_type,
+            &self.atmosphere_type,
+            temperature,
+            gravity,
+            pressure,
+            self.count,
+        )?
+        .with_bio_signal_exclusion(self.exclude_with_bio_signals);
+
+        SearchConfig::new(self.system, criteria).map_err(Into::into)
+    }
 }
 
 pub(crate) fn parse_range_f32(s: &str) -> Result<(f32, f32)> {
@@ -173,5 +219,56 @@ mod tests {
         assert_eq!(args.gravity, "0.2-0.8");
         assert_eq!(args.pressure, "0.0-2.5");
         assert_eq!(args.count, 12);
+    }
+
+    #[test]
+    fn converts_arguments_to_shared_search_configuration() {
+        let config = Args::try_parse_from([
+            "ed_planet_search",
+            "--system",
+            "  Sol  ",
+            "--planet-type",
+            "Rocky body",
+            "--atmosphere-type",
+            "Water",
+            "--temperature",
+            "395-450",
+            "--gravity",
+            "0.1-1.0",
+            "--pressure",
+            "0.040-0.063",
+            "--count",
+            "6",
+            "--exclude-with-bio-signals",
+        ])
+        .unwrap()
+        .into_search_config()
+        .unwrap();
+
+        assert_eq!(config.system, "Sol");
+        assert_eq!(config.criteria.count, 6);
+        assert!(config.criteria.exclude_with_bio_signals);
+        assert_eq!(config.criteria.temperature.min, 395.0);
+        assert_eq!(config.criteria.temperature.max, 450.0);
+    }
+
+    #[test]
+    fn rejects_reversed_ranges_while_building_configuration() {
+        let error = Args::try_parse_from([
+            "ed_planet_search",
+            "--system",
+            "Sol",
+            "--planet-type",
+            "any",
+            "--atmosphere-type",
+            "any",
+            "--temperature",
+            "500-100",
+        ])
+        .unwrap()
+        .into_search_config()
+        .unwrap_err();
+
+        assert!(error.to_string().contains("температуры"));
     }
 }
