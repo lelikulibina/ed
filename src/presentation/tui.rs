@@ -271,7 +271,9 @@ fn draw_results(
 ) {
     use super::{
         layout::{LayoutMode, layout_mode},
-        results::{SortColumn, cell_value, visible_columns},
+        results::{
+            SortColumn, body_detail_lines, body_summary_lines, cell_value, visible_columns,
+        },
     };
 
     let area = frame.area();
@@ -312,8 +314,8 @@ fn draw_results(
 
     if state.details_open {
         let detail = bodies.get(state.selected).map_or_else(
-            || "Подходящие планеты не найдены.".to_owned(),
-            body_detail_text,
+            || vec![ratatui::text::Line::from("Подходящие планеты не найдены.")],
+            body_detail_lines,
         );
         frame.render_widget(
             Paragraph::new(detail)
@@ -412,9 +414,9 @@ fn draw_results(
         }
 
         if let Some(inspector_area) = inspector_area {
-            let content = bodies
-                .get(state.selected)
-                .map_or_else(|| "Нет выбранной планеты.".to_owned(), body_summary_text);
+            let content = bodies.get(state.selected).map(body_summary_lines).unwrap_or_else(|| {
+                vec![ratatui::text::Line::from("Нет выбранной планеты.")]
+            });
             frame.render_widget(
                 Paragraph::new(content).wrap(Wrap { trim: true }).block(
                     Block::default()
@@ -438,108 +440,3 @@ fn draw_results(
     );
 }
 
-fn body_summary_text(body: &crate::domain::body::Body) -> String {
-    use super::results::format_optional;
-
-    format!(
-        "{}\n{}\n\nПоверхность  {}\nАтмосфера    {}\nТемпература  {}\nРасстояние   {}\n\nКартографирована  {}\nБиосигналы        {}",
-        body.name,
-        body.system_name.as_deref().unwrap_or("Система неизвестна"),
-        body.subtype.as_deref().unwrap_or("—"),
-        body.atmosphere.as_deref().unwrap_or("—"),
-        format_optional(body.surface_temperature, 1, " K"),
-        format_optional(body.distance_ly, 1, " св. л."),
-        match body.is_mapped {
-            Some(true) => "да",
-            Some(false) => "нет",
-            None => "нет данных",
-        },
-        body.biological_signal_count
-            .map_or_else(|| "нет данных".to_owned(), |v| v.to_string())
-    )
-}
-
-fn body_detail_text(body: &crate::domain::body::Body) -> String {
-    use super::results::format_optional;
-
-    let mut lines = vec![
-        format!(
-            "{}  /  {}",
-            body.name,
-            body.system_name.as_deref().unwrap_or("система неизвестна")
-        ),
-        format!("ID тела: {}", body.id64.as_deref().unwrap_or("нет данных")),
-        format!(
-            "Тип поверхности: {}",
-            body.subtype.as_deref().unwrap_or("нет данных")
-        ),
-        format!(
-            "Атмосфера: {}",
-            body.atmosphere.as_deref().unwrap_or("нет данных")
-        ),
-        format!(
-            "Температура: {}",
-            format_optional(body.surface_temperature, 2, " K")
-        ),
-        format!(
-            "Давление: {}",
-            format_optional(body.surface_pressure, 4, " atm")
-        ),
-        format!("Гравитация: {}", format_optional(body.gravity, 3, " g")),
-        format!(
-            "Расстояние: {}",
-            format_optional(body.distance_ly, 2, " св. л.")
-        ),
-        format!("Можно приземлиться: {}", optional_bool(body.is_landable)),
-        format!("Картографирована: {}", optional_bool(body.is_mapped)),
-        format!(
-            "Обновление записи: {}",
-            body.last_updated_at.as_deref().unwrap_or("нет данных")
-        ),
-        format!(
-            "Биологические сигналы Spansh: {}",
-            body.biological_signal_count
-                .map_or_else(|| "нет данных".to_owned(), |v| v.to_string())
-        ),
-        format!(
-            "Геологические сигналы Spansh: {}",
-            body.geological_signal_count
-                .map_or_else(|| "нет данных".to_owned(), |v| v.to_string())
-        ),
-        format!(
-            "Биологические группы: {}",
-            body.biological_genera
-                .as_ref()
-                .filter(|genera| !genera.is_empty())
-                .map_or_else(
-                    || "не указаны".to_owned(),
-                    |genera| {
-                        genera
-                            .iter()
-                            .map(|genus| crate::presentation::output::russian_group_name(genus))
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    },
-                )
-        ),
-        format!(
-            "Вулканизм: {}",
-            body.volcanism_type.as_deref().unwrap_or("нет данных")
-        ),
-        String::new(),
-    ];
-    match crate::presentation::output::exobiology_summary(body) {
-        Ok(Some(summary)) => lines.extend(summary.lines().map(str::to_owned)),
-        Ok(None) => lines.push("Подходящие виды в справочнике не найдены.".to_owned()),
-        Err(error) => lines.push(format!("Ошибка расчёта экзобиологии: {error}")),
-    }
-    lines.join("\n")
-}
-
-fn optional_bool(value: Option<bool>) -> &'static str {
-    match value {
-        Some(true) => "да",
-        Some(false) => "нет",
-        None => "нет данных",
-    }
-}
