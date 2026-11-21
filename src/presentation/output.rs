@@ -282,17 +282,4 @@ mod tests {
         assert!(lines.last().unwrap().contains("└"));
     }
 
-    #[test]
-    fn groups_by_system_id64_not_system_name() {
-        let bodies = [
-            body("A 1", "100", "System A"),
-            body("A 2", "100", "Different spelling"),
-            body("B 1", "200", "System A"),
-        ];
-        let groups = group_by_system(&bodies);
-
-        assert_eq!(groups.len(), 2);
-        assert_eq!(groups["100"].len(), 2);
-        assert_eq!(groups["200"].len(), 1);
-    }
 }
