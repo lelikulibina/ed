@@ -1,4 +1,4 @@
-use crate::domain::criteria::{CriteriaError, NumericRange, SearchCriteria};
+use crate::domain::criteria::NumericRange;
 
 #[derive(Debug, Clone, Copy)]
 pub struct SearchPreset {
@@ -10,35 +10,6 @@ pub struct SearchPreset {
     pub pressure: NumericRange,
     pub expensive_species: u8,
     pub potential_value_cr: u64,
-}
-
-impl SearchPreset {
-    pub fn criteria(
-        &self,
-        count: usize,
-        exclude_with_bio_signals: bool,
-    ) -> Result<SearchCriteria, CriteriaError> {
-        let mut criteria = SearchCriteria::from_cli(
-            self.surface_types.first().copied().unwrap_or("any"),
-            self.atmosphere,
-            self.temperature,
-            NumericRange { min: 0.1, max: 1.0 },
-            self.pressure,
-            count,
-        )?;
-        criteria.planet_types = self
-            .surface_types
-            .iter()
-            .map(|value| (*value).to_owned())
-            .collect();
-        criteria.planet_type = self
-            .surface_types
-            .first()
-            .copied()
-            .unwrap_or("any")
-            .to_owned();
-        Ok(criteria.with_bio_signal_exclusion(exclude_with_bio_signals))
-    }
 }
 
 const fn range(min: f64, max: f64) -> NumericRange {
@@ -228,20 +199,5 @@ mod tests {
         }
     }
 
-    #[test]
-    fn profile_three_surface_types_are_alternatives_and_gravity_keeps_default() {
-        let criteria = PRESETS[2].criteria(5, false).unwrap();
-        assert_eq!(
-            criteria.planet_types,
-            vec!["Rocky body", "High metal content world"]
-        );
-        assert_eq!(criteria.gravity, NumericRange { min: 0.1, max: 1.0 });
-        assert_eq!(criteria.count, 5);
-    }
 
-    #[test]
-    fn profiles_preserve_bio_signal_exclusion_as_a_separate_option() {
-        let criteria = PRESETS[0].criteria(5, true).unwrap();
-        assert!(criteria.exclude_with_bio_signals);
-    }
 }
