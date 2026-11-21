@@ -110,6 +110,8 @@ where
         {
             if key.code == KeyCode::Char('?') {
                 help_open = !help_open;
+            } else if key.code == KeyCode::Esc && help_open {
+                help_open = false;
             } else if key.code == KeyCode::Esc {
                 task.abort();
                 return Ok(SearchUiAction::BackToSetup);
@@ -131,14 +133,23 @@ where
 fn show_error_in_session(session: &mut TerminalSession, message: &str) -> Result<SearchUiAction> {
     loop {
         session.terminal.draw(|frame| {
-            let panel = centered(75, 40, frame.area());
+            let area = frame.area();
+            let too_small = super::layout::layout_mode(area) == super::layout::LayoutMode::TooSmall;
+            let panel = if too_small { area } else { centered(75, 40, area) };
             frame.render_widget(
                 Paragraph::new(format!(
                     "Поиск не выполнен\n\n{message}\n\nEnter / Esc — вернуться к настройкам   Ctrl+Q — выход"
                 ))
                     .alignment(Alignment::Center)
                     .wrap(Wrap { trim: true })
-                    .block(Block::default().title(" ОШИБКА ПОИСКА ").borders(Borders::ALL).border_style(Style::default().fg(Color::Red))),
+                    .block(if too_small {
+                        Block::default()
+                    } else {
+                        Block::default()
+                            .title(" ОШИБКА ПОИСКА ")
+                            .borders(Borders::ALL)
+                            .border_style(Style::default().fg(Color::Red))
+                    }),
                 panel,
             );
         })?;
@@ -226,6 +237,8 @@ fn show_results_in_session(
         }
         if state.help_open
             && !matches!(key.code, KeyCode::Esc | KeyCode::Enter | KeyCode::Char('?'))
+            && !(key.code == KeyCode::Char('q')
+                && key.modifiers.contains(KeyModifiers::CONTROL))
         {
             continue;
         }
