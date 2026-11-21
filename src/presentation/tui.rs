@@ -438,4 +438,3 @@ fn draw_results(
         root[2],
     );
 }
-
