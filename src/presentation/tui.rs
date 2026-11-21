@@ -127,6 +127,7 @@ impl App {
                 value.pop();
             }
             KeyCode::Delete => value.clear(),
+            KeyCode::Char('u') if false => value.clear(),
             _ => {}
         }
         self.error = None;
@@ -273,11 +274,14 @@ pub fn run_tui() -> Result<Option<SearchConfig>> {
                     }
                     app.error = None;
                 }
-                KeyCode::Up if app.screen == Screen::Presets && app.focus == 0 => {
-                    app.selected = (app.selected + PRESETS.len() - 1) % PRESETS.len()
+                // Отдельные клавиши выбора профиля не конфликтуют с редактированием полей.
+                KeyCode::Char('[') if app.screen == Screen::Presets => {
+                    app.selected = (app.selected + PRESETS.len() - 1) % PRESETS.len();
+                    app.error = None;
                 }
-                KeyCode::Down if app.screen == Screen::Presets && app.focus == 0 => {
-                    app.selected = (app.selected + 1) % PRESETS.len()
+                KeyCode::Char(']') if app.screen == Screen::Presets => {
+                    app.selected = (app.selected + 1) % PRESETS.len();
+                    app.error = None;
                 }
                 KeyCode::Tab => app.move_focus(1),
                 KeyCode::BackTab => app.move_focus(-1),
@@ -305,6 +309,7 @@ pub fn run_tui() -> Result<Option<SearchConfig>> {
 
 fn draw(f: &mut ratatui::Frame<'_>, app: &App) {
     let area = f.area();
+    let compact = area.width < 92 || area.height < 28;
     let root = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -313,189 +318,165 @@ fn draw(f: &mut ratatui::Frame<'_>, app: &App) {
             Constraint::Length(3),
         ])
         .split(area);
+
+    let header = Line::from(vec![
+        Span::styled(" ED ", Style::default().fg(Color::Black).bg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled("  EXPLORER  ", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+        Span::styled(" / ", Style::default().fg(Color::DarkGray)),
+        Span::styled("ПОДБОР ПЛАНЕТ", Style::default().fg(Color::LightCyan)),
+        Span::styled("                                      ", Style::default()),
+        Span::styled(if app.screen == Screen::Manual { "РУЧНОЙ РЕЖИМ" } else { "ПРОФИЛИ ПОИСКА" },
+            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+    ]);
     f.render_widget(
-        Paragraph::new("ED: PLANET SEARCH  /  EXOBIOLOGY SCANNER")
-            .alignment(Alignment::Center)
-            .style(
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
-            )
-            .block(Block::default().borders(Borders::ALL)),
+        Paragraph::new(header).block(Block::default().borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan))),
         root[0],
     );
-    let wide = area.width >= 90;
-    let cols = if wide {
-        Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(38), Constraint::Percentage(62)])
+
+    let main = if compact {
+        Layout::default().direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(43), Constraint::Percentage(57)])
             .split(root[1])
     } else {
-        Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
+        Layout::default().direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(36), Constraint::Percentage(64)])
             .split(root[1])
     };
-    let items = PRESETS
-        .iter()
-        .enumerate()
-        .map(|(i, p)| {
-            ListItem::new(format!(
-                "{}{:02}  {}",
-                if i == app.selected { "▶ " } else { "  " },
-                p.number,
-                p.name
-            ))
-            .style(if i == app.selected {
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD)
-            } else {
-                Style::default().fg(Color::Gray)
-            })
-        })
-        .collect::<Vec<_>>();
-    let mut state = ListState::default();
-    state.select(Some(app.selected));
+
+    let profile_items = PRESETS.iter().enumerate().map(|(i, p)| {
+        let selected = i == app.selected;
+        let marker = if selected { "▸ " } else { "  " };
+        let label = format!("{marker}{:02}  {}", p.number, p.name);
+        let style = if selected {
+            Style::default().fg(Color::Black).bg(Color::Cyan).add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::Gray)
+        };
+        ListItem::new(Line::from(Span::styled(label, style)))
+    }).collect::<Vec<_>>();
+    let mut profile_state = ListState::default();
+    profile_state.select(Some(app.selected));
     f.render_stateful_widget(
-        List::new(items).block(
-            Block::default()
-                .title(" ПРОФИЛИ ↑/↓ ")
-                .borders(Borders::ALL),
+        List::new(profile_items).highlight_symbol(" ").block(
+            Block::default().title(" 01 / ПРОФИЛЬ  [ [ / ] ] ")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Blue))
         ),
-        cols[0],
-        &mut state,
+        main[0],
+        &mut profile_state,
     );
-    let right = if wide {
-        Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(48), Constraint::Percentage(52)])
-            .split(cols[1])
+
+    let detail_and_form = if compact {
+        Layout::default().direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(44), Constraint::Percentage(56)])
+            .split(main[1])
     } else {
-        cols.clone()
+        Layout::default().direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(44), Constraint::Percentage(56)])
+            .split(main[1])
     };
-    draw_details(f, right[0], &PRESETS[app.selected]);
-    draw_form(f, right[1], app);
-    f.render_widget(Paragraph::new("↑/↓ профиль  Tab поле  Space переключатель  F2 ручная настройка  F5 поиск  Esc назад  Ctrl+Q выход").alignment(Alignment::Center).style(Style::default().fg(Color::Gray)).block(Block::default().borders(Borders::ALL)),root[2]);
-    if let Some(e) = &app.error {
-        let r = centered(70, 22, area);
-        f.render_widget(Clear, r);
+    draw_details(f, detail_and_form[0], &PRESETS[app.selected]);
+    draw_form(f, detail_and_form[1], app);
+
+    let footer = Line::from(vec![
+        Span::styled(" TAB ", Style::default().fg(Color::Black).bg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::raw(" поле  "),
+        Span::styled(" [ / ] ", Style::default().fg(Color::Black).bg(Color::Blue).add_modifier(Modifier::BOLD)),
+        Span::raw(" профиль  "),
+        Span::styled(" F2 ", Style::default().fg(Color::Black).bg(Color::Magenta).add_modifier(Modifier::BOLD)),
+        Span::raw(" ручной режим  "),
+        Span::styled(" F5 ", Style::default().fg(Color::Black).bg(Color::Green).add_modifier(Modifier::BOLD)),
+        Span::raw(" далее  "),
+        Span::styled(" ESC ", Style::default().fg(Color::Black).bg(Color::DarkGray).add_modifier(Modifier::BOLD)),
+        Span::raw(" назад / выход"),
+    ]);
+    f.render_widget(Paragraph::new(footer).alignment(Alignment::Center)
+        .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::DarkGray))),
+        root[2]);
+
+    if let Some(error) = &app.error {
+        let popup = centered(72, 24, area);
+        f.render_widget(Clear, popup);
         f.render_widget(
-            Paragraph::new(e.as_str()).wrap(Wrap { trim: true }).block(
-                Block::default()
-                    .title(" Ошибка ")
-                    .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Red)),
-            ),
-            r,
+            Paragraph::new(error.as_str()).wrap(Wrap { trim: true })
+                .block(Block::default().title(" ! ПРОВЕРЬТЕ ПАРАМЕТРЫ ")
+                    .borders(Borders::ALL).border_style(Style::default().fg(Color::Red))),
+            popup,
         );
     }
     if app.screen == Screen::Confirm {
-        let r = centered(72, 55, area);
-        f.render_widget(Clear, r);
+        let popup = centered(74, 58, area);
+        f.render_widget(Clear, popup);
         let p = &PRESETS[app.selected];
         let summary = format!(
-            "Система: {}\nПрофиль: {}\nПоверхность: {}\nАтмосфера: {}\nТемпература: {} K\nГравитация: {} g\nДавление: {} atm\nКоличество: {}\nИсключать биосигналы: {}\n\nEnter — начать поиск    Esc — назад",
-            app.system,
-            p.name,
-            app.planet,
-            app.atmosphere,
-            app.temperature,
-            app.gravity,
-            app.pressure,
-            app.count,
-            if app.bio { "да" } else { "нет" }
+            "ЦЕНТРАЛЬНАЯ СИСТЕМА   {}\nПРОФИЛЬ               {}\n\nПОВЕРХНОСТЬ           {}\nАТМОСФЕРА             {}\nТЕМПЕРАТУРА           {} K\nГРАВИТАЦИЯ            {} g\nДАВЛЕНИЕ              {} atm\nЛИМИТ                 {} тел\nИСКЛЮЧАТЬ БИОСИГНАЛЫ  {}\n\nEnter — запустить поиск    Esc — вернуться",
+            app.system, p.name, app.planet, app.atmosphere, app.temperature,
+            app.gravity, app.pressure, app.count, if app.bio { "да" } else { "нет" }
         );
-        f.render_widget(
-            Paragraph::new(summary).wrap(Wrap { trim: true }).block(
-                Block::default()
-                    .title(" ПОДТВЕРЖДЕНИЕ ПОИСКА ")
-                    .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Green)),
-            ),
-            r,
-        );
+        f.render_widget(Paragraph::new(summary).wrap(Wrap { trim: true })
+            .block(Block::default().title(" 03 / ПРОВЕРКА ПОИСКА ")
+                .borders(Borders::ALL).border_style(Style::default().fg(Color::Green))),
+            popup);
     }
 }
-fn draw_details(f: &mut ratatui::Frame<'_>, r: Rect, p: &SearchPreset) {
-    let s = format!(
-        "Тип поверхности : {}\nАтмосфера        : {}\nТемпература      : {:.0}–{:.0} K\nДавление         : {:.3}–{:.3} atm\nГравитация       : 0.1–1.0 g\nВулканизм        : не фильтруется\n\nСправочно: до {} дорогих видов\nПотенциал: {} млн CR",
-        p.surface_types.join(" ИЛИ "),
-        p.atmosphere,
-        p.temperature.min,
-        p.temperature.max,
-        p.pressure.min,
-        p.pressure.max,
-        p.expensive_species,
-        p.potential_value_cr / 1_000_000
-    );
-    f.render_widget(
-        Paragraph::new(s).wrap(Wrap { trim: true }).block(
-            Block::default()
-                .title(" ПАРАМЕТРЫ ПРОФИЛЯ ")
-                .borders(Borders::ALL),
-        ),
-        r,
-    );
+
+fn draw_details(f: &mut ratatui::Frame<'_>, area: Rect, p: &SearchPreset) {
+    let rows = vec![
+        Line::from(vec![Span::styled("ТИП МИРА      ", Style::default().fg(Color::DarkGray)), Span::styled(p.surface_types.join("  OR  "), Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD))]),
+        Line::from(vec![Span::styled("АТМОСФЕРА     ", Style::default().fg(Color::DarkGray)), Span::styled(p.atmosphere, Style::default().fg(Color::White))]),
+        Line::from(vec![Span::styled("ТЕМПЕРАТУРА   ", Style::default().fg(Color::DarkGray)), Span::styled(format!("{:.0}–{:.0} K", p.temperature.min, p.temperature.max), Style::default().fg(Color::Yellow))]),
+        Line::from(vec![Span::styled("ДАВЛЕНИЕ      ", Style::default().fg(Color::DarkGray)), Span::styled(format!("{:.3}–{:.3} atm", p.pressure.min, p.pressure.max), Style::default().fg(Color::Yellow))]),
+        Line::from(vec![Span::styled("ГРАВИТАЦИЯ    ", Style::default().fg(Color::DarkGray)), Span::styled("0.1–1.0 g", Style::default().fg(Color::Yellow))]),
+        Line::from(vec![Span::styled("ВУЛКАНИЗМ     ", Style::default().fg(Color::DarkGray)), Span::styled("не фильтруется", Style::default().fg(Color::Green))]),
+        Line::from(vec![Span::styled("СПРАВОЧНО     ", Style::default().fg(Color::DarkGray)), Span::styled(format!("до {} дорогих видов · {} млн CR", p.expensive_species, p.potential_value_cr / 1_000_000), Style::default().fg(Color::Magenta))]),
+    ];
+    f.render_widget(Paragraph::new(rows).wrap(Wrap { trim: true }).block(
+        Block::default().title(" 02 / УСЛОВИЯ ПРОФИЛЯ ")
+            .borders(Borders::ALL).border_style(Style::default().fg(Color::Magenta))),
+        area);
 }
-fn draw_form(f: &mut ratatui::Frame<'_>, r: Rect, a: &App) {
-    let mut fields = vec![("Центральная система", &a.system, Field::System)];
-    if a.screen == Screen::Manual {
-        fields.extend([
-            ("Тип поверхности", &a.planet, Field::Planet),
-            ("Атмосфера", &a.atmosphere, Field::Atmosphere),
-            ("Температура, K", &a.temperature, Field::Temperature),
-            ("Гравитация, g", &a.gravity, Field::Gravity),
-            ("Давление, atm", &a.pressure, Field::Pressure),
-        ]);
-    }
-    fields.push(("Количество результатов", &a.count, Field::Count));
-    let mut lines = fields
-        .into_iter()
-        .map(|(label, value, field)| {
-            Line::from(Span::styled(
-                format!(" {:<23} {}", label, value),
-                if a.focused() == Some(field) {
-                    Style::default()
-                        .fg(Color::Black)
-                        .bg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().fg(Color::White)
-                },
-            ))
-        })
-        .collect::<Vec<_>>();
-    lines.push(Line::from(Span::styled(
-        format!(
-            " [ {} ] Исключать тела с биосигналами",
-            if a.bio { "x" } else { " " }
-        ),
-        if a.focused() == Some(Field::Bio) {
-            Style::default().fg(Color::Black).bg(Color::Cyan)
+
+fn draw_form(f: &mut ratatui::Frame<'_>, area: Rect, app: &App) {
+    let mut rows = Vec::new();
+    let mut add_field = |label: &str, value: &str, field: Field| {
+        let active = app.focused() == Some(field);
+        let label_style = Style::default().fg(if active { Color::Black } else { Color::DarkGray });
+        let value_style = if active {
+            Style::default().fg(Color::Black).bg(Color::LightYellow).add_modifier(Modifier::BOLD)
         } else {
-            Style::default().fg(Color::Yellow)
-        },
-    )));
-    if a.screen == Screen::Manual {
-        lines.push(Line::from(Span::styled(
-            "Тип/атмосфера: используйте any для отключения фильтра",
-            Style::default().fg(Color::DarkGray),
-        )));
+            Style::default().fg(Color::White)
+        };
+        rows.push(Line::from(vec![
+            Span::styled(format!(" {:<20} ", label), label_style.bg(if active { Color::LightYellow } else { Color::Reset })),
+            Span::styled(if value.is_empty() { " <пусто> " } else { value }, value_style),
+            if active { Span::styled("  ◀ ввод", Style::default().fg(Color::Yellow)) } else { Span::raw("") },
+        ]));
+    };
+
+    add_field("Центральная система", &app.system, Field::System);
+    if app.screen == Screen::Manual {
+        add_field("Тип поверхности", &app.planet, Field::Planet);
+        add_field("Атмосфера", &app.atmosphere, Field::Atmosphere);
+        add_field("Температура, K", &app.temperature, Field::Temperature);
+        add_field("Гравитация, g", &app.gravity, Field::Gravity);
+        add_field("Давление, atm", &app.pressure, Field::Pressure);
     }
-    f.render_widget(
-        Paragraph::new(lines).block(
-            Block::default()
-                .title(if a.screen == Screen::Manual {
-                    " РУЧНАЯ НАСТРОЙКА "
-                } else {
-                    " ПАРАМЕТРЫ ПОИСКА "
-                })
-                .borders(Borders::ALL),
-        ),
-        r,
-    );
+    add_field("Количество результатов", &app.count, Field::Count);
+    rows.push(Line::from(""));
+    let bio_style = if app.bio { Style::default().fg(Color::Black).bg(Color::Green).add_modifier(Modifier::BOLD) } else { Style::default().fg(Color::Yellow) };
+    rows.push(Line::from(vec![
+        Span::styled(if app.bio { " [✓ ВКЛ] " } else { " [○ ВЫКЛ] " }, bio_style),
+        Span::styled("Исключать тела с биосигналами", Style::default().fg(Color::White)),
+    ]));
+    rows.push(Line::from(Span::styled(
+        if app.screen == Screen::Manual { "Типы через | ; any отключает фильтр" } else { "Tab — переход между полями · ввод добавляет символы" },
+        Style::default().fg(Color::DarkGray),
+    )));
+    f.render_widget(Paragraph::new(rows).wrap(Wrap { trim: true }).block(
+        Block::default().title(if app.screen == Screen::Manual { " 03 / РУЧНАЯ НАСТРОЙКА " } else { " 03 / ПАРАМЕТРЫ ЗАПУСКА " })
+            .borders(Borders::ALL).border_style(Style::default().fg(Color::Cyan))),
+        area);
 }
 fn centered(x: u16, y: u16, a: Rect) -> Rect {
     let v = Layout::default()
