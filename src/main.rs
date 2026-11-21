@@ -57,8 +57,7 @@ async fn main() -> Result<()> {
         return Err(anyhow!("Для отображения результатов требуется интерактивный терминал."));
     }
 
-    let results = run_search(&config).await?;
-    tui::show_results(&results)
+    tui::run_search_ui(async move { run_search(config).await }).await
 }
 
 async fn run_search(config: SearchConfig) -> Result<Vec<domain::body::Body>> {
