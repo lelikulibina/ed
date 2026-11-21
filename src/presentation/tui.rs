@@ -644,10 +644,15 @@ fn show_results_in_session(
 ) -> Result<()> {
     use std::time::Duration;
 
+    let mut sorted_bodies = bodies.to_vec();
+    let mut sort_mode = 0usize;
+    sort_bodies(&mut sorted_bodies, sort_mode);
     let mut selected = 0usize;
     let mut detail_scroll = 0u16;
     loop {
-        session.terminal.draw(|frame| draw_results(frame, bodies, selected, detail_scroll))?;
+        session.terminal.draw(|frame| {
+            draw_results(frame, &sorted_bodies, selected, detail_scroll, sort_mode)
+        })?;
         if !event::poll(Duration::from_millis(100))? {
             continue;
         }
@@ -666,9 +671,38 @@ fn show_results_in_session(
             KeyCode::End if !bodies.is_empty() => selected = bodies.len() - 1,
             KeyCode::PageUp => detail_scroll = detail_scroll.saturating_sub(8),
             KeyCode::PageDown => detail_scroll = detail_scroll.saturating_add(8),
+            KeyCode::Char('s') => {
+                sort_mode = (sort_mode + 1) % 5;
+                sort_bodies(&mut sorted_bodies, sort_mode);
+                selected = 0;
+                detail_scroll = 0;
+            }
             _ => {}
         }
     }
+}
+
+fn sort_bodies(bodies: &mut [crate::domain::body::Body], mode: usize) {
+    use std::cmp::Ordering;
+
+    fn compare_optional(left: Option<f64>, right: Option<f64>) -> Ordering {
+        match (left, right) {
+            (Some(a), Some(b)) => a.total_cmp(&b),
+            (Some(_), None) => Ordering::Less,
+            (None, Some(_)) => Ordering::Greater,
+            (None, None) => Ordering::Equal,
+        }
+    }
+
+    bodies.sort_by(|left, right| {
+        match mode {
+            0 => compare_optional(left.distance_ly, right.distance_ly),
+            1 => compare_optional(left.surface_temperature, right.surface_temperature),
+            2 => compare_optional(left.gravity, right.gravity),
+            3 => compare_optional(left.surface_pressure, right.surface_pressure),
+            _ => left.name.to_lowercase().cmp(&right.name.to_lowercase()),
+        }
+    });
 }
 
 fn draw_results(
@@ -676,6 +710,7 @@ fn draw_results(
     bodies: &[crate::domain::body::Body],
     selected: usize,
     detail_scroll: u16,
+    sort_mode: usize,
 ) {
     use ratatui::widgets::{List, ListItem};
 
@@ -752,8 +787,14 @@ fn draw_results(
         ),
         panes[1],
     );
+    let sort_label = ["расстояние", "температура", "гравитация", "давление", "название"]
+        .get(sort_mode)
+        .copied()
+        .unwrap_or("расстояние");
     frame.render_widget(
-        Paragraph::new("↑/↓ планета   PgUp/PgDn подробности   Home/End список   Esc/Q выход")
+        Paragraph::new(format!(
+            "↑/↓ планета   S сортировка: {sort_label}   PgUp/PgDn подробности   Home/End список   Esc/Q выход"
+        ))
             .alignment(Alignment::Center)
             .style(Style::default().fg(Color::Gray)),
         root[2],
