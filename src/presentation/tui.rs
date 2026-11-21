@@ -229,9 +229,7 @@ fn show_results_in_session(
             KeyCode::Home if !state.details_open => state.select_first(),
             KeyCode::End if !state.details_open => state.select_last(sorted_bodies.len()),
             KeyCode::Char('s') if !state.details_open => {
-                let selected_identity = sorted_bodies
-                    .get(state.selected)
-                    .map(body_identity);
+                let selected_identity = sorted_bodies.get(state.selected).map(body_identity);
                 state.sort_column = state.sort_column.next();
                 sort_bodies(&mut sorted_bodies, state.sort_column, state.sort_direction);
                 restore_selection(&mut state, &sorted_bodies, selected_identity.as_deref());
@@ -315,9 +313,10 @@ fn draw_results(
     );
 
     if state.details_open {
-        let detail = bodies
-            .get(state.selected)
-            .map_or_else(|| "Подходящие планеты не найдены.".to_owned(), body_detail_text);
+        let detail = bodies.get(state.selected).map_or_else(
+            || "Подходящие планеты не найдены.".to_owned(),
+            body_detail_text,
+        );
         frame.render_widget(
             Paragraph::new(detail)
                 .scroll((state.detail_scroll, 0))
@@ -419,14 +418,12 @@ fn draw_results(
                 .get(state.selected)
                 .map_or_else(|| "Нет выбранной планеты.".to_owned(), body_summary_text);
             frame.render_widget(
-                Paragraph::new(content)
-                    .wrap(Wrap { trim: true })
-                    .block(
-                        Block::default()
-                            .title(" ИНСПЕКТОР ")
-                            .borders(Borders::LEFT)
-                            .border_style(Style::default().fg(Color::DarkGray)),
-                    ),
+                Paragraph::new(content).wrap(Wrap { trim: true }).block(
+                    Block::default()
+                        .title(" ИНСПЕКТОР ")
+                        .borders(Borders::LEFT)
+                        .border_style(Style::default().fg(Color::DarkGray)),
+                ),
                 inspector_area,
             );
         }
@@ -459,7 +456,8 @@ fn body_summary_text(body: &crate::domain::body::Body) -> String {
             Some(false) => "нет",
             None => "нет данных",
         },
-        body.biological_signal_count.map_or_else(|| "нет данных".to_owned(), |v| v.to_string())
+        body.biological_signal_count
+            .map_or_else(|| "нет данных".to_owned(), |v| v.to_string())
     )
 }
 
@@ -467,14 +465,33 @@ fn body_detail_text(body: &crate::domain::body::Body) -> String {
     use super::results::format_optional;
 
     let mut lines = vec![
-        format!("{}  /  {}", body.name, body.system_name.as_deref().unwrap_or("система неизвестна")),
+        format!(
+            "{}  /  {}",
+            body.name,
+            body.system_name.as_deref().unwrap_or("система неизвестна")
+        ),
         format!("ID тела: {}", body.id64.as_deref().unwrap_or("нет данных")),
-        format!("Тип поверхности: {}", body.subtype.as_deref().unwrap_or("нет данных")),
-        format!("Атмосфера: {}", body.atmosphere.as_deref().unwrap_or("нет данных")),
-        format!("Температура: {}", format_optional(body.surface_temperature, 2, " K")),
-        format!("Давление: {}", format_optional(body.surface_pressure, 4, " atm")),
+        format!(
+            "Тип поверхности: {}",
+            body.subtype.as_deref().unwrap_or("нет данных")
+        ),
+        format!(
+            "Атмосфера: {}",
+            body.atmosphere.as_deref().unwrap_or("нет данных")
+        ),
+        format!(
+            "Температура: {}",
+            format_optional(body.surface_temperature, 2, " K")
+        ),
+        format!(
+            "Давление: {}",
+            format_optional(body.surface_pressure, 4, " atm")
+        ),
         format!("Гравитация: {}", format_optional(body.gravity, 3, " g")),
-        format!("Расстояние: {}", format_optional(body.distance_ly, 2, " св. л.")),
+        format!(
+            "Расстояние: {}",
+            format_optional(body.distance_ly, 2, " св. л.")
+        ),
         format!("Можно приземлиться: {}", optional_bool(body.is_landable)),
         format!("Картографирована: {}", optional_bool(body.is_mapped)),
         format!("Обновление записи: {}", body.last_updated_at.as_deref().unwrap_or("нет данных")),
@@ -485,13 +502,21 @@ fn body_detail_text(body: &crate::domain::body::Body) -> String {
             body.biological_genera
                 .as_ref()
                 .filter(|genera| !genera.is_empty())
-                .map_or_else(|| "не указаны".to_owned(), |genera| genera
-                    .iter()
-                    .map(|genus| crate::presentation::output::russian_group_name(genus))
-                    .collect::<Vec<_>>()
-                    .join(", "))
+                .map_or_else(
+                    || "не указаны".to_owned(),
+                    |genera| {
+                        genera
+                            .iter()
+                            .map(|genus| crate::presentation::output::russian_group_name(genus))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    },
+                )
         ),
-        format!("Вулканизм: {}", body.volcanism_type.as_deref().unwrap_or("нет данных")),
+        format!(
+            "Вулканизм: {}",
+            body.volcanism_type.as_deref().unwrap_or("нет данных")
+        ),
         String::new(),
     ];
     match crate::presentation::output::exobiology_summary(body) {
