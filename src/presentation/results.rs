@@ -103,7 +103,10 @@ pub fn sort_bodies(bodies: &mut [Body], column: SortColumn, direction: SortDirec
 
 #[cfg(test)]
 mod tests {
-    use super::{SortColumn, SortDirection, format_optional, sort_bodies};
+    use super::{
+        LayoutMode, ResultsState, SortColumn, SortDirection, format_optional, sort_bodies,
+        visible_columns,
+    };
 
     use crate::domain::body::Body;
 
@@ -214,4 +217,58 @@ mod tests {
             vec!["Beta", "Alpha", "Gamma"]
         );
     }
+    #[test]
+    fn results_state_handles_empty_and_single_item_navigation() {
+        let mut state = ResultsState::new(&[]);
+        state.select_next(0);
+        state.select_previous();
+        assert_eq!(state.selected, 0);
+
+        let mut state = ResultsState::new(&[body(
+            "Only planet",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )]);
+        state.select_next(1);
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn marked_planets_use_system_identity_when_names_repeat() {
+        let mut first = body("A 1", None, None, None, None, None, None);
+        first.system_id64 = Some("system-1".to_owned());
+        let mut second = body("A 1", None, None, None, None, None, None);
+        second.system_id64 = Some("system-2".to_owned());
+
+        let mut state = ResultsState::new(&[first.clone(), second.clone()]);
+        state.toggle_mark(&first);
+        state.toggle_mark(&second);
+        assert_eq!(state.marked.len(), 2);
+
+        state.toggle_mark(&first);
+        assert_eq!(state.marked.len(), 1);
+    }
+
+    #[test]
+    fn visible_columns_adapt_to_terminal_width_without_losing_priority_fields() {
+        let compact = visible_columns(LayoutMode::Compact);
+        assert_eq!(
+            compact,
+            vec![SortColumn::Name, SortColumn::Temperature, SortColumn::Distance]
+        );
+
+        let medium = visible_columns(LayoutMode::Medium);
+        assert!(medium.contains(&SortColumn::Surface));
+        assert!(medium.contains(&SortColumn::Atmosphere));
+        assert!(medium.contains(&SortColumn::Temperature));
+        assert!(medium.contains(&SortColumn::Distance));
+
+        let wide = visible_columns(LayoutMode::Wide);
+        assert_eq!(wide.len(), 7);
+    }
+
 }
