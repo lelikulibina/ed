@@ -66,14 +66,6 @@ impl SearchCriteria {
         self
     }
 
-    pub fn with_count(mut self, count: usize) -> Result<Self, CriteriaError> {
-        if count == 0 {
-            return Err(CriteriaError::Count);
-        }
-        self.count = count;
-        Ok(self)
-    }
-
     pub fn matches(&self, body: &Body) -> bool {
         (if self.planet_types.is_empty() {
             self.planet_type == "any"
@@ -270,12 +262,6 @@ mod tests {
             signals_updated_at: None,
         };
         assert!(criteria().matches(&body));
-    }
-
-    #[test]
-    fn changing_result_count_rejects_zero_and_keeps_positive_values() {
-        assert_eq!(criteria().with_count(0), Err(CriteriaError::Count));
-        assert_eq!(criteria().with_count(12).unwrap().count, 12);
     }
 
     #[test]
