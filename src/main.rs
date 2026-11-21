@@ -26,11 +26,23 @@ async fn main() -> Result<()> {
     };
 
     ensure_interactive_terminal()?;
-    let Some(config) = tui::run_tui(initial_config)? else {
-        return Ok(());
-    };
+    let mut initial_config = initial_config;
 
-    tui::run_search_ui(async move { run_search(config).await }).await
+    loop {
+        let Some(config) = tui::run_tui(initial_config.take())? else {
+            break;
+        };
+        let previous_config = config.clone();
+
+        match tui::run_search_ui(async move { run_search(config).await }).await? {
+            tui::SearchUiAction::BackToSetup => {
+                initial_config = Some(previous_config);
+            }
+            tui::SearchUiAction::Exit => break,
+        }
+    }
+
+    Ok(())
 }
 
 fn ensure_interactive_terminal() -> Result<()> {
