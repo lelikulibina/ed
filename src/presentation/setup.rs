@@ -407,13 +407,12 @@ impl App {
                 }
                 _ => self.advance(),
             },
-            Step::Review => match self.row {
-                0 => {
+            Step::Review => {
+                if self.row == 0 {
                     self.step = Step::Filters;
                     self.row = 0;
                 }
-                _ => {}
-            },
+            }
         }
     }
 }
