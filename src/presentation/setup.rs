@@ -28,11 +28,11 @@ const SURFACES: [&str; 5] = [
     "Rocky ice world",
     "High metal content world",
 ];
-const ATMOSPHERES: [&str; 19] = [
+const ATMOSPHERES: [&str; 17] = [
     "any", "Ammonia", "Water", "Carbon dioxide", "Sulphur dioxide",
     "Nitrogen", "Water-rich", "Methane-rich", "Carbon dioxide-rich",
     "Methane", "Helium", "Silicate vapour", "Neon-rich", "Argon-rich",
-    "Neon", "Argon", "Oxygen", "Hydrogen", "No atmosphere",
+    "Neon", "Argon", "Oxygen",
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,7 +47,6 @@ enum ChoiceField { Surface, Atmosphere }
 #[derive(Debug, Clone)]
 struct Editor {
     field: EditField,
-    original: String,
     value: String,
     cursor: usize,
 }
@@ -57,7 +56,6 @@ struct Choice {
     field: ChoiceField,
     cursor: usize,
     selected: Vec<bool>,
-    original: Vec<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -141,7 +139,6 @@ impl App {
         let value = self.edit_value(field).to_owned();
         self.modal = Some(Modal::Edit(Editor {
             field,
-            original: value.clone(),
             cursor: value.chars().count(),
             value,
         }));
@@ -179,7 +176,7 @@ impl App {
         }).collect::<Vec<_>>();
         let cursor = selected.iter().position(|v| *v).unwrap_or(0);
         self.modal = Some(Modal::Choice(Choice {
-            field, cursor, selected: selected.clone(), original: selected,
+            field, cursor, selected,
         }));
     }
 
@@ -414,7 +411,8 @@ pub fn run_setup() -> Result<Option<SearchConfig>> {
                 match app.step {
                     Step::General if app.row == 2 => app.bio = !app.bio,
                     Step::Profiles => app.choose_profile(),
-                    Step::General | Step::Filters | Step::Review => app.activate(),
+                    Step::Review if app.row == 1 => return app.selection().map(Some),
+                Step::General | Step::Filters | Step::Review => app.activate(),
                 }
             }
             KeyCode::Enter => {
