@@ -736,7 +736,7 @@ fn draw_results(
         Paragraph::new(format!("ED: PLANET SEARCH  /  РЕЗУЛЬТАТЫ: {}", bodies.len()))
             .alignment(Alignment::Center)
             .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
-            .block(Block::default().borders(Borders::ALL)),
+            .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::Cyan))),
         root[0],
     );
 
@@ -762,7 +762,12 @@ fn draw_results(
         state.select(Some(selected.min(bodies.len() - 1)));
     }
     frame.render_stateful_widget(
-        List::new(items).block(Block::default().title(" НАЙДЕННЫЕ ПЛАНЕТЫ ").borders(Borders::ALL)),
+        List::new(items).highlight_style(
+            Style::default().fg(Color::Black).bg(Color::LightCyan).add_modifier(Modifier::BOLD)
+        ).highlight_symbol("▸ ").block(
+            Block::default().title(" НАЙДЕННЫЕ ПЛАНЕТЫ ")
+                .borders(Borders::ALL).border_style(Style::default().fg(Color::Blue))
+        ),
         panes[0],
         &mut state,
     );
@@ -795,7 +800,8 @@ fn draw_results(
     );
     frame.render_widget(
         Paragraph::new(detail).scroll((detail_scroll, 0)).wrap(Wrap { trim: false }).block(
-            Block::default().title(" ПОДРОБНОСТИ ПЛАНЕТЫ ").borders(Borders::ALL),
+            Block::default().title(" ПОДРОБНОСТИ ПЛАНЕТЫ ")
+                .borders(Borders::ALL).border_style(Style::default().fg(Color::Magenta)),
         ),
         panes[1],
     );
@@ -808,7 +814,8 @@ fn draw_results(
             "↑/↓ планета   S сортировка: {sort_label}   PgUp/PgDn подробности   Home/End список   Esc/Q выход"
         ))
             .alignment(Alignment::Center)
-            .style(Style::default().fg(Color::Gray)),
+            .style(Style::default().fg(Color::Gray))
+            .block(Block::default().borders(Borders::TOP).border_style(Style::default().fg(Color::DarkGray))),
         root[2],
     );
 }
