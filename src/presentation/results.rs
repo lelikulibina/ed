@@ -67,11 +67,7 @@ fn compare_optional_number(
     }
 }
 
-fn compare_text(
-    left: Option<&str>,
-    right: Option<&str>,
-    direction: SortDirection,
-) -> Ordering {
+fn compare_text(left: Option<&str>, right: Option<&str>, direction: SortDirection) -> Ordering {
     compare_optional(
         left.map(str::to_lowercase),
         right.map(str::to_lowercase),
@@ -85,9 +81,11 @@ pub fn sort_bodies(bodies: &mut [Body], column: SortColumn, direction: SortDirec
         SortColumn::Surface => {
             compare_text(left.subtype.as_deref(), right.subtype.as_deref(), direction)
         }
-        SortColumn::Atmosphere => {
-            compare_text(left.atmosphere.as_deref(), right.atmosphere.as_deref(), direction)
-        }
+        SortColumn::Atmosphere => compare_text(
+            left.atmosphere.as_deref(),
+            right.atmosphere.as_deref(),
+            direction,
+        ),
         SortColumn::Temperature => compare_optional_number(
             left.surface_temperature,
             right.surface_temperature,
@@ -96,9 +94,7 @@ pub fn sort_bodies(bodies: &mut [Body], column: SortColumn, direction: SortDirec
         SortColumn::Pressure => {
             compare_optional_number(left.surface_pressure, right.surface_pressure, direction)
         }
-        SortColumn::Gravity => {
-            compare_optional_number(left.gravity, right.gravity, direction)
-        }
+        SortColumn::Gravity => compare_optional_number(left.gravity, right.gravity, direction),
         SortColumn::Distance => {
             compare_optional_number(left.distance_ly, right.distance_ly, direction)
         }
