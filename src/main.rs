@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
     tui::show_results(&results)
 }
 
-async fn run_search(config: &SearchConfig) -> Result<Vec<domain::body::Body>> {
+async fn run_search(config: SearchConfig) -> Result<Vec<domain::body::Body>> {
     let client = SpanshClient::spansh(1)?;
     let search = SearchUseCase::new(client);
 
