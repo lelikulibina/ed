@@ -562,3 +562,124 @@ mod tests {
         assert!(a.selection().is_ok());
     }
 }
+
+/// Показывает результаты поиска в полноэкранном интерфейсе Ratatui.
+pub fn show_results(bodies: &[crate::domain::body::Body]) -> Result<()> {
+    use std::time::Duration;
+
+    let mut session = TerminalSession::enter()?;
+    let mut selected = 0usize;
+    loop {
+        session.terminal.draw(|frame| draw_results(frame, bodies, selected))?;
+        if !event::poll(Duration::from_millis(100))? {
+            continue;
+        }
+        let Event::Key(key) = event::read()? else {
+            continue;
+        };
+        if key.kind != KeyEventKind::Press {
+            continue;
+        }
+        match key.code {
+            KeyCode::Char('q') if key.modifiers.contains(KeyModifiers::CONTROL) => return Ok(()),
+            KeyCode::Esc | KeyCode::Char('q') => return Ok(()),
+            KeyCode::Up if !bodies.is_empty() => {
+                selected = selected.saturating_sub(1);
+            }
+            KeyCode::Down if !bodies.is_empty() => {
+                selected = (selected + 1).min(bodies.len() - 1);
+            }
+            KeyCode::Home => selected = 0,
+            KeyCode::End if !bodies.is_empty() => selected = bodies.len() - 1,
+            _ => {}
+        }
+    }
+}
+
+fn draw_results(
+    frame: &mut ratatui::Frame<'_>,
+    bodies: &[crate::domain::body::Body],
+    selected: usize,
+) {
+    use ratatui::widgets::{List, ListItem};
+
+    let area = frame.area();
+    let root = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(3), Constraint::Min(5), Constraint::Length(2)])
+        .split(area);
+
+    frame.render_widget(
+        Paragraph::new(format!("ED: PLANET SEARCH  /  РЕЗУЛЬТАТЫ: {}", bodies.len()))
+            .alignment(Alignment::Center)
+            .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+            .block(Block::default().borders(Borders::ALL)),
+        root[0],
+    );
+
+    let wide = area.width >= 100;
+    let panes = if wide {
+        Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(42), Constraint::Percentage(58)])
+            .split(root[1])
+    } else {
+        Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
+            .split(root[1])
+    };
+
+    let items = bodies.iter().map(|body| {
+        let mapped = if body.is_mapped == Some(true) { " [картографирована]" } else { "" };
+        ListItem::new(format!("{}{}", body.name, mapped))
+    }).collect::<Vec<_>>();
+    let mut state = ListState::default();
+    if !bodies.is_empty() {
+        state.select(Some(selected.min(bodies.len() - 1)));
+    }
+    frame.render_stateful_widget(
+        List::new(items).block(Block::default().title(" НАЙДЕННЫЕ ПЛАНЕТЫ ").borders(Borders::ALL)),
+        panes[0],
+        &mut state,
+    );
+
+    let detail = bodies.get(selected).map_or_else(
+        || "Подходящие планеты не найдены.".to_owned(),
+        |body| {
+            let mut lines = vec![
+                format!("Планета: {}", body.name),
+                format!("Система: {}", body.system_name.as_deref().unwrap_or("нет данных")),
+                format!("Тип: {}", body.subtype.as_deref().unwrap_or("нет данных")),
+                format!("Атмосфера: {}", body.atmosphere.as_deref().unwrap_or("нет данных")),
+                format!("Температура: {}", body.surface_temperature.map_or_else(|| "нет данных".to_owned(), |v| format!("{v:.2} K"))),
+                format!("Давление: {}", body.surface_pressure.map_or_else(|| "нет данных".to_owned(), |v| format!("{v:.4} atm"))),
+                format!("Гравитация: {}", body.gravity.map_or_else(|| "нет данных".to_owned(), |v| format!("{v:.3} g"))),
+                format!("Расстояние: {}", body.distance_ly.map_or_else(|| "нет данных".to_owned(), |v| format!("{v:.2} св. л."))),
+                format!("Биологические сигналы Spansh: {}", body.biological_signal_count.map_or_else(|| "нет данных".to_owned(), |v| v.to_string())),
+                format!("Геологические сигналы Spansh: {}", body.geological_signal_count.map_or_else(|| "нет данных".to_owned(), |v| v.to_string())),
+                format!("Биологические группы: {}", body.biological_genera.as_ref().filter(|v| !v.is_empty()).map_or_else(|| "не указаны".to_owned(), |v| v.iter().map(|g| crate::presentation::output::russian_group_name(g)).collect::<Vec<_>>().join(", "))),
+                format!("Вулканизм: {}", body.volcanism_type.as_deref().unwrap_or("нет данных")),
+                String::new(),
+            ];
+            match crate::presentation::output::exobiology_summary(body) {
+                Ok(Some(summary)) => lines.extend(summary.lines().map(str::to_owned)),
+                Ok(None) => lines.push("Подходящие виды в справочнике не найдены.".to_owned()),
+                Err(error) => lines.push(format!("Ошибка расчёта экзобиологии: {error}")),
+            }
+            lines.join("\n")
+        },
+    );
+    frame.render_widget(
+        Paragraph::new(detail).wrap(Wrap { trim: false }).block(
+            Block::default().title(" ПОДРОБНОСТИ ПЛАНЕТЫ ").borders(Borders::ALL),
+        ),
+        panes[1],
+    );
+    frame.render_widget(
+        Paragraph::new("↑/↓ выбор планеты   Home/End начало/конец   Esc или Q назад/выход")
+            .alignment(Alignment::Center)
+            .style(Style::default().fg(Color::Gray)),
+        root[2],
+    );
+}
