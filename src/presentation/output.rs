@@ -5,71 +5,6 @@ use crate::domain::{
     exobiology::{self, CandidateStatus, EstimateError},
 };
 
-pub fn print_results(bodies: &[Body]) {
-    if bodies.is_empty() {
-        println!("❌ Не найдено подходящих планет.");
-        return;
-    }
-
-    for (system_id, planets) in group_by_system(bodies) {
-        let system_name = planets
-            .iter()
-            .find_map(|body| body.system_name.as_deref())
-            .unwrap_or("неизвестная система");
-        println!("Система: {system_name} (ID64: {system_id})");
-
-        for body in planets {
-            println!(
-                "\n┌─ {}{}",
-                body.name,
-                if body.is_mapped == Some(true) {
-                    " [картографирована]"
-                } else {
-                    ""
-                }
-            );
-            println!(
-                "│ {} | {} | {} K | {} atm | {} g | {} св. л.",
-                body.subtype.as_deref().unwrap_or("тип неизвестен"),
-                body.atmosphere.as_deref().unwrap_or("атмосфера неизвестна"),
-                display_number(body.surface_temperature),
-                display_number(body.surface_pressure),
-                display_number(body.gravity),
-                body.distance_ly.unwrap_or_default()
-            );
-            println!(
-                "│ Биосигналы Spansh: {} | Биологические группы: {}",
-                body.biological_signal_count
-                    .map_or_else(|| "нет данных".to_owned(), |count| count.to_string()),
-                body.biological_genera
-                    .as_ref()
-                    .filter(|genera| !genera.is_empty())
-                    .map_or_else(
-                        || "не указаны".to_owned(),
-                        |genera| {
-                            genera
-                                .iter()
-                                .map(|genus| russian_group_name(genus))
-                                .collect::<Vec<_>>()
-                                .join(", ")
-                        },
-                    )
-            );
-
-            match exobiology_summary(body) {
-                Ok(Some(summary)) => {
-                    for line in summary.lines() {
-                        println!("│ {line}");
-                    }
-                }
-                Ok(None) => println!("│ Подходящие виды в текущем справочнике не найдены."),
-                Err(error) => println!("│ Ошибка расчёта экзобиологии: {error}"),
-            }
-            println!("└{}", "─".repeat(78));
-        }
-    }
-}
-
 pub(crate) fn exobiology_summary(body: &Body) -> Result<Option<String>, EstimateError> {
     let estimate = exobiology::estimate(body)?;
 
@@ -238,25 +173,6 @@ fn format_credits(value: u64) -> String {
         formatted.push(character);
     }
     formatted
-}
-
-fn group_by_system(bodies: &[Body]) -> BTreeMap<String, Vec<&Body>> {
-    let mut systems: BTreeMap<String, Vec<&Body>> = BTreeMap::new();
-    for body in bodies {
-        let system_id = body
-            .system_id64
-            .clone()
-            .or_else(|| body.system_name.clone())
-            .unwrap_or_else(|| "unknown".to_owned());
-        systems.entry(system_id).or_default().push(body);
-    }
-    systems
-}
-
-fn display_number(value: Option<f64>) -> String {
-    value
-        .map(|number| format!("{number:.3}"))
-        .unwrap_or_else(|| "нет данных".to_owned())
 }
 
 #[cfg(test)]
