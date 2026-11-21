@@ -1,4 +1,36 @@
 use crate::domain::criteria::NumericRange;
+#[cfg(test)]
+use crate::domain::criteria::{CriteriaError, SearchCriteria};
+
+#[cfg(test)]
+impl SearchPreset {
+    pub fn criteria(
+        &self,
+        count: usize,
+        exclude_with_bio_signals: bool,
+    ) -> Result<SearchCriteria, CriteriaError> {
+        let mut criteria = SearchCriteria::from_cli(
+            self.surface_types.first().copied().unwrap_or("any"),
+            self.atmosphere,
+            self.temperature,
+            NumericRange { min: 0.1, max: 1.0 },
+            self.pressure,
+            count,
+        )?;
+        criteria.planet_types = self
+            .surface_types
+            .iter()
+            .map(|value| (*value).to_owned())
+            .collect();
+        criteria.planet_type = self
+            .surface_types
+            .first()
+            .copied()
+            .unwrap_or("any")
+            .to_owned();
+        Ok(criteria.with_bio_signal_exclusion(exclude_with_bio_signals))
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct SearchPreset {
