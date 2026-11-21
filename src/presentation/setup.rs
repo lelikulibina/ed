@@ -355,10 +355,10 @@ pub fn run_setup() -> Result<Option<SearchConfig>> {
                 Modal::Edit(mut editor) => match key.code {
                     KeyCode::Esc => {}
                     KeyCode::Enter => app.save_editor(editor),
-                    KeyCode::Left => { editor.cursor = editor.cursor.saturating_sub(1); app.modal = Some(Modal::Edit(editor)); }
-                    KeyCode::Right => { editor.cursor = (editor.cursor + 1).min(editor.value.chars().count()); app.modal = Some(Modal::Edit(editor)); }
-                    KeyCode::Home => { editor.cursor = 0; app.modal = Some(Modal::Edit(editor)); }
-                    KeyCode::End => { editor.cursor = editor.value.chars().count(); app.modal = Some(Modal::Edit(editor)); }
+                    KeyCode::Left => editor.cursor = editor.cursor.saturating_sub(1),
+                    KeyCode::Right => editor.cursor = (editor.cursor + 1).min(editor.value.chars().count()),
+                    KeyCode::Home => editor.cursor = 0,
+                    KeyCode::End => editor.cursor = editor.value.chars().count(),
                     KeyCode::Backspace => {
                         if editor.cursor > 0 {
                             let mut chars = editor.value.chars().collect::<Vec<_>>();
@@ -387,8 +387,8 @@ pub fn run_setup() -> Result<Option<SearchConfig>> {
                     let len = choice.selected.len();
                     match key.code {
                         KeyCode::Esc => {}
-                        KeyCode::Up => { choice.cursor = (choice.cursor + len - 1) % len; app.modal = Some(Modal::Choice(choice)); }
-                        KeyCode::Down => { choice.cursor = (choice.cursor + 1) % len; app.modal = Some(Modal::Choice(choice)); }
+                        KeyCode::Up => choice.cursor = (choice.cursor + len - 1) % len,
+                        KeyCode::Down => choice.cursor = (choice.cursor + 1) % len,
                         KeyCode::Char(' ') => {
                             App::toggle_choice(&mut choice);
                             app.modal = Some(Modal::Choice(choice));
