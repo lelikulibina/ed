@@ -1260,8 +1260,20 @@ mod tests {
         {
             assert!(preset.surface_types.contains(&surface));
             assert_eq!(preset.atmosphere, atmosphere);
-            assert_eq!(preset.temperature, NumericRange { min: t_min, max: t_max });
-            assert_eq!(preset.pressure, NumericRange { min: p_min, max: p_max });
+            assert_eq!(
+                preset.temperature,
+                NumericRange {
+                    min: t_min,
+                    max: t_max
+                }
+            );
+            assert_eq!(
+                preset.pressure,
+                NumericRange {
+                    min: p_min,
+                    max: p_max
+                }
+            );
         }
 
         assert_eq!(
