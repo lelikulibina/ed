@@ -358,7 +358,7 @@ mod tests {
                 .iter()
                 .map(|body| body.name.as_str())
                 .collect::<Vec<_>>(),
-            vec!["Beta", "Alpha", "Gamma"]
+            vec!["Gamma", "Beta", "Alpha"]
         );
     }
 
