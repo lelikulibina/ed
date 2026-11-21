@@ -558,6 +558,44 @@ mod tests {
         };
         assert!(a.selection().is_ok());
     }
+
+    fn sortable_body(name: &str, distance: Option<f64>, temperature: Option<f64>) -> crate::domain::body::Body {
+        crate::domain::body::Body {
+            id64: None,
+            name: name.to_owned(),
+            system_id64: None,
+            system_name: None,
+            subtype: None,
+            distance_ly: distance,
+            is_landable: None,
+            is_mapped: None,
+            last_updated_at: None,
+            surface_temperature: temperature,
+            surface_pressure: None,
+            gravity: None,
+            atmosphere: None,
+            volcanism_type: None,
+            biological_signal_count: None,
+            geological_signal_count: None,
+            biological_genera: None,
+            signals_updated_at: None,
+        }
+    }
+
+    #[test]
+    fn results_sort_by_selected_numeric_field_and_keep_missing_values_last() {
+        let mut bodies = vec![
+            sortable_body("Unknown", None, None),
+            sortable_body("Far", Some(20.0), Some(180.0)),
+            sortable_body("Near", Some(5.0), Some(220.0)),
+        ];
+
+        sort_bodies(&mut bodies, 0);
+        assert_eq!(bodies.iter().map(|body| body.name.as_str()).collect::<Vec<_>>(), vec!["Near", "Far", "Unknown"]);
+
+        sort_bodies(&mut bodies, 1);
+        assert_eq!(bodies.iter().map(|body| body.name.as_str()).collect::<Vec<_>>(), vec!["Far", "Near", "Unknown"]);
+    }
 }
 
 /// Выполняет асинхронный поиск, не блокируя полноэкранный интерфейс.
