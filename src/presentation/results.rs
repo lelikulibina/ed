@@ -370,9 +370,7 @@ pub fn body_detail_lines(body: &Body) -> Vec<ratatui::text::Line<'static>> {
     match crate::presentation::output::exobiology_summary(body) {
         Ok(Some(summary)) => lines.extend(summary.lines().map(Line::from)),
         Ok(None) => lines.push(Line::from("Подходящие виды в справочнике не найдены.")),
-        Err(error) => lines.push(Line::from(format!(
-            "Ошибка расчёта экзобиологии: {error}"
-        ))),
+        Err(error) => lines.push(Line::from(format!("Ошибка расчёта экзобиологии: {error}"))),
     }
 
     lines.extend([
@@ -625,5 +623,4 @@ mod tests {
         assert!(details.contains("Вулканизм: Water Magma"));
         assert!(details.contains("Оссии"));
     }
-
 }
