@@ -271,9 +271,7 @@ fn draw_results(
 ) {
     use super::{
         layout::{LayoutMode, layout_mode},
-        results::{
-            SortColumn, body_detail_lines, body_summary_lines, cell_value, visible_columns,
-        },
+        results::{SortColumn, body_detail_lines, body_summary_lines, cell_value, visible_columns},
     };
 
     let area = frame.area();
@@ -414,9 +412,10 @@ fn draw_results(
         }
 
         if let Some(inspector_area) = inspector_area {
-            let content = bodies.get(state.selected).map(body_summary_lines).unwrap_or_else(|| {
-                vec![ratatui::text::Line::from("Нет выбранной планеты.")]
-            });
+            let content = bodies
+                .get(state.selected)
+                .map(body_summary_lines)
+                .unwrap_or_else(|| vec![ratatui::text::Line::from("Нет выбранной планеты.")]);
             frame.render_widget(
                 Paragraph::new(content).wrap(Wrap { trim: true }).block(
                     Block::default()
