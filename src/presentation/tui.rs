@@ -217,7 +217,11 @@ impl TerminalSession {
         }
         match Terminal::new(CrosstermBackend::new(out)) {
             Ok(mut terminal) => {
-                terminal.hide_cursor()?;
+                if let Err(error) = terminal.hide_cursor() {
+                    let _ = execute!(terminal.backend_mut(), LeaveAlternateScreen);
+                    let _ = disable_raw_mode();
+                    return Err(error.into());
+                }
                 Ok(Self { terminal })
             }
             Err(e) => {
