@@ -51,7 +51,7 @@ GitHub Actions, workflow **Rust CI**:
 - `cargo clippy --all-targets -- -D warnings` — успешно.
 - `cargo test --locked --all-targets` — успешно.
 - На проверенном кодовом коммите: 96 unit tests passed, 0 failed, 4 ignored; дополнительный набор — 5 passed.
-- Последняя проверка после обновления документации: https://github.com/lelikulibina/ed/actions/runs/44871919990
+- Последняя проверка после обновления документации: https://github.com/lelikulibina/ed/actions/runs/44872020721
 
 ## Остаётся выполнить вручную
 
