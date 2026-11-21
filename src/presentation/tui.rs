@@ -195,7 +195,7 @@ impl App {
             }
             c.with_bio_signal_exclusion(self.bio)
         } else {
-            PRESETS[self.selected].criteria(count, self.bio)?
+            PRESETS[self.selected].criteria(5, self.bio)?.with_count(count)?
         };
         Ok(TuiSelection {
             system: self.system.trim().into(),
@@ -518,8 +518,7 @@ mod tests {
     use super::*;
     #[test]
     fn profile_three_keeps_or_surface_types() {
-        let mut a = App::default();
-        a.selected = 2;
+        let mut a = App { selected: 2, ..App::default() };
         a.load_preset();
         let s = a.selection().unwrap();
         assert_eq!(
@@ -530,20 +529,17 @@ mod tests {
     }
     #[test]
     fn zero_count_is_rejected() {
-        let mut a = App::default();
-        a.count = "0".into();
+        let a = App { count: "0".into(), ..App::default() };
         assert!(a.selection().is_err());
     }
     #[test]
     fn bio_exclusion_is_independent() {
-        let mut a = App::default();
-        a.bio = true;
+        let a = App { bio: true, ..App::default() };
         assert!(a.selection().unwrap().criteria.exclude_with_bio_signals);
     }
     #[test]
     fn manual_mode_accepts_any_filters() {
-        let mut a = App::default();
-        a.screen = Screen::Manual;
+        let a = App { screen: Screen::Manual, manual_mode: true, ..App::default() };
         assert!(a.selection().is_ok());
     }
 }
