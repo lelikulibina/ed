@@ -127,7 +127,6 @@ impl App {
                 value.pop();
             }
             KeyCode::Delete => value.clear(),
-            KeyCode::Char('u') if false => value.clear(),
             _ => {}
         }
         self.error = None;
