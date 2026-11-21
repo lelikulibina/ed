@@ -1,8 +1,41 @@
-use crate::domain::criteria::{NumericRange, SearchCriteria};
+use crate::domain::criteria::SearchCriteria;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SearchConfig {
+    pub system: String,
+    pub criteria: SearchCriteria,
+}
+
+impl SearchConfig {
+    pub fn new(system: impl Into<String>, criteria: SearchCriteria) -> Result<Self, SearchConfigError> {
+        let system = system.into();
+        let system = system.trim();
+        if system.is_empty() {
+            return Err(SearchConfigError::EmptySystem);
+        }
+        if criteria.count == 0 {
+            return Err(SearchConfigError::ZeroCount);
+        }
+
+        Ok(Self {
+            system: system.to_owned(),
+            criteria,
+        })
+    }
+}
+
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub enum SearchConfigError {
+    #[error("укажите центральную систему")]
+    EmptySystem,
+    #[error("количество результатов должно быть больше нуля")]
+    ZeroCount,
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::criteria::NumericRange;
 
     fn criteria(count: usize) -> SearchCriteria {
         SearchCriteria::from_cli(
@@ -25,11 +58,19 @@ mod tests {
 
     #[test]
     fn rejects_an_empty_system_name() {
-        assert!(SearchConfig::new("  ", criteria(5)).is_err());
+        assert_eq!(
+            SearchConfig::new("  ", criteria(5)).unwrap_err(),
+            SearchConfigError::EmptySystem
+        );
     }
 
     #[test]
     fn rejects_zero_result_count_even_if_criteria_was_mutated() {
-        let mut invalid = criteria(5);\n        invalid.count = 0;\n        assert!(SearchConfig::new("Sol", invalid).is_err());
+        let mut invalid = criteria(5);
+        invalid.count = 0;
+        assert_eq!(
+            SearchConfig::new("Sol", invalid).unwrap_err(),
+            SearchConfigError::ZeroCount
+        );
     }
 }
