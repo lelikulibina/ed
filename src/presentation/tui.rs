@@ -559,7 +559,11 @@ mod tests {
         assert!(a.selection().is_ok());
     }
 
-    fn sortable_body(name: &str, distance: Option<f64>, temperature: Option<f64>) -> crate::domain::body::Body {
+    fn sortable_body(
+        name: &str,
+        distance: Option<f64>,
+        temperature: Option<f64>,
+    ) -> crate::domain::body::Body {
         crate::domain::body::Body {
             id64: None,
             name: name.to_owned(),
@@ -591,10 +595,16 @@ mod tests {
         ];
 
         sort_bodies(&mut bodies, 0);
-        assert_eq!(bodies.iter().map(|body| body.name.as_str()).collect::<Vec<_>>(), vec!["Near", "Far", "Unknown"]);
+        assert_eq!(
+            bodies.iter().map(|body| body.name.as_str()).collect::<Vec<_>>(),
+            vec!["Near", "Far", "Unknown"]
+        );
 
         sort_bodies(&mut bodies, 1);
-        assert_eq!(bodies.iter().map(|body| body.name.as_str()).collect::<Vec<_>>(), vec!["Far", "Near", "Unknown"]);
+        assert_eq!(
+            bodies.iter().map(|body| body.name.as_str()).collect::<Vec<_>>(),
+            vec!["Far", "Near", "Unknown"]
+        );
     }
 }
 
