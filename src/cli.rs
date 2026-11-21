@@ -250,6 +250,10 @@ mod tests {
         assert!(config.criteria.exclude_with_bio_signals);
         assert_eq!(config.criteria.temperature.min, 395.0);
         assert_eq!(config.criteria.temperature.max, 450.0);
+        assert_eq!(config.criteria.gravity.min, 0.1);
+        assert_eq!(config.criteria.gravity.max, 1.0);
+        assert_eq!(config.criteria.pressure.min, 0.040);
+        assert_eq!(config.criteria.pressure.max, 0.063);
     }
 
     #[test]
