@@ -14,8 +14,7 @@ use ratatui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{Block, Borders, ListState, Paragraph, Wrap},
 };
 
 use crate::application::config::SearchConfig;
@@ -141,14 +140,15 @@ fn show_error_in_session(session: &mut TerminalSession, message: &str) -> Result
                 panel,
             );
         })?;
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press {
-                if matches!(key.code, KeyCode::Enter | KeyCode::Esc) {
-                    return Ok(SearchUiAction::BackToSetup);
-                }
-                if key.code == KeyCode::Char('q') && key.modifiers.contains(KeyModifiers::CONTROL) {
-                    return Ok(SearchUiAction::Exit);
-                }
+        if let Event::Key(key) = event::read()?
+            && key.kind == KeyEventKind::Press
+        {
+            if matches!(key.code, KeyCode::Enter | KeyCode::Esc) {
+                return Ok(SearchUiAction::BackToSetup);
+            } else if key.code == KeyCode::Char('q')
+                && key.modifiers.contains(KeyModifiers::CONTROL)
+            {
+                return Ok(SearchUiAction::Exit);
             }
         }
     }
