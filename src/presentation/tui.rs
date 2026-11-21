@@ -168,6 +168,11 @@ impl App {
                 .map(str::trim)
                 .filter(|s| !s.is_empty())
                 .collect::<Vec<_>>();
+            if surface_types.is_empty() {
+                return Err(anyhow!(
+                    "Укажите тип поверхности или явно задайте any для отключения фильтра"
+                ));
+            }
             let primary_surface = surface_types.first().copied().unwrap_or("any");
             let mut c = SearchCriteria::from_cli(
                 primary_surface,
