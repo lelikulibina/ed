@@ -565,9 +565,12 @@ where
     let mut session = TerminalSession::enter()?;
     let task = tokio::spawn(future);
 
-    let bodies = loop {
+    let outcome = loop {
         if task.is_finished() {
-            break task.await.context("Задача поиска аварийно завершилась")??;
+            break match task.await {
+                Ok(result) => result,
+                Err(error) => Err(anyhow!("Задача поиска аварийно завершилась: {error}")),
+            };
         }
 
         session.terminal.draw(draw_searching)?;
@@ -585,7 +588,30 @@ where
         }
     };
 
-    show_results_in_session(&mut session, &bodies)
+    match outcome {
+        Ok(bodies) => show_results_in_session(&mut session, &bodies),
+        Err(error) => show_error_in_session(&mut session, &error.to_string()),
+    }
+}
+
+fn show_error_in_session(session: &mut TerminalSession, message: &str) -> Result<()> {
+    loop {
+        session.terminal.draw(|frame| {
+            let panel = centered(75, 40, frame.area());
+            frame.render_widget(
+                Paragraph::new(format!("Поиск не выполнен\n\n{message}\n\nEnter / Esc — вернуться и закрыть"))
+                    .alignment(Alignment::Center)
+                    .wrap(Wrap { trim: true })
+                    .block(Block::default().title(" ОШИБКА ПОИСКА ").borders(Borders::ALL).border_style(Style::default().fg(Color::Red))),
+                panel,
+            );
+        })?;
+        if let Event::Key(key) = event::read()? {
+            if key.kind == KeyEventKind::Press && matches!(key.code, KeyCode::Enter | KeyCode::Esc | KeyCode::Char('q')) {
+                return Ok(());
+            }
+        }
+    }
 }
 
 fn draw_searching(frame: &mut ratatui::Frame<'_>) {
