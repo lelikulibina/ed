@@ -142,6 +142,9 @@ impl App {
         let count = self.row_count();
         if count > 0 {
             self.row = (self.row as isize + delta).rem_euclid(count as isize) as usize;
+            if self.step == Step::Profiles {
+                self.profile = self.row;
+            }
         }
         self.error = None;
     }
@@ -681,6 +684,25 @@ fn centered(width: u16, height: u16, area: Rect) -> Rect {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn profile_navigation_updates_the_profile_and_allows_custom_setup() {
+        let mut app = App::default();
+
+        app.move_row(2);
+        assert_eq!(app.profile, 2);
+        app.choose_profile();
+        assert_eq!(app.surfaces, vec!["Rocky body", "High metal content world"]);
+        assert_eq!(app.atmosphere, "Water");
+
+        let mut app = App::default();
+        app.move_row(PRESETS.len() as isize);
+        assert_eq!(app.profile, PRESETS.len());
+        app.choose_profile();
+        assert_eq!(app.step, Step::General);
+        assert_eq!(app.surfaces, vec!["any"]);
+        assert_eq!(app.atmosphere, "any");
+    }
 
     #[test]
     fn selected_preset_preserves_profile_three_or_surface_types_and_gravity() {
