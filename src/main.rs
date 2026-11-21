@@ -16,15 +16,18 @@ use spansh::SpanshClient;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    ensure_interactive_terminal()?;
-
     let config = if std::env::args_os().len() == 1 {
+        ensure_interactive_terminal()?;
         let Some(config) = tui::run_tui()? else {
             return Ok(());
         };
         config
     } else {
-        Args::parse().into_search_config()?
+        // Clap обрабатывает --help и --version до проверки TTY,
+        // поэтому справка доступна и в неинтерактивном окружении.
+        let config = Args::parse().into_search_config()?;
+        ensure_interactive_terminal()?;
+        config
     };
 
     // Оба способа задания критериев сходятся в одной точке:
@@ -49,16 +52,4 @@ async fn run_search(config: SearchConfig) -> Result<Vec<domain::body::Body>> {
     let center = search.resolve_center(&config.system).await?;
     let results = search.execute(&center, &config.criteria).await?;
     Ok(results)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn terminal_requirement_is_checked_in_one_place() {
-        // В CI обычно нет TTY; здесь проверяем только, что функция
-        // доступна как единая точка проверки и не зависит от аргументов CLI.
-        let _ = ensure_interactive_terminal();
-    }
 }
