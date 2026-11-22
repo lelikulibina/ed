@@ -70,9 +70,10 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         system,
         pages,
         Line::from(format!(
-            "{}: {} из {}",
+            "{}: {} {} {}",
             ui::RUNNING_FOUND_COUNT,
             app.found_count,
+            ui::RUNNING_COUNT_SEPARATOR,
             app.config.criteria.count
         )),
         Line::from(
