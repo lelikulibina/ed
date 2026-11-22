@@ -275,7 +275,7 @@ cargo fmt -- --check && cargo clippy --locked --all-targets --all-features -- -D
 - [ ] Документация: оставить `docs/architecture.md` (новый, до 100 строк, по разделу 2) и `docs/exobiology.md` (по существующему дизайн-документу, если он ещё верен). Остальные файлы удалить: история сохранена в git (решение владельца, вопрос 4).
   - [x] Создать `docs/architecture.md` с фактическими слоями, потоком поиска, параметрами HTTP-клиента и ограничениями Spansh.
   - [x] Создать `docs/exobiology.md`, описывающий текущую модель оценки, каталог и ограничения.
-- [ ] CI: основной workflow без изменений; `spansh-live-smoke.yml` — только `workflow_dispatch`, без привязки к ветке `refactor/spansh-api-architecture`, запускает единственный live-тест.
+- [x] CI: основной workflow без изменений; `spansh-live-smoke.yml` — только `workflow_dispatch`, без привязки к ветке `refactor/spansh-api-architecture`, запускает единственный live-тест.
 - [ ] `cargo build --release` и ручной запуск бинарника.
 
 **Приёмка:** в корне есть README; `docs/` не содержит планов и журналов; гейт зелёный; релизная сборка запускается.
