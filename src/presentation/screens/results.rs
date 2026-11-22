@@ -432,9 +432,7 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
         Line::from(format!(
             "{}: {}",
             ui::RESULTS_DETAIL_SURFACE,
-            body.subtype
-                .as_deref()
-                .unwrap_or(ui::RESULTS_MISSING_VALUE)
+            body.subtype.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE)
         )),
         Line::from(format!(
             "{}: {}",
