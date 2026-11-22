@@ -570,7 +570,10 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         ),
         parameter_line(
             format!("{}: ", ui::SEARCH_RADIUS_LABEL),
-            format!("{} св. лет", display_input(&screen.radius_input, screen.focus == SearchField::Radius)),
+            format!(
+                "{} св. лет",
+                display_input(&screen.radius_input, screen.focus == SearchField::Radius)
+            ),
             screen.focus == SearchField::Radius,
         ),
         parameter_line(
