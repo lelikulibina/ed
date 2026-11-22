@@ -517,6 +517,23 @@ mod tests {
     }
 
     #[test]
+    fn ctrl_y_quits_from_search_and_help_overlay() {
+        let mut app = app();
+        let ctrl_y = KeyEvent::new(KeyCode::Char('й'), KeyModifiers::CONTROL);
+
+        assert_eq!(
+            update(&mut app, AppEvent::Key(ctrl_y)),
+            Some(Command::Quit)
+        );
+
+        app.help_open = true;
+        assert_eq!(
+            update(&mut app, AppEvent::Key(ctrl_y)),
+            Some(Command::Quit)
+        );
+    }
+
+    #[test]
     fn error_screen_shows_resize_message_below_minimum_size() {
         let mut app = app();
         app.screen = Screen::Error;
