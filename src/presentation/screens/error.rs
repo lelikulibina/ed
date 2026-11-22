@@ -15,7 +15,7 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
 
     frame.render_widget(
         Paragraph::new(format!(
-            "Поиск не выполнен\n\n{message}\n\nR — повторить поиск\nE / Enter / Esc — изменить параметры\nCtrl+Q — выход"
+            "Поиск не выполнен\n\n{message}\n\nr — повторить поиск\ne / Enter / Esc — изменить параметры\nCtrl+Q — выход"
         ))
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: true })
