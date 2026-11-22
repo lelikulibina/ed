@@ -53,7 +53,8 @@ pub struct App {
     pub selected_index: usize,
     pub search_screen: SearchScreen,
     pub results_screen: ResultsScreen,
-    pub search_task: Option<tokio::task::JoinHandle<()>>,\n    pub help_open: bool,
+    pub search_task: Option<tokio::task::JoinHandle<()>>,
+    pub help_open: bool,
 }
 
 impl App {
@@ -85,7 +86,8 @@ impl App {
             selected_index: 0,
             search_screen,
             results_screen: ResultsScreen::default(),
-            search_task: None,\n            help_open: false,
+            search_task: None,
+            help_open: false,
         }
     }
 }
