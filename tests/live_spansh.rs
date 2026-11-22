@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 
+#[path = "../src/application/presets.rs"]
+pub mod application_presets;
+
 mod application {
-    #[path = "../../src/application/presets.rs"]
-    pub mod presets;
+    pub use crate::application_presets as presets;
 }
 
 #[path = "../src/domain/mod.rs"]
