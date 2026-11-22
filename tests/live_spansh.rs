@@ -1,9 +1,7 @@
 #![allow(dead_code)]
 
 use ed_planet_search::{
-    domain::{
-        criteria::{Filter, NumericRange, SearchCriteria},
-    },
+    domain::criteria::{Filter, NumericRange, SearchCriteria},
     spansh::{BodySearch, SpanshClient, SystemResolver},
 };
 
