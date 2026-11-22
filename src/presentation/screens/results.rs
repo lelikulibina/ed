@@ -877,5 +877,4 @@ mod tests {
             Some(ResultsAction::BackToSearch)
         );
     }
-
 }
