@@ -88,6 +88,24 @@ impl SearchUseCase {
             .map_err(Into::into)
     }
 
+    pub async fn search_with_events(
+        &self,
+        system_name: &str,
+        criteria: &SearchCriteria,
+        events: tokio::sync::mpsc::UnboundedSender<SearchEvent>,
+    ) -> Result<Vec<Body>, SearchError> {
+        let _ = events.send(SearchEvent::ResolvingSystem);
+        let center = self.resolve_center(system_name).await?;
+        let _ = events.send(SearchEvent::SystemResolved {
+            name: center.name.clone(),
+        });
+        let progress = events.clone();
+        self.execute_with_progress(&center, criteria, move |page, found| {
+            let _ = progress.send(SearchEvent::PageLoaded { page, found });
+        })
+        .await
+    }
+
     pub async fn execute(
         &self,
         center: &ResolvedSystem,
@@ -121,6 +139,19 @@ mod tests {
     };
     use crate::spansh::test_support::{MockResponse, MockServer};
 
+    #[test]
+    fn search_errors_have_actionable_russian_messages() {
+        let not_found = SearchError::Resolve(crate::spansh::ResolveError::NotFound(
+            "Sol".to_owned(),
+        ));
+        assert!(not_found.user_message().contains("Sol"));
+        assert!(not_found.user_message().contains("не найдена"));
+
+        let page_limit = SearchError::Bodies(BodySearchError::PageLimit(1000));
+        assert!(page_limit.user_message().contains("1000"));
+        assert!(page_limit.user_message().contains("неполными"));
+    }
+
     #[tokio::test]
     async fn resolves_center_searches_bodies_and_returns_filtered_results() {
         let responses = [
@@ -143,7 +174,6 @@ mod tests {
         let server = MockServer::start(responses.into_iter().map(MockResponse::ok).collect()).await;
         let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let search = SearchUseCase::new(client);
-        let center = search.resolve_center("Sol").await.unwrap();
         let criteria = SearchCriteria::new(
             Filter::one_of(vec![SurfaceType::RockyBody]),
             Filter::one_of(vec![AtmosphereType::Nitrogen]),
@@ -157,10 +187,25 @@ mod tests {
         )
         .unwrap();
 
-        let results = search.execute(&center, &criteria).await.unwrap();
+        let (events_tx, mut events_rx) = tokio::sync::mpsc::unbounded_channel();
+        let results = search
+            .search_with_events("Sol", &criteria, events_tx)
+            .await
+            .unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].name, "Nearby 1");
         assert_eq!(results[0].system_name.as_deref(), Some("Nearby System"));
+
+        assert!(matches!(events_rx.try_recv(), Ok(SearchEvent::ResolvingSystem)));
+        assert!(matches!(
+            events_rx.try_recv(),
+            Ok(SearchEvent::SystemResolved { name }) if name == "Sol"
+        ));
+        assert!(matches!(
+            events_rx.try_recv(),
+            Ok(SearchEvent::PageLoaded { page: 1, found: 1 })
+        ));
+        assert!(events_rx.try_recv().is_err());
 
         let requests = server.finish().await;
         assert!(requests[0].starts_with("GET /api/systems/field_values/system_names?q=Sol "));
