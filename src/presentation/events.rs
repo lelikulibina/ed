@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crossterm::event::{self, Event};
 use ratatui::layout::Rect;
-use tokio::{sync::mpsc, task::JoinHandle};
+use tokio::sync::mpsc;
 
 use super::app::AppEvent;
 
