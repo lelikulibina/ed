@@ -192,10 +192,11 @@ mod tests {
             },
             15,
         )
-        .unwrap();
+        .unwrap()
+        .with_radius(5_000.0);
 
         let payload = query.to_payload_with_criteria(&criteria);
-        assert_eq!(payload["filters"]["distance"]["max"], 1_000.0);
+        assert_eq!(payload["filters"]["distance"]["max"], 5_000.0);
         assert_eq!(
             payload["filters"]["subtype"]["value"],
             serde_json::json!(["Rocky body"])
