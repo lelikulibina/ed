@@ -595,18 +595,29 @@ mod tests {
 
     #[test]
     fn selection_is_preserved_when_sort_order_changes() {
-        let bodies = vec![body("Near", "1", Some(1.0)), body("Far", "2", Some(10.0))];
+        let mut near = body("Near", "1", Some(1.0));
+        let mut far = body("Far", "2", Some(10.0));
+        near.surface_temperature = Some(200.0);
+        far.surface_temperature = Some(100.0);
+        let bodies = vec![near, far];
         let mut screen = ResultsScreen::default();
         screen.reset(&bodies);
-        let ordered = screen.ordered_bodies(&bodies);
-        screen.select(ordered[1]);
 
-        screen.sort_mode = SortMode::Name;
+        screen.handle_key(
+            KeyEvent::new(KeyCode::Down, crossterm::event::KeyModifiers::NONE),
+            &bodies,
+        );
+        screen.handle_key(
+            KeyEvent::new(KeyCode::Char('s'), crossterm::event::KeyModifiers::NONE),
+            &bodies,
+        );
+
         let reordered = screen.ordered_bodies(&bodies);
         assert_eq!(
             screen.selected_body(&reordered).unwrap().id64.as_deref(),
             Some("2")
         );
+        assert_eq!(screen.selected_index(&reordered), 0);
     }
 
     #[test]
@@ -627,6 +638,49 @@ mod tests {
             );
             assert_eq!(screen.sort_mode, expected);
         }
+    }
+
+    #[test]
+    fn copy_action_uses_the_selected_planets_system() {
+        let bodies = vec![
+            body("Near", "1", Some(1.0)),
+            body("Far", "2", Some(10.0)),
+        ];
+        let mut screen = ResultsScreen::default();
+        screen.reset(&bodies);
+        screen.handle_key(
+            KeyEvent::new(KeyCode::Down, crossterm::event::KeyModifiers::NONE),
+            &bodies,
+        );
+
+        assert_eq!(
+            screen.handle_key(
+                KeyEvent::new(KeyCode::Char('c'), crossterm::event::KeyModifiers::NONE),
+                &bodies
+            ),
+            Some(ResultsAction::CopySystem("Sol".to_owned()))
+        );
+    }
+
+    #[test]
+    fn empty_results_explain_what_to_change_and_how_to_continue() {
+        let app = app_with_bodies(Vec::new());
+        let backend = ratatui::backend::TestBackend::new(80, 24);
+        let mut terminal = ratatui::Terminal::new(backend).unwrap();
+        terminal.draw(|frame| render(frame, &app)).unwrap();
+        let output = terminal
+            .backend()
+            .buffer()
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+
+        assert!(output.contains("Подходящие планеты не найдены"));
+        assert!(output.contains("температуры"));
+        assert!(output.contains("биосигналов"));
+        assert!(output.contains("e — изменить параметры"));
+        assert!(output.contains("n — новый поиск"));
     }
 
     #[test]
