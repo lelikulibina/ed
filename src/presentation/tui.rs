@@ -1,17 +1,24 @@
 use std::collections::HashSet;
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, ListState, Paragraph, Wrap},
 };
+use tokio::sync::mpsc;
 
-use crate::application::config::SearchConfig;
+use crate::{
+    application::{
+        config::SearchConfig,
+        search::{SearchError, SearchEvent},
+    },
+    domain::body::Body,
+};
 
 use super::{
-    app::{self, App, Command},
+    app::{self, App, AppEvent, Command, Screen},
     events::poll_and_send,
     terminal::TerminalGuard,
     theme,
@@ -19,50 +26,17 @@ use super::{
 
 pub async fn run<F, Fut>(initial: Option<SearchConfig>, search: F) -> Result<()>
 where
-    F: Fn(SearchConfig) -> Fut,
-    Fut: std::future::Future<Output = Result<Vec<crate::domain::body::Body>>> + Send + 'static,
+    F: Fn(SearchConfig, mpsc::UnboundedSender<SearchEvent>) -> Fut + Clone + Send + Sync + 'static,
+    Fut: std::future::Future<Output = Result<Vec<Body>, SearchError>> + Send + 'static,
 {
     let mut session = TerminalGuard::enter()?;
-    let mut initial = initial;
-    let mut start_immediately = initial.is_some();
-
-    loop {
-        let next_config = match take_immediate_config(&mut initial, &mut start_immediately) {
-            Some(config) => Some(config),
-            None => run_search_screen_in_session(&mut session, initial.take())?,
-        };
-        let Some(config) = next_config else {
-            break;
-        };
-        let previous_config = config.clone();
-
-        match run_search_in_session(&mut session, search(config)).await? {
-            SearchUiAction::BackToSetup => {
-                initial = Some(previous_config);
-                start_immediately = false;
-            }
-            SearchUiAction::Exit => break,
-        }
-    }
-
-    Ok(())
-}
-
-fn take_immediate_config<T>(initial: &mut Option<T>, start_immediately: &mut bool) -> Option<T> {
-    if *start_immediately {
-        *start_immediately = false;
-        initial.take()
-    } else {
-        None
-    }
-}
-
-fn run_search_screen_in_session(
-    session: &mut TerminalGuard,
-    initial: Option<SearchConfig>,
-) -> Result<Option<SearchConfig>> {
+    let (sender, mut receiver) = mpsc::channel(32);
     let mut app = initial.map(App::new).unwrap_or_else(App::new_default);
-    let (sender, mut receiver) = tokio::sync::mpsc::channel(1);
+
+    if let Some(config) = initial {
+        app.screen = Screen::Running;
+        start_search_task(&mut app, config, sender.clone(), &search).await;
+    }
 
     loop {
         session
@@ -71,12 +45,91 @@ fn run_search_screen_in_session(
         poll_and_send(&sender, std::time::Duration::from_millis(100), false)?;
 
         if let Ok(event) = receiver.try_recv() {
-            match app::update(&mut app, event) {
-                Some(Command::StartSearch(config)) => return Ok(Some(config)),
-                Some(Command::Quit) => return Ok(None),
-                Some(Command::CancelSearch | Command::CopySystem(_)) | None => {}
+            let terminal_event = matches!(
+                event,
+                AppEvent::Search(SearchEvent::Finished(_) | SearchEvent::Failed(_))
+            );
+            let command = app::update(&mut app, event);
+
+            if terminal_event
+                && let Some(task) = app.search_task.take()
+            {
+                let _ = task.await;
+            }
+
+            match command {
+                Some(Command::StartSearch(config)) => {
+                    start_search_task(&mut app, config, sender.clone(), &search).await;
+                }
+                Some(Command::CancelSearch) => {
+                    cancel_search_task(&mut app).await;
+                    while receiver.try_recv().is_ok() {}
+                }
+                Some(Command::Quit) => {
+                    cancel_search_task(&mut app).await;
+                    break;
+                }
+                Some(Command::CopySystem(_)) | None => {}
             }
         }
+
+        if app.screen == Screen::Results {
+            match show_results_in_session(&mut session, &app.results)? {
+                SearchUiAction::BackToSetup => app.screen = Screen::Search,
+                SearchUiAction::Exit => break,
+            }
+        }
+    }
+
+    cancel_search_task(&mut app).await;
+    Ok(())
+}
+
+async fn start_search_task<F, Fut>(
+    app: &mut App,
+    config: SearchConfig,
+    sender: mpsc::Sender<AppEvent>,
+    search: &F,
+) where
+    F: Fn(SearchConfig, mpsc::UnboundedSender<SearchEvent>) -> Fut + Clone + Send + Sync + 'static,
+    Fut: std::future::Future<Output = Result<Vec<Body>, SearchError>> + Send + 'static,
+{
+    cancel_search_task(app).await;
+    app.screen = Screen::Running;
+    app.config = config.clone();
+    app.progress_message = Some("Подготовка поиска…".to_owned());
+    app.resolved_system = None;
+    app.current_page = 0;
+    app.found_count = 0;
+
+    let search = search.clone();
+    app.search_task = Some(tokio::spawn(async move {
+        let (progress_sender, mut progress_receiver) = mpsc::unbounded_channel();
+        let event_sender = sender.clone();
+        let forwarder = tokio::spawn(async move {
+            while let Some(event) = progress_receiver.recv().await {
+                if event_sender.send(AppEvent::Search(event)).await.is_err() {
+                    break;
+                }
+            }
+        });
+
+        let result = search(config, progress_sender.clone()).await;
+        drop(progress_sender);
+        let _ = forwarder.await;
+
+        let event = match result {
+            Ok(results) => SearchEvent::Finished(results),
+            Err(error) => SearchEvent::Failed(error),
+        };
+        let _ = sender.send(AppEvent::Search(event)).await;
+    }));
+}
+
+async fn cancel_search_task(app: &mut App) {
+    if let Some(task) = app.search_task.take() {
+        task.abort();
+        let _ = task.await;
     }
 }
 
@@ -84,92 +137,6 @@ fn run_search_screen_in_session(
 enum SearchUiAction {
     BackToSetup,
     Exit,
-}
-
-async fn run_search_in_session<F>(session: &mut TerminalGuard, future: F) -> Result<SearchUiAction>
-where
-    F: std::future::Future<Output = Result<Vec<crate::domain::body::Body>>> + Send + 'static,
-{
-    use std::time::Duration;
-
-    let task = tokio::spawn(future);
-
-    let outcome = loop {
-        if task.is_finished() {
-            break match task.await {
-                Ok(result) => result,
-                Err(error) => Err(anyhow!("Задача поиска аварийно завершилась: {error}")),
-            };
-        }
-
-        session.terminal_mut().draw(draw_searching)?;
-        if event::poll(Duration::from_millis(100))?
-            && let Event::Key(key) = event::read()?
-            && key.kind == KeyEventKind::Press
-        {
-            if key.code == KeyCode::Esc {
-                task.abort();
-                return Ok(SearchUiAction::BackToSetup);
-            } else if key.code == KeyCode::Char('q')
-                && key.modifiers.contains(KeyModifiers::CONTROL)
-            {
-                task.abort();
-                return Ok(SearchUiAction::Exit);
-            }
-        }
-    };
-
-    match outcome {
-        Ok(bodies) => show_results_in_session(session, &bodies),
-        Err(error) => show_error_in_session(session, &error.to_string()),
-    }
-}
-
-fn show_error_in_session(session: &mut TerminalGuard, message: &str) -> Result<SearchUiAction> {
-    loop {
-        session.terminal_mut().draw(|frame| {
-            let panel = theme::centered(frame.area(), frame.area().width * 75 / 100, frame.area().height * 40 / 100);
-            frame.render_widget(
-                Paragraph::new(format!(
-                    "Поиск не выполнен\n\n{message}\n\nEnter / Esc — вернуться к настройкам   Ctrl+Q — выход"
-                ))
-                    .alignment(Alignment::Center)
-                    .wrap(Wrap { trim: true })
-                    .block(Block::default().title(" ОШИБКА ПОИСКА ").borders(Borders::ALL).border_style(Style::default().fg(Color::Red))),
-                panel,
-            );
-        })?;
-        if let Event::Key(key) = event::read()?
-            && key.kind == KeyEventKind::Press
-        {
-            if matches!(key.code, KeyCode::Enter | KeyCode::Esc) {
-                return Ok(SearchUiAction::BackToSetup);
-            } else if key.code == KeyCode::Char('q')
-                && key.modifiers.contains(KeyModifiers::CONTROL)
-            {
-                return Ok(SearchUiAction::Exit);
-            }
-        }
-    }
-}
-
-fn draw_searching(frame: &mut ratatui::Frame<'_>) {
-    let area = frame.area();
-    let panel = theme::centered(area, area.width * 70 / 100, area.height * 35 / 100);
-    frame.render_widget(
-        Paragraph::new(
-            "Выполняется поиск планет\n\nРазрешение центральной системы и загрузка результатов Spansh.\n\nИнтерфейс остаётся активным. Esc — отменить поиск.",
-        )
-        .alignment(Alignment::Center)
-        .wrap(Wrap { trim: true })
-        .block(
-            Block::default()
-                .title(" ED: PLANET SEARCH ")
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Cyan)),
-        ),
-        panel,
-    );
 }
 
 fn show_results_in_session(
