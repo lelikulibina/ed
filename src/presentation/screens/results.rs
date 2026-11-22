@@ -304,7 +304,7 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let panes = if wide {
         Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(58), Constraint::Percentage(42)])
+            .constraints([Constraint::Length(8), Constraint::Min(0)])
             .split(root[1])
     } else {
         Layout::default()
@@ -447,67 +447,6 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
         return;
     };
     let details = vec![
-        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_PLANET, body.name)),
-        Line::from(format!(
-            "{}: {}",
-            ui::RESULTS_DETAIL_SYSTEM,
-            body.system_name
-                .as_deref()
-                .unwrap_or(ui::RESULTS_MISSING_VALUE)
-        )),
-        Line::from(format!(
-            "{}: {}",
-            ui::RESULTS_DETAIL_SURFACE,
-            body.subtype.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE)
-        )),
-        Line::from(format!(
-            "{}: {}",
-            ui::RESULTS_DETAIL_ATMOSPHERE,
-            body.atmosphere
-                .as_deref()
-                .unwrap_or(ui::RESULTS_MISSING_VALUE)
-        )),
-        Line::from(format!(
-            "{}: {} K",
-            ui::RESULTS_DETAIL_TEMPERATURE,
-            display_number(body.surface_temperature, 2)
-        )),
-        Line::from(format!(
-            "{}: {} atm",
-            ui::RESULTS_DETAIL_PRESSURE,
-            display_number(body.surface_pressure, 4)
-        )),
-        Line::from(format!(
-            "{}: {} g",
-            ui::RESULTS_DETAIL_GRAVITY,
-            display_number(body.gravity, 3)
-        )),
-        Line::from(format!(
-            "{}: {} {}",
-            ui::RESULTS_DETAIL_DISTANCE,
-            display_number(body.distance_ly, 2),
-            ui::RESULTS_DISTANCE_HEADER
-        )),
-        Line::from(format!(
-            "{}: {}",
-            ui::RESULTS_DETAIL_LANDING,
-            body.is_landable
-                .map_or(ui::RESULTS_MISSING_VALUE, |value| if value {
-                    ui::RESULTS_YES
-                } else {
-                    ui::RESULTS_NO
-                })
-        )),
-        Line::from(format!(
-            "{}: {}",
-            ui::RESULTS_DETAIL_MAPPED,
-            body.is_mapped
-                .map_or(ui::RESULTS_MISSING_VALUE, |value| if value {
-                    ui::RESULTS_YES
-                } else {
-                    ui::RESULTS_NO
-                })
-        )),
         Line::from(format!(
             "{}: {}",
             ui::RESULTS_DETAIL_DATA_UPDATED,
