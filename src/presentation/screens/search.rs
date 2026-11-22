@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout},
-    style::Style,
+    style::{Modifier, Style},
     text::{Line, Span, Text},
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
 };
@@ -547,85 +547,118 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     );
 
     let mut fields = vec![
-        Line::from(format!(
-            "{}: {}",
-            ui::SEARCH_SYSTEM_LABEL,
-            display_input(&screen.system_input, screen.focus == SearchField::System)
-        )),
-        Line::from(format!(
-            "{}: {}",
-            ui::SEARCH_COUNT_LABEL,
-            display_input(&screen.count_input, screen.focus == SearchField::Count)
-        )),
-        Line::from(format!(
-            "{}: {}",
-            ui::SEARCH_BIO_LABEL,
-            if screen.form.exclude_with_bio_signals {
-                "[x]"
-            } else {
-                "[ ]"
-            }
-        )),
+        field_line(
+            format!(
+                "{}: {}",
+                ui::SEARCH_SYSTEM_LABEL,
+                display_input(&screen.system_input, screen.focus == SearchField::System)
+            ),
+            screen.focus == SearchField::System,
+        ),
+        field_line(
+            format!(
+                "{}: {}",
+                ui::SEARCH_COUNT_LABEL,
+                display_input(&screen.count_input, screen.focus == SearchField::Count)
+            ),
+            screen.focus == SearchField::Count,
+        ),
+        field_line(
+            format!(
+                "{}: {}",
+                ui::SEARCH_BIO_LABEL,
+                if screen.form.exclude_with_bio_signals {
+                    "[x]"
+                } else {
+                    "[ ]"
+                }
+            ),
+            screen.focus == SearchField::BioSignals,
+        ),
     ];
     push_error(&mut fields, screen, FormField::System);
     push_error(&mut fields, screen, FormField::Count);
 
     if screen.advanced {
         fields.extend([
-            Line::from(format!(
-                "{}         {} · {}: {}",
-                ui::SEARCH_SURFACE_LABEL,
-                screen
-                    .form
-                    .surface_types
-                    .iter()
-                    .map(|value| value.label_ru())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-                ui::SEARCH_SURFACE_CHOICE_LABEL,
-                surface_at(screen.surface_cursor).label_ru()
-            )),
-            Line::from(format!(
-                "{}           {}",
-                ui::SEARCH_ATMOSPHERE_LABEL,
-                screen
-                    .form
-                    .atmosphere_types
-                    .iter()
-                    .map(|value| value.label_ru())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )),
-            Line::from(format!(
-                "{}         {} — {} K",
-                ui::SEARCH_TEMPERATURE_LABEL,
-                display_input(
-                    &screen.temperature_min,
-                    screen.focus == SearchField::TemperatureMin
+            field_line(
+                format!(
+                    "{}         {} · {}: {}",
+                    ui::SEARCH_SURFACE_LABEL,
+                    screen
+                        .form
+                        .surface_types
+                        .iter()
+                        .map(|value| value.label_ru())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                    ui::SEARCH_SURFACE_CHOICE_LABEL,
+                    surface_at(screen.surface_cursor).label_ru()
                 ),
-                display_input(
-                    &screen.temperature_max,
-                    screen.focus == SearchField::TemperatureMax
-                )
-            )),
-            Line::from(format!(
-                "{}          {} — {} g",
-                ui::SEARCH_GRAVITY_LABEL,
-                display_input(&screen.gravity_min, screen.focus == SearchField::GravityMin),
-                display_input(&screen.gravity_max, screen.focus == SearchField::GravityMax)
-            )),
-            Line::from(format!(
-                "{}            {} — {} atm",
-                ui::SEARCH_PRESSURE_LABEL,
-                display_input(
-                    &screen.pressure_min,
-                    screen.focus == SearchField::PressureMin
+                screen.focus == SearchField::Surface,
+            ),
+            field_line(
+                format!(
+                    "{}           {}",
+                    ui::SEARCH_ATMOSPHERE_LABEL,
+                    screen
+                        .form
+                        .atmosphere_types
+                        .iter()
+                        .map(|value| value.label_ru())
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 ),
-                display_input(
-                    &screen.pressure_max,
-                    screen.focus == SearchField::PressureMax
-                )
-            )),
+                screen.focus == SearchField::Atmosphere,
+            ),
+            field_line(
+                format!(
+                    "{}         {} — {} K",
+                    ui::SEARCH_TEMPERATURE_LABEL,
+                    display_input(
+                        &screen.temperature_min,
+                        screen.focus == SearchField::TemperatureMin
+                    ),
+                    display_input(
+                        &screen.temperature_max,
+                        screen.focus == SearchField::TemperatureMax
+                    )
+                ),
+                matches!(
+                    screen.focus,
+                    SearchField::TemperatureMin | SearchField::TemperatureMax
+                ),
+            ),
+            field_line(
+                format!(
+                    "{}          {} — {} g",
+                    ui::SEARCH_GRAVITY_LABEL,
+                    display_input(&screen.gravity_min, screen.focus == SearchField::GravityMin),
+                    display_input(&screen.gravity_max, screen.focus == SearchField::GravityMax)
+                ),
+                matches!(
+                    screen.focus,
+                    SearchField::GravityMin | SearchField::GravityMax
+                ),
+            ),
+            field_line(
+                format!(
+                    "{}            {} — {} atm",
+                    ui::SEARCH_PRESSURE_LABEL,
+                    display_input(
+                        &screen.pressure_min,
+                        screen.focus == SearchField::PressureMin
+                    ),
+                    display_input(
+                        &screen.pressure_max,
+                        screen.focus == SearchField::PressureMax
+                    )
+                ),
+                matches!(
+                    screen.focus,
+                    SearchField::PressureMin | SearchField::PressureMax
+                ),
+            ),
         ]);
         push_error(&mut fields, screen, FormField::Surface);
         push_error(&mut fields, screen, FormField::Atmosphere);
@@ -680,6 +713,17 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
             .style(theme::Theme::default().muted),
         root[3],
     );
+}
+
+fn field_line(content: String, focused: bool) -> Line<'static> {
+    let style = if focused {
+        theme::Theme::default()
+            .accent
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+    Line::from(Span::styled(content, style))
 }
 
 fn display_input(input: &TextInput, focused: bool) -> String {
