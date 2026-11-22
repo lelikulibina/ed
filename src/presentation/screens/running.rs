@@ -50,6 +50,11 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
             Span::raw(ui::RUNNING_SYSTEM_PENDING),
         ]),
     };
+    let replacement = app.resolved_system.as_deref().filter(|resolved| {
+        !resolved
+            .trim()
+            .eq_ignore_ascii_case(app.config.system.trim())
+    });
     let pages = if app.current_page > 0 {
         Line::from(vec![
             Span::styled("✓ ", theme::Theme::default().success),
@@ -65,8 +70,19 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
             Span::raw(ui::RUNNING_PAGE_PENDING),
         ])
     };
-    let content = vec![
-        system,
+    let mut content = vec![system];
+    if let Some(resolved) = replacement {
+        content.push(Line::from(Span::styled(
+            format!(
+                "{}: «{}» → «{}»",
+                ui::SYSTEM_REPLACED_WARNING,
+                app.config.system,
+                resolved
+            ),
+            theme::Theme::default().warning,
+        )));
+    }
+    content.extend([
         pages,
         Line::from(format!(
             "{}: {} {} {}",
@@ -80,7 +96,7 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
                 .as_deref()
                 .unwrap_or(ui::RUNNING_PREPARING),
         ),
-    ];
+    ]);
     frame.render_widget(
         Paragraph::new(content).wrap(Wrap { trim: true }).block(
             Block::default()
