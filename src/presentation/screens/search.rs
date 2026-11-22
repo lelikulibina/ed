@@ -999,6 +999,26 @@ mod tests {
         assert!(rendered.contains("Sol"));
         assert!(rendered.contains("F2"));
         assert!(rendered.contains("Свой поиск"));
+        assert!(rendered.contains("Перевопроходец"));
+    }
+
+    #[test]
+    fn current_parameter_values_are_highlighted_with_the_success_color() {
+        let backend = ratatui::backend::TestBackend::new(120, 40);
+        let mut terminal = ratatui::Terminal::new(backend).unwrap();
+        terminal
+            .draw(|frame| render(frame, &SearchScreen::default()))
+            .unwrap();
+
+        let system_value = terminal
+            .backend()
+            .buffer()
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "S")
+            .expect("default system value should be rendered");
+
+        assert_eq!(system_value.fg, ratatui::style::Color::Green);
     }
 
     #[test]
