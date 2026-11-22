@@ -423,11 +423,13 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
         )),
         Line::from(format!(
             "Посадка: {}",
-            body.is_landable.map_or("—", |value| if value { "Да" } else { "Нет" })
+            body.is_landable
+                .map_or("—", |value| if value { "Да" } else { "Нет" })
         )),
         Line::from(format!(
             "Картографирование: {}",
-            body.is_mapped.map_or("—", |value| if value { "Да" } else { "Нет" })
+            body.is_mapped
+                .map_or("—", |value| if value { "Да" } else { "Нет" })
         )),
         Line::from(format!(
             "Обновление данных Spansh: {}",
