@@ -29,7 +29,7 @@ pub mod ui {
     pub const SEARCH_SURFACE_CHOICE_LABEL: &str = "выбор";
     pub const SEARCH_PROFILE_VALUE_UNIT: &str = "млн CR";
     pub const SEARCH_RADIUS_VALUE: &str = "1000 св. лет";
-    pub const FORM_ERROR_MARKER: &str = "  ! ";
+    pub const FORM_ERROR_MARKER: &str = "  ✗ ";
     pub const RUNNING_TITLE: &str = " Поиск планет ";
     pub const RUNNING_PANEL_TITLE: &str = " Выполнение ";
     pub const RUNNING_SYSTEM_PENDING: &str = "Поиск центральной системы…";
@@ -51,7 +51,7 @@ pub mod ui {
     pub const TERMINAL_RAW_MODE_ERROR: &str = "Не удалось включить raw mode";
     pub const APP_SEARCH_RETRYING: &str = "Повторный запуск поиска…";
     pub const ERROR_TITLE: &str = " Ошибка поиска ";
-    pub const ERROR_HEADING: &str = "Поиск не выполнен";
+    pub const ERROR_HEADING: &str = "✗ Поиск не выполнен";
     pub const ERROR_FALLBACK: &str = "Не удалось выполнить поиск. Попробуйте ещё раз.";
     pub const ERROR_HINTS: &str = "r / к — повторить поиск\ne / у / Enter / Esc — изменить параметры\nCtrl+Q / Ctrl+Й — выход";
     pub const RESULTS_EMPTY_TITLE: &str = " Нет результатов ";
