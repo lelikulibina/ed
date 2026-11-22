@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
-    text::Line,
+    text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
 };
 
@@ -263,25 +263,38 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let root = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(4),
             Constraint::Min(8),
             Constraint::Length(2),
         ])
         .split(area);
 
+    let mut summary = vec![Line::from(format!(
+        "{}: {}  ·  {}: {}  ·  {}: {}",
+        ui::RESULTS_SUMMARY_LABEL,
+        app.results.len(),
+        ui::RESULTS_SUMMARY_SYSTEM_LABEL,
+        app.config.system,
+        ui::RESULTS_SUMMARY_SORT_LABEL,
+        app.results_screen.sort_label()
+    ))];
+    if let Some(resolved) = app.resolved_system.as_deref().filter(|resolved| {
+        !resolved.trim().eq_ignore_ascii_case(app.config.system.trim())
+    }) {
+        summary.push(Line::from(Span::styled(
+            format!(
+                "{}: «{}» → «{}»",
+                ui::SYSTEM_REPLACED_WARNING,
+                app.config.system,
+                resolved
+            ),
+            theme::Theme::default().warning,
+        )));
+    }
     frame.render_widget(
-        Paragraph::new(format!(
-            "{}: {}  ·  {}: {}  ·  {}: {}",
-            ui::RESULTS_SUMMARY_LABEL,
-            app.results.len(),
-            ui::RESULTS_SUMMARY_SYSTEM_LABEL,
-            app.config.system,
-            ui::RESULTS_SUMMARY_SORT_LABEL,
-            app.results_screen.sort_label()
-        ))
-        .alignment(Alignment::Center)
-        .style(theme::Theme::default().accent)
-        .block(Block::default().borders(Borders::ALL)),
+        Paragraph::new(summary)
+            .alignment(Alignment::Center)
+            .block(Block::default().borders(Borders::ALL)),
         root[0],
     );
 
@@ -323,11 +336,19 @@ fn render_empty(frame: &mut ratatui::Frame<'_>, app: &App) {
     );
     frame.render_widget(
         Paragraph::new(format!(
-            "{}\n\n{}: {}\n\n{}\n\n{}",
+            "{}\n\n{}: {}\n\n{}\n\n{}{}",
             ui::RESULTS_EMPTY_MESSAGE,
             ui::RESULTS_EMPTY_SYSTEM_LABEL,
             app.config.system,
             ui::RESULTS_EMPTY_HINT,
+            app.resolved_system.as_deref().filter(|resolved| {
+                !resolved.trim().eq_ignore_ascii_case(app.config.system.trim())
+            }).map(|resolved| format!(
+                "\n\n{}: «{}» → «{}»",
+                ui::SYSTEM_REPLACED_WARNING,
+                app.config.system,
+                resolved
+            )).unwrap_or_default(),
             ui::RESULTS_EMPTY_ACTIONS
         ))
         .alignment(Alignment::Center)
