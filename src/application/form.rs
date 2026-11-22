@@ -108,7 +108,11 @@ impl SearchForm {
             self.gravity,
             self.pressure,
             self.count,
-            if self.exclude_with_bio_signals { "да" } else { "нет" }
+            if self.exclude_with_bio_signals {
+                "да"
+            } else {
+                "нет"
+            }
         )
     }
 
@@ -157,10 +161,7 @@ impl SearchForm {
             "Гравитация: ожидается диапазон min-max в g",
             "Некорректная гравитация",
         )
-        .unwrap_or(NumericRange {
-            min: 0.1,
-            max: 1.0,
-        });
+        .unwrap_or(NumericRange { min: 0.1, max: 1.0 });
         let pressure = parse_float_range(
             &self.pressure,
             FormField::Pressure,
@@ -176,13 +177,12 @@ impl SearchForm {
             return Err(errors);
         }
 
-        let surface = if self.surface_types.is_empty()
-            || self.surface_types.contains(&SurfaceType::Any)
-        {
-            Filter::Any
-        } else {
-            Filter::one_of(self.surface_types.clone())
-        };
+        let surface =
+            if self.surface_types.is_empty() || self.surface_types.contains(&SurfaceType::Any) {
+                Filter::Any
+            } else {
+                Filter::one_of(self.surface_types.clone())
+            };
         let atmosphere = if self.atmosphere_types.is_empty()
             || self.atmosphere_types.contains(&AtmosphereType::Any)
         {
@@ -191,16 +191,10 @@ impl SearchForm {
             Filter::one_of(self.atmosphere_types.clone())
         };
 
-        let criteria = SearchCriteria::new(
-            surface,
-            atmosphere,
-            temperature,
-            gravity,
-            pressure,
-            count,
-        )
-        .map_err(|error| vec![criteria_error(error)])?
-        .with_bio_signal_exclusion(self.exclude_with_bio_signals);
+        let criteria =
+            SearchCriteria::new(surface, atmosphere, temperature, gravity, pressure, count)
+                .map_err(|error| vec![criteria_error(error)])?
+                .with_bio_signal_exclusion(self.exclude_with_bio_signals);
 
         SearchConfig::new(system, criteria).map_err(|error| vec![config_error(error)])
     }
@@ -212,8 +206,7 @@ fn parse_integer_range(
     parse_message: &str,
     range_message: &str,
 ) -> Result<NumericRange, FieldError> {
-    let (min, max) = parse_range_i32(value)
-        .map_err(|_| FieldError::new(field, parse_message))?;
+    let (min, max) = parse_range_i32(value).map_err(|_| FieldError::new(field, parse_message))?;
     NumericRange::new(f64::from(min), f64::from(max))
         .ok_or_else(|| FieldError::new(field, range_message))
 }
@@ -224,8 +217,7 @@ fn parse_float_range(
     parse_message: &str,
     range_message: &str,
 ) -> Result<NumericRange, FieldError> {
-    let (min, max) =
-        parse_range_f64(value).map_err(|_| FieldError::new(field, parse_message))?;
+    let (min, max) = parse_range_f64(value).map_err(|_| FieldError::new(field, parse_message))?;
     NumericRange::new(min, max).ok_or_else(|| FieldError::new(field, range_message))
 }
 
