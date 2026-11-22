@@ -146,7 +146,10 @@ pub fn exobiology_view(body: &Body) -> Result<Option<ExobiologyView>, EstimateEr
                         "Подходит по известным данным".to_owned()
                     }
                     CandidateStatus::NeedsVerification => {
-                        format!("Нужно проверить: {}", candidate.unknown_conditions.join(", "))
+                        format!(
+                            "Нужно проверить: {}",
+                            candidate.unknown_conditions.join(", ")
+                        )
                     }
                 };
                 ExobiologyRow {
