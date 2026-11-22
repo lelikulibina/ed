@@ -20,6 +20,58 @@ pub enum SearchEvent {
     Failed(SearchError),
 }
 
+impl SearchError {
+    pub fn user_message(&self) -> String {
+        match self {
+            Self::Resolve(crate::spansh::ResolveError::NotFound(name)) => {
+                format!("Система «{name}» не найдена. Проверьте название и попробуйте снова.")
+            }
+            Self::Resolve(crate::spansh::ResolveError::InvalidResponse) => {
+                "Spansh вернул неполные данные центральной системы. Попробуйте повторить поиск."
+                    .to_owned()
+            }
+            Self::Resolve(crate::spansh::ResolveError::Spansh(error)) => {
+                spansh_error_message(error)
+            }
+            Self::Bodies(crate::spansh::BodySearchError::Spansh(error)) => {
+                spansh_error_message(error)
+            }
+            Self::Bodies(crate::spansh::BodySearchError::Query(_)) => {
+                "Не удалось подготовить запрос к Spansh. Проверьте параметры поиска.".to_owned()
+            }
+            Self::Bodies(crate::spansh::BodySearchError::InvalidResponse) => {
+                "Spansh вернул ответ неожиданного формата. Попробуйте повторить поиск.".to_owned()
+            }
+            Self::Bodies(crate::spansh::BodySearchError::InvalidBody(details)) => {
+                format!("Spansh вернул некорректные данные планеты: {details}")
+            }
+            Self::Bodies(crate::spansh::BodySearchError::PageLimit(limit)) => {
+                format!("Достигнут предел загрузки страниц ({limit}); результаты могут быть неполными.")
+            }
+        }
+    }
+}
+
+fn spansh_error_message(error: &crate::spansh::SpanshError) -> String {
+    match error {
+        crate::spansh::SpanshError::Http(_) => {
+            "Не удалось связаться со Spansh. Проверьте подключение к интернету.".to_owned()
+        }
+        crate::spansh::SpanshError::Status { status, .. } if status.as_u16() == 429 => {
+            "Spansh временно ограничил частоту запросов. Подождите и повторите поиск.".to_owned()
+        }
+        crate::spansh::SpanshError::Status { status, .. } if status.is_server_error() => {
+            format!("Сервер Spansh временно недоступен (HTTP {status}). Повторите поиск позже.")
+        }
+        crate::spansh::SpanshError::Status { status, .. } => {
+            format!("Spansh отклонил запрос (HTTP {status}). Проверьте параметры поиска.")
+        }
+        crate::spansh::SpanshError::Closed => {
+            "Соединение со Spansh было закрыто до завершения запроса.".to_owned()
+        }
+    }
+}
+
 pub struct SearchUseCase {
     client: SpanshClient,
 }
@@ -41,8 +93,20 @@ impl SearchUseCase {
         center: &ResolvedSystem,
         criteria: &SearchCriteria,
     ) -> Result<Vec<Body>, SearchError> {
+        self.execute_with_progress(center, criteria, |_, _| {}).await
+    }
+
+    pub async fn execute_with_progress<F>(
+        &self,
+        center: &ResolvedSystem,
+        criteria: &SearchCriteria,
+        on_page: F,
+    ) -> Result<Vec<Body>, SearchError>
+    where
+        F: FnMut(u32, usize),
+    {
         BodySearch::new(self.client.clone())
-            .search(center, criteria)
+            .search_with_progress(center, criteria, on_page)
             .await
             .map_err(Into::into)
     }
