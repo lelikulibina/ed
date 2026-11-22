@@ -442,12 +442,12 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
             ui::RESULTS_DETAIL_MAPPED,
             body.is_mapped.map_or(ui::RESULTS_MISSING_VALUE, |value| if value { ui::RESULTS_YES } else { ui::RESULTS_NO })
         )),
-        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_DATA_UPDATED, body.last_updated_at.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
-        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_SIGNALS_UPDATED, body.signals_updated_at.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
-        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_BIO_COUNT, body.biological_signal_count.map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |value| value.to_string()))),
-        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_GEO_COUNT, body.geological_signal_count.map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |value| value.to_string()))),
-        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_BIO_GROUPS, body.biological_genera.as_ref().filter(|values| !values.is_empty()).map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |values| values.iter().map(|value| crate::presentation::text::russian_group_name(value)).collect::<Vec<_>>().join(", ")))),
-        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_VOLCANISM, body.volcanism_type.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
+        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_DATA_UPDATED, body.last_updated_at.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
+        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_SIGNALS_UPDATED, body.signals_updated_at.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
+        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_BIO_COUNT, body.biological_signal_count.map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |value| value.to_string()))),
+        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_GEO_COUNT, body.geological_signal_count.map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |value| value.to_string()))),
+        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_BIO_GROUPS, body.biological_genera.as_ref().filter(|values| !values.is_empty()).map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |values| values.iter().map(|value| crate::presentation::text::russian_group_name(value)).collect::<Vec<_>>().join(", ")))),
+        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_VOLCANISM, body.volcanism_type.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
     ];
 
     let detail_layout = Layout::default()
