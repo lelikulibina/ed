@@ -276,7 +276,9 @@ impl SearchScreen {
         };
         if changed {
             self.sync_form_from_inputs();
-            self.mark_custom();
+            if self.focus != SearchField::System {
+                self.mark_custom();
+            }
         }
         SearchScreenAction::None
     }
@@ -298,7 +300,9 @@ impl SearchScreen {
         };
         if changed {
             self.sync_form_from_inputs();
-            self.mark_custom();
+            if self.focus != SearchField::System {
+                self.mark_custom();
+            }
         }
         changed
     }
@@ -547,32 +551,23 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     );
 
     let mut fields = vec![
-        field_line(
-            format!(
-                "{}: {}",
-                ui::SEARCH_SYSTEM_LABEL,
-                display_input(&screen.system_input, screen.focus == SearchField::System)
-            ),
+        parameter_line(
+            format!("{}: ", ui::SEARCH_SYSTEM_LABEL),
+            display_input(&screen.system_input, screen.focus == SearchField::System),
             screen.focus == SearchField::System,
         ),
-        field_line(
-            format!(
-                "{}: {}",
-                ui::SEARCH_COUNT_LABEL,
-                display_input(&screen.count_input, screen.focus == SearchField::Count)
-            ),
+        parameter_line(
+            format!("{}: ", ui::SEARCH_COUNT_LABEL),
+            display_input(&screen.count_input, screen.focus == SearchField::Count),
             screen.focus == SearchField::Count,
         ),
-        field_line(
-            format!(
-                "{}: {}",
-                ui::SEARCH_BIO_LABEL,
-                if screen.form.exclude_with_bio_signals {
-                    "[x]"
-                } else {
-                    "[ ]"
-                }
-            ),
+        parameter_line(
+            format!("{}: ", ui::SEARCH_BIO_LABEL),
+            if screen.form.exclude_with_bio_signals {
+                "[x]".to_owned()
+            } else {
+                "[ ]".to_owned()
+            },
             screen.focus == SearchField::BioSignals,
         ),
     ];
@@ -581,10 +576,10 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
 
     if screen.advanced {
         fields.extend([
-            field_line(
+            parameter_line(
+                format!("{}         ", ui::SEARCH_SURFACE_LABEL),
                 format!(
-                    "{}         {} · {}: {}",
-                    ui::SEARCH_SURFACE_LABEL,
+                    "{} · {}: {}",
                     screen
                         .form
                         .surface_types
@@ -597,24 +592,21 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
                 ),
                 screen.focus == SearchField::Surface,
             ),
-            field_line(
-                format!(
-                    "{}           {}",
-                    ui::SEARCH_ATMOSPHERE_LABEL,
-                    screen
-                        .form
-                        .atmosphere_types
-                        .iter()
-                        .map(|value| value.label_ru())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                ),
+            parameter_line(
+                format!("{}           ", ui::SEARCH_ATMOSPHERE_LABEL),
+                screen
+                    .form
+                    .atmosphere_types
+                    .iter()
+                    .map(|value| value.label_ru())
+                    .collect::<Vec<_>>()
+                    .join(", "),
                 screen.focus == SearchField::Atmosphere,
             ),
-            field_line(
+            parameter_line(
+                format!("{}         ", ui::SEARCH_TEMPERATURE_LABEL),
                 format!(
-                    "{}         {} — {} K",
-                    ui::SEARCH_TEMPERATURE_LABEL,
+                    "{} — {} K",
                     display_input(
                         &screen.temperature_min,
                         screen.focus == SearchField::TemperatureMin
@@ -629,10 +621,10 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
                     SearchField::TemperatureMin | SearchField::TemperatureMax
                 ),
             ),
-            field_line(
+            parameter_line(
+                format!("{}          ", ui::SEARCH_GRAVITY_LABEL),
                 format!(
-                    "{}          {} — {} g",
-                    ui::SEARCH_GRAVITY_LABEL,
+                    "{} — {} g",
                     display_input(&screen.gravity_min, screen.focus == SearchField::GravityMin),
                     display_input(&screen.gravity_max, screen.focus == SearchField::GravityMax)
                 ),
@@ -641,10 +633,10 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
                     SearchField::GravityMin | SearchField::GravityMax
                 ),
             ),
-            field_line(
+            parameter_line(
+                format!("{}            ", ui::SEARCH_PRESSURE_LABEL),
                 format!(
-                    "{}            {} — {} atm",
-                    ui::SEARCH_PRESSURE_LABEL,
+                    "{} — {} atm",
                     display_input(
                         &screen.pressure_min,
                         screen.focus == SearchField::PressureMin
@@ -715,13 +707,17 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     );
 }
 
-fn field_line(content: String, focused: bool) -> Line<'static> {
-    let style = if focused {
+fn parameter_line(label: String, value: String, focused: bool) -> Line<'static> {
+    let line_style = if focused {
         theme::Theme::default().accent.add_modifier(Modifier::BOLD)
     } else {
         Style::default()
     };
-    Line::from(Span::styled(content, style))
+    Line::from(vec![
+        Span::raw(label),
+        Span::styled(value, theme::Theme::default().success),
+    ])
+    .style(line_style)
 }
 
 fn display_input(input: &TextInput, focused: bool) -> String {
@@ -817,7 +813,24 @@ mod tests {
 
         assert!(screen.handle_paste(" Prime"));
         assert_eq!(screen.form.system, "SolX Prime");
-        assert_eq!(screen.selected_preset(), PRESETS.len());
+        assert_eq!(screen.selected_preset(), 0);
+    }
+
+    #[test]
+    fn changing_the_origin_system_does_not_change_the_selected_profile() {
+        let mut screen = SearchScreen::default();
+        screen.select_preset(2);
+        screen.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::Char('X'), KeyModifiers::NONE));
+
+        assert_eq!(screen.form.system, "SolX");
+        assert_eq!(screen.selected_preset(), 2);
+        assert_eq!(screen.form.temperature, "395-450");
+
+        assert!(screen.handle_paste(" Prime"));
+        assert_eq!(screen.form.system, "SolX Prime");
+        assert_eq!(screen.selected_preset(), 2);
     }
 
     #[test]
