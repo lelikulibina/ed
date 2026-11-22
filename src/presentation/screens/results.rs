@@ -179,6 +179,10 @@ impl ResultsScreen {
         ordered.get(self.selected_index(ordered)).copied()
     }
 
+    pub fn detail_scroll(&self) -> u16 {
+        self.detail_scroll
+    }
+
     fn sort_label(&self) -> String {
         let arrow = if self.descending { "▼" } else { "▲" };
         format!("{} {arrow}", self.sort_mode.label())
@@ -414,7 +418,7 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
         .split(area);
     frame.render_widget(
         Paragraph::new(details)
-            .scroll((app.results_screen.detail_scroll, 0))
+            .scroll((app.results_screen.detail_scroll(), 0))
             .wrap(Wrap { trim: true })
             .block(Block::default().title(" Подробности ").borders(Borders::ALL)),
         detail_layout[0],
