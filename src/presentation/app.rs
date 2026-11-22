@@ -1,5 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
-use ratatui::layout::Rect;
+use ratatui::{
+    layout::{Alignment, Rect},
+    widgets::{Block, Borders, Paragraph, Wrap},
+};
 
 use crate::{
     application::{config::SearchConfig, search::SearchEvent},
@@ -50,7 +53,7 @@ pub struct App {
     pub selected_index: usize,
     pub search_screen: SearchScreen,
     pub results_screen: ResultsScreen,
-    pub search_task: Option<tokio::task::JoinHandle<()>>,
+    pub search_task: Option<tokio::task::JoinHandle<()>>,\n    pub help_open: bool,
 }
 
 impl App {
@@ -82,7 +85,7 @@ impl App {
             selected_index: 0,
             search_screen,
             results_screen: ResultsScreen::default(),
-            search_task: None,
+            search_task: None,\n            help_open: false,
         }
     }
 }
@@ -139,6 +142,18 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
             None
         }
         AppEvent::Key(key) => {
+            if app.help_open && key.kind == KeyEventKind::Press {
+                if key.code == KeyCode::Esc || key.code == KeyCode::Char('?') {
+                    app.help_open = false;
+                }
+                return None;
+            }
+
+            if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('?') {
+                app.help_open = true;
+                return None;
+            }
+
             if key.code == KeyCode::Esc {
                 return match app.screen {
                     Screen::Search => Some(Command::Quit),
@@ -195,13 +210,13 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     None => None,
                 },
                 Screen::Error => match key.code {
-                    KeyCode::Char('r' | 'R') => {
+                    KeyCode::Char('r' | 'R' | 'к' | 'К') => {
                         app.screen = Screen::Running;
                         app.error_message = None;
                         app.progress_message = Some(ui::APP_SEARCH_RETRYING.to_owned());
                         Some(Command::StartSearch(app.config.clone()))
                     }
-                    KeyCode::Esc | KeyCode::Enter | KeyCode::Char('e' | 'E') => {
+                    KeyCode::Esc | KeyCode::Enter | KeyCode::Char('e' | 'E' | 'у' | 'У') => {
                         app.screen = Screen::Search;
                         app.error_message = None;
                         None
@@ -219,6 +234,32 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         Screen::Running => super::screens::running::render(frame, app),
         Screen::Error => super::screens::error::render(frame, app),
         Screen::Results => super::screens::results::render(frame, app),
+    }
+
+    if app.help_open {
+        let help = match app.screen {
+            Screen::Search => ui::HELP_SEARCH,
+            Screen::Running => ui::HELP_RUNNING,
+            Screen::Results => ui::HELP_RESULTS,
+            Screen::Error => ui::HELP_ERROR,
+        };
+        let content = format!("{help}\n\n{}", ui::HELP_COMMON);
+        let area = super::theme::centered(
+            frame.area(),
+            frame.area().width.saturating_sub(4),
+            frame.area().height.saturating_sub(4),
+        );
+        frame.render_widget(
+            Paragraph::new(content)
+                .wrap(Wrap { trim: true })
+                .block(
+                    Block::default()
+                        .title(ui::HELP_TITLE)
+                        .borders(Borders::ALL)
+                        .border_style(super::theme::Theme::default().accent),
+                ),
+            area,
+        );
     }
 }
 
