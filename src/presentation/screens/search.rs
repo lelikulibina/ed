@@ -574,6 +574,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         fields.extend([
             Line::from(format!(
                 "{}         {} · {}: {}",
+                ui::SEARCH_SURFACE_LABEL,
                 screen
                     .form
                     .surface_types
@@ -586,6 +587,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
             )),
             Line::from(format!(
                 "{}           {}",
+                ui::SEARCH_ATMOSPHERE_LABEL,
                 screen
                     .form
                     .atmosphere_types
