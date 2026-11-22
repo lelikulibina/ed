@@ -2,7 +2,6 @@
 
 use ed_planet_search::{
     domain::{
-        catalog::{AtmosphereType, SurfaceType},
         criteria::{Filter, NumericRange, SearchCriteria},
     },
     spansh::{BodySearch, SpanshClient, SystemResolver},
