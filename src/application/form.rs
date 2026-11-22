@@ -100,7 +100,7 @@ impl SearchForm {
         let surfaces = labels_surface(&self.surface_types);
         let atmospheres = labels_atmosphere(&self.atmosphere_types);
         format!(
-            "Система: {}\nПоверхность: {}\nАтмосфера: {}\nТемпература: {} K\nГравитация: {} g\nДавление: {} atm\nКоличество: {}\nИсключать биосигналы: {}",
+            "Система: {}\nПоверхность: {}\nАтмосфера: {}\nТемпература: {} K\nГравитация: {} g\nДавление: {} atm\nКоличество: {}\nПеревопроходец: {}",
             self.system.trim(),
             surfaces,
             atmospheres,
