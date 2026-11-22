@@ -2,11 +2,8 @@ use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 
 use crate::{
-    application::config::SearchConfig,
-    domain::{
-        catalog::{AtmosphereType, SurfaceType},
-        criteria::{Filter, NumericRange, SearchCriteria},
-    },
+    application::{config::SearchConfig, form::SearchForm},
+    domain::catalog::{AtmosphereType, SurfaceType},
 };
 
 #[derive(Parser, Debug)]
@@ -99,43 +96,26 @@ impl Args {
     /// Преобразует аргументы командной строки в ту же конфигурацию,
     /// которую использует интерактивный интерфейс.
     pub(crate) fn into_search_config(self) -> Result<SearchConfig> {
-        let (temperature_min, temperature_max) = parse_range_i32(&self.temperature)
-            .context("Температура: ожидается диапазон min-max в K")?;
-        let (gravity_min, gravity_max) =
-            parse_range_f64(&self.gravity).context("Гравитация: ожидается диапазон min-max в g")?;
-        let (pressure_min, pressure_max) = parse_range_f64(&self.pressure)
-            .context("Давление: ожидается диапазон min-max в atm")?;
+        let mut form = SearchForm::default();
+        form.system = self.system;
+        form.surface_types = vec![self.planet_type.parse::<SurfaceType>()?];
+        form.atmosphere_types = vec![self.atmosphere_type.parse::<AtmosphereType>()?];
+        form.temperature = self.temperature;
+        form.gravity = self.gravity;
+        form.pressure = self.pressure;
+        form.count = self.count.to_string();
+        form.exclude_with_bio_signals = self.exclude_with_bio_signals;
 
-        let temperature = NumericRange::new(f64::from(temperature_min), f64::from(temperature_max))
-            .ok_or_else(|| anyhow!("Некорректный диапазон температуры: {}", self.temperature))?;
-        let gravity = NumericRange::new(gravity_min, gravity_max)
-            .ok_or_else(|| anyhow!("Некорректный диапазон гравитации: {}", self.gravity))?;
-        let pressure = NumericRange::new(pressure_min, pressure_max)
-            .ok_or_else(|| anyhow!("Некорректный диапазон давления: {}", self.pressure))?;
-
-        let surface_type = self.planet_type.parse::<SurfaceType>()?;
-        let atmosphere_type = self.atmosphere_type.parse::<AtmosphereType>()?;
-        let surface = if surface_type == SurfaceType::Any {
-            Filter::Any
-        } else {
-            Filter::one_of(vec![surface_type])
-        };
-        let atmosphere = if atmosphere_type == AtmosphereType::Any {
-            Filter::Any
-        } else {
-            Filter::one_of(vec![atmosphere_type])
-        };
-        let criteria = SearchCriteria::new(
-            surface,
-            atmosphere,
-            temperature,
-            gravity,
-            pressure,
-            self.count,
-        )?
-        .with_bio_signal_exclusion(self.exclude_with_bio_signals);
-
-        SearchConfig::new(self.system, criteria).map_err(Into::into)
+        form.build().map_err(|errors| {
+            anyhow!(
+                "{}",
+                errors
+                    .into_iter()
+                    .map(|error| error.message)
+                    .collect::<Vec<_>>()
+                    .join("; ")
+            )
+        })
     }
 }
 

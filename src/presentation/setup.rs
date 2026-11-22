@@ -18,13 +18,10 @@ use ratatui::{
 use crate::{
     application::{
         config::SearchConfig,
+        form::SearchForm,
         presets::{PRESETS, SearchPreset},
     },
-    cli::{parse_range_f64, parse_range_i32},
-    domain::{
-        catalog::{AtmosphereType, SurfaceType},
-        criteria::{Filter, NumericRange, SearchCriteria},
-    },
+    domain::catalog::{AtmosphereType, SurfaceType},
 };
 
 const SURFACES: [&str; 5] = [
@@ -135,36 +132,32 @@ impl Default for App {
 
 impl App {
     fn from_config(config: SearchConfig) -> Self {
-        let criteria = config.criteria;
-        let surfaces = match criteria.surface {
-            Filter::Any => vec![SurfaceType::Any.spansh_value().to_owned()],
-            Filter::OneOf(types) => types
-                .into_iter()
-                .map(|surface| surface.spansh_value().to_owned())
-                .collect(),
-        };
-        let atmosphere = match criteria.atmosphere {
-            Filter::Any => AtmosphereType::Any.spansh_value().to_owned(),
-            Filter::OneOf(types) => types
-                .first()
-                .copied()
-                .unwrap_or(AtmosphereType::Any)
-                .spansh_value()
-                .to_owned(),
-        };
+        let form = SearchForm::from_config(&config);
+        let surfaces = form
+            .surface_types
+            .iter()
+            .map(|surface| surface.spansh_value().to_owned())
+            .collect();
+        let atmosphere = form
+            .atmosphere_types
+            .first()
+            .copied()
+            .unwrap_or(AtmosphereType::Any)
+            .spansh_value()
+            .to_owned();
 
         Self {
             step: Step::General,
             profile: PRESETS.len(),
             row: 0,
-            system: config.system,
-            count: criteria.count.to_string(),
-            bio: criteria.exclude_with_bio_signals,
+            system: form.system,
+            count: form.count,
+            bio: form.exclude_with_bio_signals,
             surfaces,
             atmosphere,
-            temperature: format!("{}-{}", criteria.temperature.min, criteria.temperature.max),
-            gravity: format!("{}-{}", criteria.gravity.min, criteria.gravity.max),
-            pressure: format!("{}-{}", criteria.pressure.min, criteria.pressure.max),
+            temperature: form.temperature,
+            gravity: form.gravity,
+            pressure: form.pressure,
             modal: None,
             error: None,
         }
@@ -172,192 +165,59 @@ impl App {
 
     fn choose_profile(&mut self) {
         if self.profile < PRESETS.len() {
-            let p = &PRESETS[self.profile];
-            self.surfaces = p
+            let mut form = SearchForm::default();
+            form.apply_preset(&PRESETS[self.profile]);
+            self.surfaces = form
                 .surface_types
                 .iter()
                 .map(|surface| surface.spansh_value().to_owned())
                 .collect();
-            self.atmosphere = p.atmosphere.spansh_value().to_owned();
-            self.temperature = format!("{:.0}-{:.0}", p.temperature.min, p.temperature.max);
-            self.gravity = "0.1-1.0".into();
-            self.pressure = format!("{:.3}-{:.3}", p.pressure.min, p.pressure.max);
+            self.atmosphere = form
+                .atmosphere_types
+                .first()
+                .copied()
+                .unwrap_or(AtmosphereType::Any)
+                .spansh_value()
+                .to_owned();
+            self.temperature = form.temperature;
+            self.gravity = form.gravity;
+            self.pressure = form.pressure;
         } else {
-            self.surfaces = vec!["any".into()];
-            self.atmosphere = "any".into();
+            self.surfaces = vec![SurfaceType::Any.spansh_value().to_owned()];
+            self.atmosphere = AtmosphereType::Any.spansh_value().to_owned();
             self.temperature = "0-5000".into();
             self.gravity = "0.1-1.0".into();
             self.pressure = "0-10".into();
         }
         self.step = Step::General;
         self.row = 0;
-        self.error = None;
-    }
-
-    fn row_count(&self) -> usize {
-        match self.step {
-            Step::Profiles => PRESETS.len() + 1,
-            Step::General => 4,
-            Step::Filters => 7,
-            Step::Review => 2,
-        }
-    }
-
-    fn move_row(&mut self, delta: isize) {
-        let count = self.row_count();
-        if count > 0 {
-            self.row = (self.row as isize + delta).rem_euclid(count as isize) as usize;
-            if self.step == Step::Profiles {
-                self.profile = self.row;
-            }
-        }
-        self.error = None;
-    }
-
-    fn open_editor(&mut self, field: EditField) {
-        let value = self.edit_value(field).to_owned();
-        self.modal = Some(Modal::Edit(Editor {
-            field,
-            cursor: value.chars().count(),
-            value,
-        }));
-    }
-
-    fn edit_value(&self, field: EditField) -> &str {
-        match field {
-            EditField::System => &self.system,
-            EditField::Count => &self.count,
-            EditField::Temperature => &self.temperature,
-            EditField::Gravity => &self.gravity,
-            EditField::Pressure => &self.pressure,
-        }
-    }
-
-    fn save_editor(&mut self, editor: Editor) {
-        match editor.field {
-            EditField::System => self.system = editor.value,
-            EditField::Count => self.count = editor.value,
-            EditField::Temperature => self.temperature = editor.value,
-            EditField::Gravity => self.gravity = editor.value,
-            EditField::Pressure => self.pressure = editor.value,
-        }
-        self.error = None;
-    }
-
-    fn open_choice(&mut self, field: ChoiceField) {
-        let options: &[&str] = match field {
-            ChoiceField::Surface => &SURFACES,
-            ChoiceField::Atmosphere => &ATMOSPHERES,
-        };
-        let selected = options
-            .iter()
-            .map(|option| match field {
-                ChoiceField::Surface => self.surfaces.iter().any(|v| v == option),
-                ChoiceField::Atmosphere => self.atmosphere == *option,
-            })
-            .collect::<Vec<_>>();
-        let cursor = selected.iter().position(|v| *v).unwrap_or(0);
-        self.modal = Some(Modal::Choice(Choice {
-            field,
-            cursor,
-            selected,
-        }));
-    }
-
-    fn save_choice(&mut self, choice: Choice) {
-        let options: &[&str] = match choice.field {
-            ChoiceField::Surface => &SURFACES,
-            ChoiceField::Atmosphere => &ATMOSPHERES,
-        };
-        let values = options
-            .iter()
-            .zip(choice.selected.iter())
-            .filter_map(|(value, selected)| selected.then_some((*value).to_owned()))
-            .collect::<Vec<_>>();
-        match choice.field {
-            ChoiceField::Surface => {
-                self.surfaces = if values.is_empty() {
-                    vec!["any".into()]
-                } else {
-                    values
-                };
-                if self.surfaces.len() > 1 {
-                    self.surfaces.retain(|v| v != "any");
-                }
-            }
-            ChoiceField::Atmosphere => {
-                self.atmosphere = values.first().cloned().unwrap_or_else(|| "any".into());
-            }
-        }
-        self.error = None;
-    }
-
-    fn toggle_choice(choice: &mut Choice) {
-        let index = choice.cursor;
-        if choice.field == ChoiceField::Atmosphere {
-            choice.selected.fill(false);
-            choice.selected[index] = true;
-            return;
-        }
-        if index == 0 {
-            choice.selected.fill(false);
-            choice.selected[0] = true;
-        } else {
-            choice.selected[0] = false;
-            choice.selected[index] = !choice.selected[index];
-            if !choice.selected.iter().any(|v| *v) {
-                choice.selected[0] = true;
-            }
-        }
     }
 
     fn selection(&self) -> Result<SearchConfig> {
-        if self.system.trim().is_empty() {
-            return Err(anyhow!("Укажите центральную систему"));
-        }
-        let count = self
-            .count
-            .trim()
-            .parse::<usize>()
-            .context("Количество результатов должно быть целым числом")?;
-        if count == 0 {
-            return Err(anyhow!("Количество результатов должно быть больше нуля"));
-        }
-        let (t_min, t_max) = parse_range_i32(&self.temperature)
-            .context("Температура: ожидается диапазон min-max в K")?;
-        let (g_min, g_max) =
-            parse_range_f64(&self.gravity).context("Гравитация: ожидается диапазон min-max в g")?;
-        let (p_min, p_max) = parse_range_f64(&self.pressure)
-            .context("Давление: ожидается диапазон min-max в atm")?;
-
-        let surface_types = self
+        let mut form = SearchForm::default();
+        form.system = self.system.clone();
+        form.surface_types = self
             .surfaces
             .iter()
             .map(|value| value.parse::<SurfaceType>())
             .collect::<std::result::Result<Vec<_>, _>>()?;
-        let surface = if surface_types.is_empty() || surface_types.contains(&SurfaceType::Any) {
-            Filter::Any
-        } else {
-            Filter::one_of(surface_types)
-        };
-        let atmosphere_type = self.atmosphere.parse::<AtmosphereType>()?;
-        let atmosphere = if atmosphere_type == AtmosphereType::Any {
-            Filter::Any
-        } else {
-            Filter::one_of(vec![atmosphere_type])
-        };
+        form.atmosphere_types = vec![self.atmosphere.parse::<AtmosphereType>()?];
+        form.temperature = self.temperature.clone();
+        form.gravity = self.gravity.clone();
+        form.pressure = self.pressure.clone();
+        form.count = self.count.clone();
+        form.exclude_with_bio_signals = self.bio;
 
-        let criteria = SearchCriteria::new(
-            surface,
-            atmosphere,
-            NumericRange::new(t_min.into(), t_max.into())
-                .ok_or_else(|| anyhow!("Некорректная температура"))?,
-            NumericRange::new(g_min, g_max).ok_or_else(|| anyhow!("Некорректная гравитация"))?,
-            NumericRange::new(p_min, p_max).ok_or_else(|| anyhow!("Некорректное давление"))?,
-            count,
-        )?
-        .with_bio_signal_exclusion(self.bio);
-        SearchConfig::new(self.system.clone(), criteria).map_err(Into::into)
+        form.build().map_err(|errors| {
+            anyhow!(
+                "{}",
+                errors
+                    .into_iter()
+                    .map(|error| error.message)
+                    .collect::<Vec<_>>()
+                    .join("; ")
+            )
+        })
     }
 
     fn advance(&mut self) {
@@ -1101,6 +961,7 @@ fn centered(width: u16, height: u16, area: Rect) -> Rect {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::criteria::{Filter, NumericRange, SearchCriteria};
 
     #[test]
     fn profile_navigation_updates_the_profile_and_allows_custom_setup() {
