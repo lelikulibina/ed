@@ -78,7 +78,13 @@ impl ResultsScreen {
     pub fn reset(&mut self, bodies: &[Body]) {
         self.sort_mode = SortMode::Distance;
         self.descending = false;
-        self.selected_identity = bodies.first().map(body_identity);
+        self.selected_identity = bodies
+            .iter()
+            .min_by(|left, right| {
+                compare_optional(left.distance_ly, right.distance_ly)
+                    .then_with(|| left.name.cmp(&right.name))
+            })
+            .map(body_identity);
         self.detail_scroll = 0;
         self.status_message = None;
     }
@@ -358,7 +364,7 @@ fn render_planet_table(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Re
     )
     .header(
         Row::new(vec![
-            Cell::from("Планета"),
+            Cell::from(app.results_screen.header_label(SortMode::Name, "Планета")),
             Cell::from("Система"),
             Cell::from(
                 app.results_screen
