@@ -149,7 +149,7 @@ impl SearchForm {
             &self.temperature,
             FormField::Temperature,
             "Температура: ожидается диапазон min-max в K",
-            "Некорректная температура",
+            "Некорректный диапазон температуры",
         ) {
             Ok(range) => range,
             Err(error) => {
