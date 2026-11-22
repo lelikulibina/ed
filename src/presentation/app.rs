@@ -43,6 +43,7 @@ pub struct App {
     pub found_count: usize,
     pub selected_index: usize,
     pub search_screen: SearchScreen,
+    pub search_task: Option<tokio::task::JoinHandle<()>>,
 }
 
 impl App {
@@ -72,6 +73,7 @@ impl App {
             found_count: 0,
             selected_index: 0,
             search_screen,
+            search_task: None,
         }
     }
 }
@@ -103,6 +105,7 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     app.progress_message = Some(format!("Страница {page} · найдено {found}"));
                 }
                 SearchEvent::Finished(results) => {
+                    app.search_task.take();
                     app.results = results;
                     app.selected_index = 0;
                     app.progress_message = None;
@@ -110,8 +113,9 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     app.screen = Screen::Results;
                 }
                 SearchEvent::Failed(error) => {
+                    app.search_task.take();
                     app.progress_message = None;
-                    app.error_message = Some(error.to_string());
+                    app.error_message = Some(error.user_message());
                     app.screen = Screen::Error;
                 }
             }
