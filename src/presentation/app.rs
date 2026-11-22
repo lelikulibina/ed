@@ -134,8 +134,13 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                         app.progress_message = None;
                         Some(Command::CancelSearch)
                     }
-                    Screen::Results | Screen::Error => {
+                    Screen::Results => {
                         app.screen = Screen::Search;
+                        None
+                    }
+                    Screen::Error => {
+                        app.screen = Screen::Search;
+                        app.error_message = None;
                         None
                     }
                 };
@@ -372,6 +377,66 @@ mod tests {
     }
 
     #[test]
+    fn progress_events_update_the_running_screen_in_order() {
+        let mut app = app();
+
+        update(&mut app, AppEvent::Search(SearchEvent::ResolvingSystem));
+        assert_eq!(app.progress_message.as_deref(), Some("Поиск центральной системы…"));
+
+        update(
+            &mut app,
+            AppEvent::Search(SearchEvent::SystemResolved {
+                name: "Sol".to_owned(),
+            }),
+        );
+        assert_eq!(app.resolved_system.as_deref(), Some("Sol"));
+
+        update(
+            &mut app,
+            AppEvent::Search(SearchEvent::PageLoaded { page: 3, found: 2 }),
+        );
+        assert_eq!(app.current_page, 3);
+        assert_eq!(app.found_count, 2);
+    }
+
+    #[test]
+    fn running_and_error_screens_render_actionable_content() {
+        let mut app = app();
+        app.screen = Screen::Running;
+        app.resolved_system = Some("Sol".to_owned());
+        app.current_page = 2;
+        app.found_count = 3;
+
+        let backend = ratatui::backend::TestBackend::new(80, 24);
+        let mut terminal = ratatui::Terminal::new(backend).unwrap();
+        terminal.draw(|frame| render(frame, &app)).unwrap();
+        let running = terminal
+            .backend()
+            .buffer()
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+        assert!(running.contains("Центральная система найдена"));
+        assert!(running.contains("Загружена страница Spansh: 2"));
+        assert!(running.contains("3 из 5"));
+
+        app.screen = Screen::Error;
+        app.error_message = Some("Система не найдена".to_owned());
+        terminal.draw(|frame| render(frame, &app)).unwrap();
+        let error = terminal
+            .backend()
+            .buffer()
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+        assert!(error.contains("Система не найдена"));
+        assert!(error.contains("R — повторить поиск"));
+        assert!(error.contains("E / Enter / Esc"));
+    }
+
+    #[test]
     fn failed_search_moves_to_error_screen_with_message() {
         let mut app = app();
         app.screen = Screen::Running;
@@ -390,7 +455,7 @@ mod tests {
         assert!(
             app.error_message
                 .as_deref()
-                .is_some_and(|message| !message.is_empty())
+                .is_some_and(|message| message.contains("не найдена"))
         );
     }
 }
