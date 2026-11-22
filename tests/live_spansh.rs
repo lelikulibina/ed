@@ -78,11 +78,7 @@ async fn live_flyua_phoea_center_and_distances_are_consistent() {
         "requested={requested:?}; resolved={:?}; id64={}; coords=({}, {}, {})",
         center.name, center.id64, center.coordinates.x, center.coordinates.y, center.coordinates.z
     );
-    assert!(
-        center.name.trim().eq_ignore_ascii_case(requested),
-        "resolver selected a different system: requested {requested:?}, got {:?}",
-        center.name
-    );
+    let resolved_name_matches = center.name.trim().eq_ignore_ascii_case(requested);
 
     let center_detail = client
         .get_json(&format!("/api/system/{}", center.id64))
@@ -174,5 +170,10 @@ async fn live_flyua_phoea_center_and_distances_are_consistent() {
     assert!(
         checked > 0,
         "at least one returned body must have a parent system ID64 to verify its distance"
+    );
+    assert!(
+        resolved_name_matches,
+        "resolver selected a different system: requested {requested:?}, got {:?}",
+        center.name
     );
 }
