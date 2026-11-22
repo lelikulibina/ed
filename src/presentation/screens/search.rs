@@ -1,3 +1,4 @@
+use crossterm::event::KeyEvent;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout},
