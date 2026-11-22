@@ -70,7 +70,9 @@ async fn run_search_screen_in_session(
     let event_task = spawn_event_stream(sender, false);
 
     loop {
-        session.terminal_mut().draw(|frame| app::render(frame, &app))?;
+        session
+            .terminal_mut()
+            .draw(|frame| app::render(frame, &app))?;
         let Some(event) = receiver.recv().await else {
             drop(event_task);
             return Ok(None);
