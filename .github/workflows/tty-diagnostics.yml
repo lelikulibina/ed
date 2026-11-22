@@ -33,17 +33,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p tty-artifacts
-          { sleep 2; printf '\\033'; } | TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 120 rows 40; test -t 0 && test -t 1; exec ./target/debug/ed_planet_search' tty-artifacts/tty-120x40.log
+          { sleep 2; printf '\033'; } | TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 120 rows 40; test -t 0 && test -t 1; exec ./target/debug/ed_planet_search' tty-artifacts/tty-120x40.log
       - name: Capture TTY at minimum supported 80x24
         shell: bash
         run: |
           set -euo pipefail
-          { sleep 2; printf '\\033'; } | TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 80 rows 24; test -t 0 && test -t 1; exec ./target/debug/ed_planet_search' tty-artifacts/tty-80x24.log
+          { sleep 2; printf '\033'; } | TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 80 rows 24; test -t 0 && test -t 1; exec ./target/debug/ed_planet_search' tty-artifacts/tty-80x24.log
       - name: Capture small terminal behavior 60x18
         shell: bash
         run: |
           set -euo pipefail
-          { sleep 2; printf '\\033'; } | TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 60 rows 18; test -t 0 && test -t 1; exec ./target/debug/ed_planet_search' tty-artifacts/tty-60x18.log
+          { sleep 2; printf '\033'; } | TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 60 rows 18; test -t 0 && test -t 1; exec ./target/debug/ed_planet_search' tty-artifacts/tty-60x18.log
       - name: Publish diagnostics
         if: always()
         uses: actions/upload-artifact@v4
