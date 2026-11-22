@@ -4,7 +4,7 @@ use crossterm::event::{self, Event};
 use ratatui::layout::Rect;
 use tokio::sync::mpsc;
 
-use super::app::AppEvent;
+use super::{app::AppEvent, text::ui};
 
 pub fn poll_and_send(
     sender: &mpsc::Sender<AppEvent>,
@@ -14,14 +14,14 @@ pub fn poll_and_send(
     if event::poll(timeout)? {
         if let Some(event) = to_app_event(event::read()?) {
             sender.try_send(event).map_err(|error| {
-                anyhow::anyhow!("Не удалось передать событие интерфейсу: {error}")
+                anyhow::anyhow!("{}: {error}", ui::EVENT_SEND_ERROR)
             })?;
             return Ok(true);
         }
     } else if animation_enabled {
         sender
             .try_send(AppEvent::Tick)
-            .map_err(|error| anyhow::anyhow!("Не удалось передать событие анимации: {error}"))?;
+            .map_err(|error| anyhow::anyhow!("{}: {error}", ui::ANIMATION_EVENT_SEND_ERROR))?;
         return Ok(true);
     }
 
