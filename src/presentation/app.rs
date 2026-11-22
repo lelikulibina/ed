@@ -353,7 +353,7 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect::<String>();
-        assert!(rendered.contains("ПОИСК ПЛАНЕТ"));
+        assert!(rendered.contains("ED Planet Search"));
         assert_eq!(app.screen, Screen::Search);
     }
 
