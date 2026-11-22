@@ -44,6 +44,17 @@ jobs:
         run: |
           set -euo pipefail
           { sleep 2; printf '\033'; } | TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 60 rows 18; test -t 0 && test -t 1; exec ./target/release/ed_planet_search' tty-artifacts/tty-60x18.log
+      - name: Verify NO_COLOR at minimum supported 80x24
+        shell: bash
+        run: |
+          set -euo pipefail
+          { sleep 2; printf '\033'; } | NO_COLOR=1 TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 80 rows 24; test -t 0 && test -t 1; exec ./target/release/ed_planet_search' tty-artifacts/tty-no-color-80x24.log
+          if perl -ne 'while (/\e\[([0-9;]*)m/g) { for $code (split /;/, $1) { exit 1 if $code =~ /^(?:3[0-7]|38|39|4[0-7]|48|49|9[0-7]|10[0-7])$/ } }' tty-artifacts/tty-no-color-80x24.log; then
+            echo "NO_COLOR output contains no foreground/background color SGR codes"
+          else
+            echo "NO_COLOR output unexpectedly contains foreground/background color SGR codes" >&2
+            exit 1
+          fi
       - name: Publish diagnostics
         if: always()
         uses: actions/upload-artifact@v4
