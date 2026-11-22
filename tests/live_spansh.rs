@@ -76,11 +76,7 @@ async fn live_flyua_phoea_center_and_distances_are_consistent() {
 
     println!(
         "requested={requested:?}; resolved={:?}; id64={}; coords=({}, {}, {})",
-        center.name,
-        center.id64,
-        center.coordinates.x,
-        center.coordinates.y,
-        center.coordinates.z
+        center.name, center.id64, center.coordinates.x, center.coordinates.y, center.coordinates.z
     );
     assert!(
         center.name.trim().eq_ignore_ascii_case(requested),
@@ -107,9 +103,7 @@ async fn live_flyua_phoea_center_and_distances_are_consistent() {
         center.coordinates.y - detail_coordinates.1,
         center.coordinates.z - detail_coordinates.2,
     );
-    println!(
-        "detail_coords={detail_coordinates:?}; resolver_delta={center_delta:?}"
-    );
+    println!("detail_coords={detail_coordinates:?}; resolver_delta={center_delta:?}");
     assert!(
         center_delta.0.abs() < 0.001
             && center_delta.1.abs() < 0.001
