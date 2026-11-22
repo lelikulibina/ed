@@ -1,0 +1,1112 @@
+{
+  "version": 1,
+  "currency": "CR",
+  "payout_model": {
+    "complete_sample_set": 3,
+    "first_logged_multiplier": 5,
+    "probabilities": null
+  },
+  "sources": [
+    "https://elite-dangerous.fandom.com/wiki/Exobiology_Sample_Values_and_Details",
+    "https://elite-dangerous.fandom.com/ru/wiki/Экзобиолог/Стоимость_образцов"
+  ],
+  "species": [
+    {
+      "genus": "Aleoida",
+      "species": "Arcus",
+      "base_value_cr": 7252500,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false,
+      "temperature_min_k": 175,
+      "temperature_max_k": 180
+    },
+    {
+      "genus": "Aleoida",
+      "species": "Coronamus",
+      "base_value_cr": 6284600,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false,
+      "temperature_min_k": 180,
+      "temperature_max_k": 190
+    },
+    {
+      "genus": "Aleoida",
+      "species": "Gravis",
+      "base_value_cr": 12934900,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false,
+      "temperature_min_k": 190,
+      "temperature_max_k": 195
+    },
+    {
+      "genus": "Aleoida",
+      "species": "Laminiae",
+      "base_value_cr": 3385200,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Ammonia"
+      ],
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false
+    },
+    {
+      "genus": "Aleoida",
+      "species": "Spica",
+      "base_value_cr": 3385200,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Ammonia"
+      ],
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false
+    },
+    {
+      "genus": "Bacterium",
+      "species": "Alcyoneum",
+      "base_value_cr": 1658500,
+      "planet_types": [],
+      "atmospheres": [
+        "Ammonia"
+      ],
+      "volcanism": [
+        "No volcanism"
+      ]
+    },
+    {
+      "genus": "Bacterium",
+      "species": "Aurasus",
+      "base_value_cr": 1000000,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "volcanism": [
+        "No volcanism"
+      ]
+    },
+    {
+      "genus": "Bacterium",
+      "species": "Cerbrus",
+      "base_value_cr": 1689800,
+      "planet_types": [],
+      "atmospheres": [
+        "Water",
+        "Sulphur dioxide"
+      ],
+      "volcanism": [
+        "No volcanism"
+      ]
+    },
+    {
+      "genus": "Bacterium",
+      "species": "Vesicula",
+      "base_value_cr": 1000000,
+      "planet_types": [],
+      "atmospheres": [
+        "Argon",
+        "Argon-rich"
+      ],
+      "volcanism": [
+        "No volcanism"
+      ]
+    },
+    {
+      "genus": "Bacterium",
+      "species": "Volu",
+      "base_value_cr": 7774700,
+      "planet_types": [],
+      "atmospheres": [
+        "Oxygen"
+      ],
+      "volcanism": [
+        "No volcanism"
+      ]
+    },
+    {
+      "genus": "Cactoida",
+      "species": "Cortexum",
+      "base_value_cr": 3667600,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ]
+    },
+    {
+      "genus": "Cactoida",
+      "species": "Lapis",
+      "base_value_cr": 2483600,
+      "planet_types": [],
+      "atmospheres": [
+        "Ammonia"
+      ]
+    },
+    {
+      "genus": "Cactoida",
+      "species": "Peperatis",
+      "base_value_cr": 2483600,
+      "planet_types": [],
+      "atmospheres": [
+        "Ammonia"
+      ]
+    },
+    {
+      "genus": "Cactoida",
+      "species": "Pullulanta",
+      "base_value_cr": 3667600,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 180,
+      "temperature_max_k": 195
+    },
+    {
+      "genus": "Cactoida",
+      "species": "Vermis",
+      "base_value_cr": 16202800,
+      "planet_types": [],
+      "atmospheres": [
+        "Water"
+      ]
+    },
+    {
+      "genus": "Clypeus",
+      "species": "Lacrimam",
+      "base_value_cr": 8418000,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Water",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 190,
+      "temperature_min_inclusive": false,
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false
+    },
+    {
+      "genus": "Clypeus",
+      "species": "Margaritus",
+      "base_value_cr": 11873200,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Water",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 190,
+      "temperature_min_inclusive": false,
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false
+    },
+    {
+      "genus": "Concha",
+      "species": "Aureolas",
+      "base_value_cr": 7774700,
+      "planet_types": [],
+      "atmospheres": [
+        "Ammonia"
+      ],
+      "terrain": [
+        "Rocky or hilly terrain"
+      ]
+    },
+    {
+      "genus": "Concha",
+      "species": "Biconcavis",
+      "base_value_cr": 16777215,
+      "planet_types": [],
+      "atmospheres": [
+        "Nitrogen"
+      ],
+      "terrain": [
+        "Rocky or hilly terrain"
+      ]
+    },
+    {
+      "genus": "Concha",
+      "species": "Labiata",
+      "base_value_cr": 2352400,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_max_k": 190,
+      "temperature_max_inclusive": false,
+      "terrain": [
+        "Rocky or hilly terrain"
+      ]
+    },
+    {
+      "genus": "Concha",
+      "species": "Renibus",
+      "base_value_cr": 4572400,
+      "planet_types": [],
+      "atmospheres": [
+        "Water",
+        "Water-rich",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 180,
+      "temperature_max_k": 195,
+      "terrain": [
+        "Rocky or hilly terrain"
+      ]
+    },
+    {
+      "genus": "Fonticulua",
+      "species": "Campestris",
+      "base_value_cr": 1000000,
+      "planet_types": [],
+      "atmospheres": [
+        "Argon"
+      ]
+    },
+    {
+      "genus": "Fonticulua",
+      "species": "Fluctus",
+      "base_value_cr": 16777215,
+      "planet_types": [],
+      "atmospheres": [
+        "Oxygen"
+      ]
+    },
+    {
+      "genus": "Fonticulua",
+      "species": "Upupam",
+      "base_value_cr": 5727600,
+      "planet_types": [],
+      "atmospheres": [
+        "Argon-rich"
+      ]
+    },
+    {
+      "genus": "Frutexa",
+      "species": "Acus",
+      "base_value_cr": 7774700,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_max_k": 195,
+      "temperature_max_inclusive": false,
+      "terrain": [
+        "Mountainous terrain"
+      ]
+    },
+    {
+      "genus": "Frutexa",
+      "species": "Collum",
+      "base_value_cr": 1639800,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Sulphur dioxide"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ]
+    },
+    {
+      "genus": "Frutexa",
+      "species": "Fera",
+      "base_value_cr": 1632500,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_max_k": 195,
+      "temperature_max_inclusive": false,
+      "terrain": [
+        "Mountainous terrain"
+      ]
+    },
+    {
+      "genus": "Frutexa",
+      "species": "Flabellum",
+      "base_value_cr": 1808900,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Ammonia"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ]
+    },
+    {
+      "genus": "Frutexa",
+      "species": "Flammasis",
+      "base_value_cr": 10326000,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Ammonia"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ]
+    },
+    {
+      "genus": "Frutexa",
+      "species": "Metallicum",
+      "base_value_cr": 1632500,
+      "planet_types": [
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Ammonia",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ],
+      "conditional_temperature_rules": [
+        {
+          "atmospheres": [
+            "Carbon dioxide",
+            "Carbon dioxide-rich"
+          ],
+          "temperature_max_k": 195,
+          "temperature_max_inclusive": false
+        }
+      ]
+    },
+    {
+      "genus": "Frutexa",
+      "species": "Sponsae",
+      "base_value_cr": 5988000,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Water",
+        "Water-rich"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ]
+    },
+    {
+      "genus": "Fumerola",
+      "species": "Aquatis",
+      "base_value_cr": 6284600,
+      "planet_types": [
+        "Icy body",
+        "Rocky Ice world"
+      ],
+      "atmospheres": [],
+      "volcanism": [
+        "Water Magma",
+        "Major Water Magma",
+        "Minor Water Magma",
+        "Water Geysers",
+        "Major Water Geysers",
+        "Minor Water Geysers"
+      ],
+      "requires_geological_signals": true,
+      "terrain": [
+        "Fumeroles"
+      ]
+    },
+    {
+      "genus": "Fumerola",
+      "species": "Carbosis",
+      "base_value_cr": 6284600,
+      "planet_types": [
+        "Icy body",
+        "Rocky Ice world"
+      ],
+      "atmospheres": [],
+      "volcanism": [
+        "Minor Methane Magma",
+        "Carbon Dioxide Geysers",
+        "Major Carbon Dioxide Geysers",
+        "Minor Carbon Dioxide Geysers"
+      ],
+      "requires_geological_signals": true,
+      "terrain": [
+        "Fumeroles"
+      ]
+    },
+    {
+      "genus": "Fumerola",
+      "species": "Extremus",
+      "base_value_cr": 16202800,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [],
+      "volcanism": [
+        "Silicate Vapour Geysers",
+        "Major Silicate Vapour Geysers",
+        "Minor Silicate Vapour Geysers",
+        "Metallic Magma",
+        "Major Metallic Magma",
+        "Minor Metallic Magma",
+        "Rocky Magma",
+        "Major Rocky Magma",
+        "Minor Rocky Magma"
+      ],
+      "requires_geological_signals": true,
+      "terrain": [
+        "Fumeroles"
+      ]
+    },
+    {
+      "genus": "Fumerola",
+      "species": "Nitris",
+      "base_value_cr": 7500900,
+      "planet_types": [
+        "Icy body",
+        "Rocky Ice world"
+      ],
+      "atmospheres": [],
+      "volcanism": [
+        "Minor Nitrogen Magma",
+        "Minor Ammonia Magma"
+      ],
+      "requires_geological_signals": true,
+      "terrain": [
+        "Fumeroles"
+      ]
+    },
+    {
+      "genus": "Fungoida",
+      "species": "Bullarum",
+      "base_value_cr": 3703200,
+      "planet_types": [],
+      "atmospheres": [
+        "Argon",
+        "Argon-rich"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ]
+    },
+    {
+      "genus": "Fungoida",
+      "species": "Gelata",
+      "base_value_cr": 3330300,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich",
+        "Water"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ],
+      "conditional_temperature_rules": [
+        {
+          "atmospheres": [
+            "Carbon dioxide",
+            "Carbon dioxide-rich"
+          ],
+          "temperature_min_k": 180,
+          "temperature_max_k": 195
+        }
+      ]
+    },
+    {
+      "genus": "Fungoida",
+      "species": "Setisis",
+      "base_value_cr": 1670100,
+      "planet_types": [],
+      "atmospheres": [
+        "Ammonia"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ]
+    },
+    {
+      "genus": "Fungoida",
+      "species": "Stabitis",
+      "base_value_cr": 2680300,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich",
+        "Water"
+      ],
+      "terrain": [
+        "Mountainous terrain"
+      ],
+      "conditional_temperature_rules": [
+        {
+          "atmospheres": [
+            "Carbon dioxide",
+            "Carbon dioxide-rich"
+          ],
+          "temperature_min_k": 180,
+          "temperature_max_k": 195
+        }
+      ]
+    },
+    {
+      "genus": "Osseus",
+      "species": "Cornibus",
+      "base_value_cr": 1483000,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "terrain": [
+        "Rocky outcrops"
+      ]
+    },
+    {
+      "genus": "Osseus",
+      "species": "Discus",
+      "base_value_cr": 12934900,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Water",
+        "Water-rich"
+      ]
+    },
+    {
+      "genus": "Osseus",
+      "species": "Fractus",
+      "base_value_cr": 4027800,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 180,
+      "temperature_max_k": 190,
+      "terrain": [
+        "Rocky outcrops"
+      ]
+    },
+    {
+      "genus": "Osseus",
+      "species": "Pellebantus",
+      "base_value_cr": 9739000,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 190,
+      "temperature_max_k": 195,
+      "terrain": [
+        "Rocky outcrops"
+      ]
+    },
+    {
+      "genus": "Osseus",
+      "species": "Pumice",
+      "base_value_cr": 3156300,
+      "planet_types": [
+        "Rocky Ice world"
+      ],
+      "atmospheres": [
+        "Methane",
+        "Methane-rich",
+        "Argon",
+        "Argon-rich",
+        "Nitrogen"
+      ],
+      "terrain": [
+        "Rocky outcrops"
+      ]
+    },
+    {
+      "genus": "Osseus",
+      "species": "Spiralis",
+      "base_value_cr": 2404700,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Ammonia"
+      ],
+      "terrain": [
+        "Rocky outcrops"
+      ]
+    },
+    {
+      "genus": "Recepta",
+      "species": "Conditivus",
+      "base_value_cr": 14313700,
+      "planet_types": [
+        "Icy body",
+        "Rocky Ice world"
+      ],
+      "atmospheres": [
+        "Sulphur dioxide"
+      ],
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false
+    },
+    {
+      "genus": "Recepta",
+      "species": "Deltahedronix",
+      "base_value_cr": 16202800,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Sulphur dioxide"
+      ],
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false
+    },
+    {
+      "genus": "Recepta",
+      "species": "Umbrux",
+      "base_value_cr": 12934900,
+      "planet_types": [
+        "Rocky body",
+        "High metal content world",
+        "Icy body",
+        "Rocky Ice world"
+      ],
+      "atmospheres": [
+        "Sulphur dioxide"
+      ],
+      "gravity_max_g": 0.27,
+      "gravity_max_inclusive": false
+    },
+    {
+      "genus": "Stratum",
+      "species": "Araneamus",
+      "base_value_cr": 2448900,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Sulphur dioxide"
+      ],
+      "temperature_min_k": 165,
+      "temperature_min_inclusive": false
+    },
+    {
+      "genus": "Stratum",
+      "species": "Cucumisis",
+      "base_value_cr": 16202800,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Sulphur dioxide",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 190,
+      "temperature_min_inclusive": false
+    },
+    {
+      "genus": "Stratum",
+      "species": "Excutitus",
+      "base_value_cr": 2448900,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Sulphur dioxide",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 165,
+      "temperature_max_k": 190
+    },
+    {
+      "genus": "Stratum",
+      "species": "Frigus",
+      "base_value_cr": 2637500,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Sulphur dioxide",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 190,
+      "temperature_min_inclusive": false
+    },
+    {
+      "genus": "Stratum",
+      "species": "Laminamus",
+      "base_value_cr": 2788300,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Ammonia"
+      ],
+      "temperature_min_k": 165,
+      "temperature_min_inclusive": false
+    },
+    {
+      "genus": "Stratum",
+      "species": "Limaxus",
+      "base_value_cr": 1362000,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Sulphur dioxide",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 165,
+      "temperature_max_k": 190
+    },
+    {
+      "genus": "Stratum",
+      "species": "Paleas",
+      "base_value_cr": 1362000,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Ammonia",
+        "Water",
+        "Water-rich"
+      ],
+      "conditional_temperature_rules": [
+        {
+          "atmospheres": [
+            "Ammonia"
+          ],
+          "temperature_min_k": 165,
+          "temperature_min_inclusive": false
+        }
+      ]
+    },
+    {
+      "genus": "Stratum",
+      "species": "Tectonicas",
+      "base_value_cr": 19010800,
+      "planet_types": [
+        "High metal content world"
+      ],
+      "atmospheres": [],
+      "temperature_min_k": 165,
+      "temperature_min_inclusive": false
+    },
+    {
+      "genus": "Tubus",
+      "species": "Cavas",
+      "base_value_cr": 11873200,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 160,
+      "temperature_max_k": 190,
+      "terrain": [
+        "Plains"
+      ]
+    },
+    {
+      "genus": "Tubus",
+      "species": "Compagibus",
+      "base_value_cr": 7774700,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 160,
+      "temperature_max_k": 190,
+      "terrain": [
+        "Plains"
+      ]
+    },
+    {
+      "genus": "Tubus",
+      "species": "Conifer",
+      "base_value_cr": 2415500,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 160,
+      "temperature_max_k": 190,
+      "terrain": [
+        "Plains"
+      ]
+    },
+    {
+      "genus": "Tubus",
+      "species": "Rosarium",
+      "base_value_cr": 2637500,
+      "planet_types": [
+        "Rocky body"
+      ],
+      "atmospheres": [
+        "Ammonia"
+      ],
+      "temperature_min_k": 160,
+      "temperature_min_inclusive": false,
+      "terrain": [
+        "Plains"
+      ]
+    },
+    {
+      "genus": "Tubus",
+      "species": "Sororibus",
+      "base_value_cr": 5727600,
+      "planet_types": [
+        "High metal content world"
+      ],
+      "atmospheres": [
+        "Ammonia",
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 160,
+      "temperature_max_k": 190,
+      "terrain": [
+        "Plains"
+      ]
+    },
+    {
+      "genus": "Tussock",
+      "species": "Albata",
+      "base_value_cr": 3252500,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 175,
+      "temperature_max_k": 180
+    },
+    {
+      "genus": "Tussock",
+      "species": "Capillum",
+      "base_value_cr": 7025800,
+      "planet_types": [],
+      "atmospheres": [
+        "Methane",
+        "Methane-rich",
+        "Argon",
+        "Argon-rich"
+      ]
+    },
+    {
+      "genus": "Tussock",
+      "species": "Caputus",
+      "base_value_cr": 3472400,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 180,
+      "temperature_max_k": 190
+    },
+    {
+      "genus": "Tussock",
+      "species": "Catena",
+      "base_value_cr": 1766600,
+      "planet_types": [],
+      "atmospheres": [
+        "Ammonia"
+      ]
+    },
+    {
+      "genus": "Tussock",
+      "species": "Cultro",
+      "base_value_cr": 1766600,
+      "planet_types": [],
+      "atmospheres": [
+        "Ammonia"
+      ]
+    },
+    {
+      "genus": "Tussock",
+      "species": "Divisa",
+      "base_value_cr": 1766600,
+      "planet_types": [],
+      "atmospheres": [
+        "Ammonia"
+      ]
+    },
+    {
+      "genus": "Tussock",
+      "species": "Ignis",
+      "base_value_cr": 1849000,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 160,
+      "temperature_max_k": 170
+    },
+    {
+      "genus": "Tussock",
+      "species": "Pennata",
+      "base_value_cr": 5853800,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 145,
+      "temperature_max_k": 155
+    },
+    {
+      "genus": "Tussock",
+      "species": "Pennatis",
+      "base_value_cr": 1000000,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_max_k": 195,
+      "temperature_max_inclusive": false
+    },
+    {
+      "genus": "Tussock",
+      "species": "Propagito",
+      "base_value_cr": 1000000,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_max_k": 195,
+      "temperature_max_inclusive": false
+    },
+    {
+      "genus": "Tussock",
+      "species": "Serrati",
+      "base_value_cr": 4447100,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 170,
+      "temperature_max_k": 175
+    },
+    {
+      "genus": "Tussock",
+      "species": "Stigmasis",
+      "base_value_cr": 19010800,
+      "planet_types": [],
+      "atmospheres": [
+        "Sulphur dioxide"
+      ]
+    },
+    {
+      "genus": "Tussock",
+      "species": "Triticum",
+      "base_value_cr": 7774700,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 190,
+      "temperature_max_k": 195
+    },
+    {
+      "genus": "Tussock",
+      "species": "Ventusa",
+      "base_value_cr": 3277700,
+      "planet_types": [],
+      "atmospheres": [
+        "Carbon dioxide",
+        "Carbon dioxide-rich"
+      ],
+      "temperature_min_k": 155,
+      "temperature_max_k": 160
+    },
+    {
+      "genus": "Tussock",
+      "species": "Virgam",
+      "base_value_cr": 14313700,
+      "planet_types": [],
+      "atmospheres": [
+        "Water",
+        "Water-rich"
+      ]
+    }
+  ]
+}

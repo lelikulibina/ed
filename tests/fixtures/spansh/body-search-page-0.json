@@ -1,0 +1,18 @@
+{
+  "guid": "test-guid",
+  "results": [
+    {
+      "name": "Unmapped? No",
+      "id64": "1001",
+      "system_id64": "2001",
+      "system_name": "Nearby A",
+      "subtype": "Rocky body",
+      "is_landable": true,
+      "is_mapped": true,
+      "surface_temperature": 250,
+      "surface_pressure": 1.0,
+      "gravity": 1.0,
+      "atmosphere": "Nitrogen"
+    }
+  ]
+}

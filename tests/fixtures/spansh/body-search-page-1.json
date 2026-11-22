@@ -1,0 +1,19 @@
+{
+  "has_more": false,
+  "results": [
+    {
+      "name": "Nearby B 1",
+      "id64": "1002",
+      "system_id64": "2002",
+      "system_name": "Nearby B",
+      "subtype": "Rocky body",
+      "is_landable": true,
+      "is_mapped": false,
+      "surface_temperature": 250,
+      "surface_pressure": 1.0,
+      "gravity": 1.0,
+      "atmosphere": "Nitrogen",
+      "distance": 12.0
+    }
+  ]
+}
