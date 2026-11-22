@@ -1,5 +1,7 @@
 use serde_json::{Value, json};
 
+use crate::domain::criteria::Filter;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Coordinates {
     pub x: f64,
@@ -61,21 +63,21 @@ impl BodySearchQuery {
             .as_object_mut()
             .expect("base query always contains an object of filters");
 
-        if !criteria.planet_types.is_empty() {
-            filters.insert(
-                "subtype".to_owned(),
-                json!({ "value": criteria.planet_types }),
-            );
+        if let Filter::OneOf(surface_types) = &criteria.surface {
+            let values = surface_types
+                .iter()
+                .map(|surface| surface.spansh_value())
+                .collect::<Vec<_>>();
+            filters.insert("subtype".to_owned(), json!({ "value": values }));
         }
-        if criteria.atmosphere_type != "any" {
-            filters.insert(
-                "atmosphere".to_owned(),
-                json!({
-                    "value": crate::domain::body::atmosphere_filter_labels(
-                        &criteria.atmosphere_type
-                    )
-                }),
-            );
+        if let Filter::OneOf(atmosphere_types) = &criteria.atmosphere {
+            let values = atmosphere_types
+                .iter()
+                .flat_map(|atmosphere| {
+                    crate::domain::body::atmosphere_filter_labels(atmosphere.spansh_value())
+                })
+                .collect::<Vec<_>>();
+            filters.insert("atmosphere".to_owned(), json!({ "value": values }));
         }
 
         filters.insert(
@@ -161,7 +163,10 @@ mod tests {
 
     #[test]
     fn payload_pushes_all_body_criteria_to_spansh() {
-        use crate::domain::criteria::{NumericRange, SearchCriteria};
+        use crate::domain::{
+            catalog::{AtmosphereType, SurfaceType},
+            criteria::{Filter, NumericRange, SearchCriteria},
+        };
 
         let query = BodySearchQuery::new(
             Coordinates {
@@ -173,9 +178,9 @@ mod tests {
             100,
         )
         .unwrap();
-        let criteria = SearchCriteria::from_cli(
-            "Rock",
-            "Water",
+        let criteria = SearchCriteria::new(
+            Filter::one_of(vec![SurfaceType::RockyBody]),
+            Filter::one_of(vec![AtmosphereType::Water]),
             NumericRange {
                 min: 190.0,
                 max: 195.0,
@@ -237,7 +242,7 @@ mod tests {
         )
         .unwrap();
         let criteria = crate::application::presets::PRESETS[2]
-            .criteria(5, false)
+            .to_criteria(5, false)
             .unwrap();
         let payload = query.to_payload_with_criteria(&criteria);
 

@@ -1,7 +1,4 @@
-use crate::domain::{
-    catalog::{AtmosphereType, SurfaceType},
-    criteria::{Filter, SearchCriteria},
-};
+use crate::domain::criteria::SearchCriteria;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SearchConfig {
@@ -41,7 +38,10 @@ pub enum SearchConfigError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::criteria::NumericRange;
+    use crate::domain::{
+        catalog::{AtmosphereType, SurfaceType},
+        criteria::{Filter, NumericRange},
+    };
 
     fn criteria(count: usize) -> SearchCriteria {
         SearchCriteria::new(

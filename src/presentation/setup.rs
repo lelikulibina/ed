@@ -787,10 +787,18 @@ fn preset_lines(p: &SearchPreset) -> Vec<Line<'static>> {
     vec![
         kv(
             "Тип поверхности",
-            p.surface_types.join(" / "),
+            p.surface_types
+                .iter()
+                .map(|surface| surface.spansh_value())
+                .collect::<Vec<_>>()
+                .join(" / "),
             Color::LightCyan,
         ),
-        kv("Атмосфера", p.atmosphere.to_owned(), Color::White),
+        kv(
+            "Атмосфера",
+            p.atmosphere.spansh_value().to_owned(),
+            Color::White,
+        ),
         kv(
             "Температура",
             format!("{:.0}–{:.0} K", p.temperature.min, p.temperature.max),
