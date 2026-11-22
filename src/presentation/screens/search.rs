@@ -960,11 +960,26 @@ mod tests {
         for (width, height) in [(80, 24), (120, 40)] {
             let output = rendered(&screen, width, height);
 
-            assert!(output.contains("Сценарий"), "missing profile list at {width}x{height}");
-            assert!(output.contains("Ищем"), "missing criteria summary at {width}x{height}");
-            assert!(output.contains("Sol"), "missing default system at {width}x{height}");
-            assert!(output.contains("Количество: 5"), "missing result count at {width}x{height}");
-            assert!(output.contains("Радиус: 1000 св. лет"), "missing radius at {width}x{height}");
+            assert!(
+                output.contains("Сценарий"),
+                "missing profile list at {width}x{height}"
+            );
+            assert!(
+                output.contains("Ищем"),
+                "missing criteria summary at {width}x{height}"
+            );
+            assert!(
+                output.contains("Sol"),
+                "missing default system at {width}x{height}"
+            );
+            assert!(
+                output.contains("Количество: 5"),
+                "missing result count at {width}x{height}"
+            );
+            assert!(
+                output.contains("Радиус: 1000 св. лет"),
+                "missing radius at {width}x{height}"
+            );
         }
     }
 
