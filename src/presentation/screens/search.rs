@@ -647,34 +647,9 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         columns[1],
     );
 
-    let surfaces = screen
-        .form
-        .surface_types
-        .iter()
-        .map(|value| value.label_ru())
-        .collect::<Vec<_>>()
-        .join(", ");
-    let atmospheres = screen
-        .form
-        .atmosphere_types
-        .iter()
-        .map(|value| value.label_ru())
-        .collect::<Vec<_>>()
-        .join(", ");
     let summary = format!(
-        "Ищем: {} · {} · {}\n{} K · {} g · {} atm\nКоличество: {} · Без био: {} · Радиус: 1000 св. лет",
-        screen.form.system,
-        surfaces,
-        atmospheres,
-        screen.form.temperature,
-        screen.form.gravity,
-        screen.form.pressure,
-        screen.form.count,
-        if screen.form.exclude_with_bio_signals {
-            "да"
-        } else {
-            "нет"
-        }
+        "Ищем: {} · Радиус: 1000 св. лет",
+        screen.form.summary().replace('\n', " · ")
     );
     frame.render_widget(
         Paragraph::new(summary).wrap(Wrap { trim: true }).block(
