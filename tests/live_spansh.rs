@@ -44,16 +44,22 @@ async fn live_spansh_body_search_contract() {
         .await
         .expect("Spansh body search must complete");
 
-    assert!(!results.is_empty(), "Sol neighborhood must yield a matching body");
-    assert!(results.len() <= 1, "search must honor the requested result count");
+    assert!(
+        !results.is_empty(),
+        "Sol neighborhood must yield a matching body"
+    );
+    assert!(
+        results.len() <= 1,
+        "search must honor the requested result count"
+    );
     assert!(
         results.iter().all(|body| criteria.matches(body)),
         "every returned body must satisfy the local criteria"
     );
     assert!(
-        results.iter().all(|body| body.distance_ly.is_some_and(|distance| {
-            (0.0..=1_000.0).contains(&distance)
-        })),
+        results.iter().all(|body| body
+            .distance_ly
+            .is_some_and(|distance| { (0.0..=1_000.0).contains(&distance) })),
         "every returned body must be within the fixed 1000-ly search radius"
     );
 }
