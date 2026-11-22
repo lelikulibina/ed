@@ -488,6 +488,56 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn search_task_forwards_ordered_progress_before_finished_results() {
+        let mut app = App::new_default();
+        let (sender, mut receiver) = mpsc::channel(8);
+        let search = |_: SearchConfig, events: mpsc::UnboundedSender<SearchEvent>| async move {
+            events.send(SearchEvent::ResolvingSystem).unwrap();
+            events
+                .send(SearchEvent::SystemResolved {
+                    name: "Sol".to_owned(),
+                })
+                .unwrap();
+            events
+                .send(SearchEvent::PageLoaded { page: 1, found: 0 })
+                .unwrap();
+            Ok(Vec::new())
+        };
+
+        let config = app.config.clone();
+        start_search_task(&mut app, config, sender, &search).await;
+
+        assert!(matches!(
+            tokio::time::timeout(std::time::Duration::from_secs(1), receiver.recv())
+                .await
+                .unwrap(),
+            Some(AppEvent::Search(SearchEvent::ResolvingSystem))
+        ));
+        assert!(matches!(
+            tokio::time::timeout(std::time::Duration::from_secs(1), receiver.recv())
+                .await
+                .unwrap(),
+            Some(AppEvent::Search(SearchEvent::SystemResolved { name })) if name == "Sol"
+        ));
+        assert!(matches!(
+            tokio::time::timeout(std::time::Duration::from_secs(1), receiver.recv())
+                .await
+                .unwrap(),
+            Some(AppEvent::Search(SearchEvent::PageLoaded { page: 1, found: 0 }))
+        ));
+        assert!(matches!(
+            tokio::time::timeout(std::time::Duration::from_secs(1), receiver.recv())
+                .await
+                .unwrap(),
+            Some(AppEvent::Search(SearchEvent::Finished(results))) if results.is_empty()
+        ));
+
+        if let Some(task) = app.search_task.take() {
+            task.await.unwrap();
+        }
+    }
+
+    #[tokio::test]
     async fn replacing_a_search_aborts_and_joins_the_previous_task() {
         let mut app = App::new_default();
         let previous_cancelled = Arc::new(AtomicBool::new(false));
