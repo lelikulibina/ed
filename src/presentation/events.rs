@@ -10,11 +10,12 @@ pub fn spawn_event_stream(
     sender: mpsc::Sender<AppEvent>,
     animation_enabled: bool,
 ) -> JoinHandle<()> {
-    tokio::task::spawn_blocking(move || {
+    tokio::task::spawn_local(async move {
         loop {
             if sender.is_closed() {
                 break;
             }
+
             let event = match event::poll(Duration::from_millis(100)) {
                 Ok(true) => match event::read() {
                     Ok(event) => to_app_event(event),
@@ -26,7 +27,7 @@ pub fn spawn_event_stream(
             };
 
             if let Some(event) = event
-                && sender.blocking_send(event).is_err()
+                && sender.send(event).await.is_err()
             {
                 break;
             }

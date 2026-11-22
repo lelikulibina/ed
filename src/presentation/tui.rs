@@ -62,32 +62,36 @@ async fn run_search_screen_in_session(
     initial: Option<SearchConfig>,
 ) -> Result<Option<SearchConfig>> {
     let mut app = initial.map(App::new).unwrap_or_else(App::new_default);
-    let (sender, mut receiver) = tokio::sync::mpsc::channel(32);
-    let event_task = spawn_event_stream(sender, false);
+    let local = tokio::task::LocalSet::new();
 
-    loop {
-        session
-            .terminal_mut()
-            .draw(|frame| app::render(frame, &app))?;
-        let Some(event) = receiver.recv().await else {
-            drop(event_task);
-            return Ok(None);
-        };
+    local
+        .run_until(async {
+            let (sender, mut receiver) = tokio::sync::mpsc::channel(32);
+            let event_task = spawn_event_stream(sender, false);
 
-        match app::update(&mut app, event) {
-            Some(Command::StartSearch(config)) => {
-                drop(receiver);
-                drop(event_task);
-                return Ok(Some(config));
+            loop {
+                session
+                    .terminal_mut()
+                    .draw(|frame| app::render(frame, &app))?;
+                let Some(event) = receiver.recv().await else {
+                    event_task.abort();
+                    return Ok(None);
+                };
+
+                match app::update(&mut app, event) {
+                    Some(Command::StartSearch(config)) => {
+                        event_task.abort();
+                        return Ok(Some(config));
+                    }
+                    Some(Command::Quit) => {
+                        event_task.abort();
+                        return Ok(None);
+                    }
+                    Some(Command::CancelSearch | Command::CopySystem(_)) | None => {}
+                }
             }
-            Some(Command::Quit) => {
-                drop(receiver);
-                drop(event_task);
-                return Ok(None);
-            }
-            Some(Command::CancelSearch | Command::CopySystem(_)) | None => {}
-        }
-    }
+        })
+        .await
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
