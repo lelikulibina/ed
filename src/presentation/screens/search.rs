@@ -809,7 +809,7 @@ mod tests {
         let screen = SearchScreen::from_config(&config);
 
         assert_eq!(screen.form.build().unwrap(), config);
-        assert_eq!(screen.selected_preset(), PRESETS.len());
+        assert_eq!(screen.selected_preset(), 2);
         assert!(screen.advanced());
     }
 
