@@ -262,6 +262,10 @@ fn find_guid(value: &Value) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::{
+        catalog::{AtmosphereType, SurfaceType},
+        criteria::Filter,
+    };
     use crate::spansh::test_support::{MockResponse, MockServer};
 
     #[test]
@@ -317,9 +321,9 @@ mod tests {
                 z: 3.0,
             },
         };
-        let criteria = SearchCriteria::from_cli(
-            "rocky body",
-            "nitrogen",
+        let criteria = SearchCriteria::new(
+            Filter::one_of(vec![SurfaceType::RockyBody]),
+            Filter::one_of(vec![AtmosphereType::Nitrogen]),
             crate::domain::criteria::NumericRange {
                 min: 200.0,
                 max: 300.0,
@@ -406,9 +410,9 @@ mod tests {
                 z: 3.0,
             },
         };
-        let criteria = SearchCriteria::from_cli(
-            "rocky body",
-            "nitrogen",
+        let criteria = SearchCriteria::new(
+            Filter::one_of(vec![SurfaceType::RockyBody]),
+            Filter::one_of(vec![AtmosphereType::Nitrogen]),
             crate::domain::criteria::NumericRange {
                 min: 200.0,
                 max: 300.0,
@@ -482,9 +486,9 @@ mod tests {
                 z: 0.0,
             },
         };
-        let criteria = SearchCriteria::from_cli(
-            "any",
-            "any",
+        let criteria = SearchCriteria::new(
+            Filter::Any,
+            Filter::Any,
             crate::domain::criteria::NumericRange {
                 min: 0.0,
                 max: 5000.0,
@@ -545,9 +549,9 @@ mod tests {
                 z: 0.0,
             },
         };
-        let criteria = SearchCriteria::from_cli(
-            "any",
-            "any",
+        let criteria = SearchCriteria::new(
+            Filter::Any,
+            Filter::Any,
             crate::domain::criteria::NumericRange {
                 min: 0.0,
                 max: 5000.0,

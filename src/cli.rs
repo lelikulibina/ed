@@ -3,7 +3,10 @@ use clap::Parser;
 
 use crate::{
     application::config::SearchConfig,
-    domain::criteria::{NumericRange, SearchCriteria},
+    domain::{
+        catalog::{AtmosphereType, SurfaceType},
+        criteria::{Filter, NumericRange, SearchCriteria},
+    },
 };
 
 #[derive(Parser, Debug)]
@@ -110,9 +113,21 @@ impl Args {
         let pressure = NumericRange::new(pressure_min, pressure_max)
             .ok_or_else(|| anyhow!("Некорректный диапазон давления: {}", self.pressure))?;
 
-        let criteria = SearchCriteria::from_cli(
-            &self.planet_type,
-            &self.atmosphere_type,
+        let surface_type = self.planet_type.parse::<SurfaceType>()?;
+        let atmosphere_type = self.atmosphere_type.parse::<AtmosphereType>()?;
+        let surface = if surface_type == SurfaceType::Any {
+            Filter::Any
+        } else {
+            Filter::one_of(vec![surface_type])
+        };
+        let atmosphere = if atmosphere_type == AtmosphereType::Any {
+            Filter::Any
+        } else {
+            Filter::one_of(vec![atmosphere_type])
+        };
+        let criteria = SearchCriteria::new(
+            surface,
+            atmosphere,
             temperature,
             gravity,
             pressure,

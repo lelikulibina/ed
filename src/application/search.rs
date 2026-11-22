@@ -42,7 +42,10 @@ impl SearchUseCase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::criteria::NumericRange;
+    use crate::domain::{
+        catalog::{AtmosphereType, SurfaceType},
+        criteria::{Filter, NumericRange},
+    };
     use crate::spansh::test_support::{MockResponse, MockServer};
 
     #[tokio::test]
@@ -68,9 +71,9 @@ mod tests {
         let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let search = SearchUseCase::new(client);
         let center = search.resolve_center("Sol").await.unwrap();
-        let criteria = SearchCriteria::from_cli(
-            "rocky body",
-            "nitrogen",
+        let criteria = SearchCriteria::new(
+            Filter::one_of(vec![SurfaceType::RockyBody]),
+            Filter::one_of(vec![AtmosphereType::Nitrogen]),
             NumericRange {
                 min: 200.0,
                 max: 300.0,

@@ -20,49 +20,40 @@ use crate::{
         config::SearchConfig,
         presets::{PRESETS, SearchPreset},
     },
-    cli::parse_range_i32,
-    domain::criteria::{NumericRange, SearchCriteria},
+    cli::{parse_range_f64, parse_range_i32},
+    domain::{
+        catalog::{AtmosphereType, SurfaceType},
+        criteria::{Filter, NumericRange, SearchCriteria},
+    },
 };
 
 const SURFACES: [&str; 5] = [
-    "any",
-    "Rocky body",
-    "Icy body",
-    "Rocky ice world",
-    "High metal content world",
+    SurfaceType::Any.spansh_value(),
+    SurfaceType::RockyBody.spansh_value(),
+    SurfaceType::IcyBody.spansh_value(),
+    SurfaceType::RockyIceWorld.spansh_value(),
+    SurfaceType::HighMetalContentWorld.spansh_value(),
 ];
 const ATMOSPHERES: [&str; 17] = [
-    "any",
-    "Ammonia",
-    "Water",
-    "Carbon dioxide",
-    "Sulphur dioxide",
-    "Nitrogen",
-    "Water-rich",
-    "Methane-rich",
-    "Carbon dioxide-rich",
-    "Methane",
-    "Helium",
-    "Silicate vapour",
-    "Neon-rich",
-    "Argon-rich",
-    "Neon",
-    "Argon",
-    "Oxygen",
+    AtmosphereType::Any.spansh_value(),
+    AtmosphereType::Ammonia.spansh_value(),
+    AtmosphereType::Water.spansh_value(),
+    AtmosphereType::CarbonDioxide.spansh_value(),
+    AtmosphereType::SulphurDioxide.spansh_value(),
+    AtmosphereType::Nitrogen.spansh_value(),
+    AtmosphereType::WaterRich.spansh_value(),
+    AtmosphereType::MethaneRich.spansh_value(),
+    AtmosphereType::CarbonDioxideRich.spansh_value(),
+    AtmosphereType::Methane.spansh_value(),
+    AtmosphereType::Helium.spansh_value(),
+    AtmosphereType::SilicateVapour.spansh_value(),
+    AtmosphereType::NeonRich.spansh_value(),
+    AtmosphereType::ArgonRich.spansh_value(),
+    AtmosphereType::Neon.spansh_value(),
+    AtmosphereType::Argon.spansh_value(),
+    AtmosphereType::Oxygen.spansh_value(),
 ];
 
-fn parse_range_f64(value: &str) -> Result<(f64, f64)> {
-    let mut parts = value.split('-');
-    let min = parts.next().unwrap_or_default().parse::<f64>()?;
-    let max = parts
-        .next()
-        .ok_or_else(|| anyhow!("Ожидается диапазон min-max"))?
-        .parse::<f64>()?;
-    if parts.next().is_some() {
-        return Err(anyhow!("Ожидается диапазон min-max"));
-    }
-    Ok((min, max))
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Step {
@@ -146,14 +137,22 @@ impl Default for App {
 impl App {
     fn from_config(config: SearchConfig) -> Self {
         let criteria = config.criteria;
-        let mut surfaces = if criteria.planet_types.is_empty() {
-            vec![criteria.planet_type]
-        } else {
-            criteria.planet_types
+        let surfaces = match criteria.surface {
+            Filter::Any => vec![SurfaceType::Any.spansh_value().to_owned()],
+            Filter::OneOf(types) => types
+                .into_iter()
+                .map(|surface| surface.spansh_value().to_owned())
+                .collect(),
         };
-        if surfaces.is_empty() {
-            surfaces.push("any".into());
-        }
+        let atmosphere = match criteria.atmosphere {
+            Filter::Any => AtmosphereType::Any.spansh_value().to_owned(),
+            Filter::OneOf(types) => types
+                .first()
+                .copied()
+                .unwrap_or(AtmosphereType::Any)
+                .spansh_value()
+                .to_owned(),
+        };
 
         Self {
             step: Step::General,
@@ -163,7 +162,7 @@ impl App {
             count: criteria.count.to_string(),
             bio: criteria.exclude_with_bio_signals,
             surfaces,
-            atmosphere: criteria.atmosphere_type,
+            atmosphere,
             temperature: format!("{}-{}", criteria.temperature.min, criteria.temperature.max),
             gravity: format!("{}-{}", criteria.gravity.min, criteria.gravity.max),
             pressure: format!("{}-{}", criteria.pressure.min, criteria.pressure.max),
@@ -175,8 +174,12 @@ impl App {
     fn choose_profile(&mut self) {
         if self.profile < PRESETS.len() {
             let p = &PRESETS[self.profile];
-            self.surfaces = p.surface_types.iter().map(|v| (*v).to_owned()).collect();
-            self.atmosphere = p.atmosphere.to_owned();
+            self.surfaces = p
+                .surface_types
+                .iter()
+                .map(|surface| surface.spansh_value().to_owned())
+                .collect();
+            self.atmosphere = p.atmosphere.spansh_value().to_owned();
             self.temperature = format!("{:.0}-{:.0}", p.temperature.min, p.temperature.max);
             self.gravity = "0.1-1.0".into();
             self.pressure = format!("{:.3}-{:.3}", p.pressure.min, p.pressure.max);
@@ -328,26 +331,33 @@ impl App {
         let (p_min, p_max) = parse_range_f64(&self.pressure)
             .context("Давление: ожидается диапазон min-max в atm")?;
 
-        let surfaces = if self.surfaces.is_empty() {
-            vec!["any".to_owned()]
+        let surface_types = self
+            .surfaces
+            .iter()
+            .map(|value| value.parse::<SurfaceType>())
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        let surface = if surface_types.is_empty() || surface_types.contains(&SurfaceType::Any) {
+            Filter::Any
         } else {
-            self.surfaces.clone()
+            Filter::one_of(surface_types)
         };
-        let primary = surfaces.first().map(String::as_str).unwrap_or("any");
-        let mut criteria = SearchCriteria::from_cli(
-            primary,
-            &self.atmosphere,
+        let atmosphere_type = self.atmosphere.parse::<AtmosphereType>()?;
+        let atmosphere = if atmosphere_type == AtmosphereType::Any {
+            Filter::Any
+        } else {
+            Filter::one_of(vec![atmosphere_type])
+        };
+
+        let criteria = SearchCriteria::new(
+            surface,
+            atmosphere,
             NumericRange::new(t_min.into(), t_max.into())
                 .ok_or_else(|| anyhow!("Некорректная температура"))?,
             NumericRange::new(g_min, g_max).ok_or_else(|| anyhow!("Некорректная гравитация"))?,
             NumericRange::new(p_min, p_max).ok_or_else(|| anyhow!("Некорректное давление"))?,
             count,
-        )?;
-        if surfaces.iter().any(|v| v != "any") {
-            criteria.planet_types = surfaces.into_iter().filter(|v| v != "any").collect();
-            criteria.planet_type = criteria.planet_types[0].clone();
-        }
-        criteria = criteria.with_bio_signal_exclusion(self.bio);
+        )?
+        .with_bio_signal_exclusion(self.bio);
         SearchConfig::new(self.system.clone(), criteria).map_err(Into::into)
     }
 
@@ -1106,9 +1116,9 @@ mod tests {
 
     #[test]
     fn cli_configuration_prefills_the_wizard_without_changing_criteria() {
-        let mut criteria = SearchCriteria::from_cli(
-            "Rocky body",
-            "Water",
+        let mut criteria = SearchCriteria::new(
+            Filter::one_of(vec![SurfaceType::RockyBody]),
+            Filter::one_of(vec![AtmosphereType::Water]),
             NumericRange {
                 min: 395.0,
                 max: 450.0,
@@ -1122,7 +1132,10 @@ mod tests {
         )
         .unwrap()
         .with_bio_signal_exclusion(true);
-        criteria.planet_types = vec!["Rocky body".into(), "High metal content world".into()];
+        criteria.surface = Filter::one_of(vec![
+            SurfaceType::RockyBody,
+            SurfaceType::HighMetalContentWorld,
+        ]);
         let config = SearchConfig::new("Sol", criteria).unwrap();
 
         let app = App::from_config(config.clone());
@@ -1151,8 +1164,11 @@ mod tests {
         app.choose_profile();
         let config = app.selection().unwrap();
         assert_eq!(
-            config.criteria.planet_types,
-            vec!["Rocky body", "High metal content world"]
+            config.criteria.surface,
+            Filter::one_of(vec![
+                SurfaceType::RockyBody,
+                SurfaceType::HighMetalContentWorld,
+            ])
         );
         assert_eq!(config.criteria.gravity, NumericRange { min: 0.1, max: 1.0 });
     }

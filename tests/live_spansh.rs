@@ -1,7 +1,10 @@
 #![allow(dead_code)]
 
 use ed_planet_search::{
-    domain::criteria::{NumericRange, SearchCriteria},
+    domain::{
+        catalog::{AtmosphereType, SurfaceType},
+        criteria::{Filter, NumericRange, SearchCriteria},
+    },
     spansh::{BodySearch, SpanshClient, SystemResolver},
 };
 
@@ -17,9 +20,9 @@ async fn live_spansh_body_search_contract() {
         .expect("Spansh must resolve Sol");
     assert_eq!(center.name, "Sol");
 
-    let criteria = SearchCriteria::from_cli(
-        "any",
-        "any",
+    let criteria = SearchCriteria::new(
+        Filter::Any,
+        Filter::Any,
         NumericRange {
             min: 0.0,
             max: 5_000.0,

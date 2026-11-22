@@ -1,4 +1,7 @@
-use crate::domain::criteria::SearchCriteria;
+use crate::domain::{
+    catalog::{AtmosphereType, SurfaceType},
+    criteria::{Filter, SearchCriteria},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SearchConfig {
@@ -41,9 +44,9 @@ mod tests {
     use crate::domain::criteria::NumericRange;
 
     fn criteria(count: usize) -> SearchCriteria {
-        SearchCriteria::from_cli(
-            "Rocky body",
-            "Carbon dioxide",
+        SearchCriteria::new(
+            Filter::one_of(vec![SurfaceType::RockyBody]),
+            Filter::one_of(vec![AtmosphereType::CarbonDioxide]),
             NumericRange {
                 min: 190.0,
                 max: 195.0,
