@@ -102,10 +102,10 @@ impl ResultsScreen {
         let selected = self.selected_index(&ordered);
         match key.code {
             KeyCode::Up if !ordered.is_empty() => {
-                self.select(&ordered[selected.saturating_sub(1)]);
+                self.select(ordered[selected.saturating_sub(1)]);
             }
             KeyCode::Down if !ordered.is_empty() => {
-                self.select(&ordered[(selected + 1).min(ordered.len() - 1)]);
+                self.select(ordered[(selected + 1).min(ordered.len() - 1)]);
             }
             KeyCode::PageUp => self.detail_scroll = self.detail_scroll.saturating_sub(6),
             KeyCode::PageDown => self.detail_scroll = self.detail_scroll.saturating_add(6),
