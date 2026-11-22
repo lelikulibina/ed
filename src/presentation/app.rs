@@ -111,7 +111,6 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     app.progress_message = Some(format!("Страница {page} · найдено {found}"));
                 }
                 SearchEvent::Finished(results) => {
-                    app.search_task.take();
                     app.results = results;
                     app.selected_index = 0;
                     app.progress_message = None;
@@ -119,7 +118,6 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     app.screen = Screen::Results;
                 }
                 SearchEvent::Failed(error) => {
-                    app.search_task.take();
                     app.progress_message = None;
                     app.error_message = Some(error.user_message());
                     app.screen = Screen::Error;
