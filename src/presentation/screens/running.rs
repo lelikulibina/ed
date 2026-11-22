@@ -51,7 +51,9 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         ]),
     };
     let replacement = app.resolved_system.as_deref().filter(|resolved| {
-        !resolved.trim().eq_ignore_ascii_case(app.config.system.trim())
+        !resolved
+            .trim()
+            .eq_ignore_ascii_case(app.config.system.trim())
     });
     let pages = if app.current_page > 0 {
         Line::from(vec![
@@ -81,7 +83,6 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         )));
     }
     content.extend([
-
         pages,
         Line::from(format!(
             "{}: {} {} {}",
