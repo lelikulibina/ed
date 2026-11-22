@@ -330,7 +330,7 @@ mod tests {
                 Some(Coordinates {
                     x: 0.0,
                     y: 0.0,
-                    z: 0.0
+                    z: 0.0,
                 }),
             ),
             (
@@ -479,4 +479,3 @@ mod tests {
         assert!(requests[1].starts_with("GET /api/system/2 "));
     }
 }
-
