@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::{
-    layout::{Alignment, Rect},
+    layout::Rect,
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 
@@ -142,8 +142,16 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
             None
         }
         AppEvent::Key(key) => {
-            if app.help_open && key.kind == KeyEventKind::Press {
-                if key.code == KeyCode::Esc || key.code == KeyCode::Char('?') {
+            if app.help_open {
+                if key.kind == KeyEventKind::Press
+                    && key.code == KeyCode::Char('q')
+                    && key.modifiers.contains(KeyModifiers::CONTROL)
+                {
+                    return Some(Command::Quit);
+                }
+                if key.kind == KeyEventKind::Press
+                    && (key.code == KeyCode::Esc || key.code == KeyCode::Char('?'))
+                {
                     app.help_open = false;
                 }
                 return None;
