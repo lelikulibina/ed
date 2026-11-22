@@ -1,0 +1,26 @@
+name: Flyua Phoea Distance Investigation
+
+on:
+  push:
+    branches:
+      - debug/flyua-phoea-distance
+
+permissions:
+  contents: read
+
+jobs:
+  live-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RUST_BACKTRACE: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Verify formatting
+        run: cargo fmt -- --check
+      - name: Run live Flyua Phoea resolver and distance diagnostic
+        run: cargo test --test live_spansh live_flyua_phoea_center_and_distances_are_consistent -- --ignored --nocapture
