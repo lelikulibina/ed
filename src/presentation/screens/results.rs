@@ -503,7 +503,7 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
 
     let detail_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(58), Constraint::Percentage(42)])
+        .constraints([Constraint::Length(8), Constraint::Min(0)])
         .split(area);
     frame.render_widget(
         Paragraph::new(details)
