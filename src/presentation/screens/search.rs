@@ -952,7 +952,7 @@ mod tests {
     fn advanced_temperature_and_gravity_bounds_are_independent_inputs() {
         let mut screen = SearchScreen::default();
         screen.set_advanced(true);
-        for _ in 0..6 {
+        for _ in 0..7 {
             screen.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
         }
         screen.handle_key(KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
@@ -969,7 +969,7 @@ mod tests {
     fn atmosphere_selection_cycles_to_the_next_typed_value() {
         let mut screen = SearchScreen::default();
         screen.set_advanced(true);
-        for _ in 0..5 {
+        for _ in 0..6 {
             screen.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
         }
         screen.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
@@ -994,7 +994,7 @@ mod tests {
     fn surface_selection_supports_or_and_any_is_exclusive() {
         let mut screen = SearchScreen::new(SearchForm::default());
         screen.set_advanced(true);
-        for _ in 0..4 {
+        for _ in 0..5 {
             screen.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
         }
 
