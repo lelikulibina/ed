@@ -41,6 +41,7 @@ pub struct App {
     pub progress_message: Option<String>,
     pub current_page: u32,
     pub found_count: usize,
+    pub resolved_system: Option<String>,
     pub selected_index: usize,
     pub search_screen: SearchScreen,
     pub search_task: Option<tokio::task::JoinHandle<()>>,
@@ -71,6 +72,7 @@ impl App {
             progress_message: None,
             current_page: 0,
             found_count: 0,
+            resolved_system: None,
             selected_index: 0,
             search_screen,
             search_task: None,
@@ -94,9 +96,13 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
         AppEvent::Search(event) => {
             match event {
                 SearchEvent::ResolvingSystem => {
+                    app.resolved_system = None;
+                    app.current_page = 0;
+                    app.found_count = 0;
                     app.progress_message = Some("Поиск центральной системы…".to_owned());
                 }
                 SearchEvent::SystemResolved { name } => {
+                    app.resolved_system = Some(name.clone());
                     app.progress_message = Some(format!("Система найдена: {name}"));
                 }
                 SearchEvent::PageLoaded { page, found } => {
@@ -206,30 +212,17 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
 }
 
 pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
-    if app.screen == Screen::Search {
-        super::screens::search::render(frame, &app.search_screen);
-        return;
+    match app.screen {
+        Screen::Search => super::screens::search::render(frame, &app.search_screen),
+        Screen::Running => super::screens::running::render(frame, app),
+        Screen::Error => super::screens::error::render(frame, app),
+        Screen::Results => render_placeholder(frame, "РЕЗУЛЬТАТЫ", "Экран результатов будет подключён на этапе 6."),
     }
+}
 
+fn render_placeholder(frame: &mut ratatui::Frame<'_>, title: &'static str, message: &str) {
     use ratatui::widgets::{Block, Borders, Paragraph};
 
-    let (title, message) = match app.screen {
-        Screen::Search => ("ПОИСК ПЛАНЕТ", "Enter — начать поиск · Esc — выход"),
-        Screen::Running => (
-            "ПОИСК ВЫПОЛНЯЕТСЯ",
-            app.progress_message
-                .as_deref()
-                .unwrap_or("Ожидание событий…"),
-        ),
-        Screen::Results => (
-            "РЕЗУЛЬТАТЫ",
-            "↑↓ — выбор · c — копировать систему · n — новый поиск",
-        ),
-        Screen::Error => (
-            "ОШИБКА ПОИСКА",
-            app.error_message.as_deref().unwrap_or("Неизвестная ошибка"),
-        ),
-    };
     let area = frame.area();
     frame.render_widget(
         Paragraph::new(message).block(Block::default().title(title).borders(Borders::ALL)),
