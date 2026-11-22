@@ -3,8 +3,7 @@ use std::io::IsTerminal;
 use anyhow::{Result, anyhow};
 use ed_planet_search::{
     application::{config::SearchConfig, search::SearchUseCase},
-    cli,
-    domain,
+    cli, domain,
     presentation::tui,
     spansh::SpanshClient,
 };
