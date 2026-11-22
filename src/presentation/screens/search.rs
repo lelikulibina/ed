@@ -717,9 +717,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
 
 fn field_line(content: String, focused: bool) -> Line<'static> {
     let style = if focused {
-        theme::Theme::default()
-            .accent
-            .add_modifier(Modifier::BOLD)
+        theme::Theme::default().accent.add_modifier(Modifier::BOLD)
     } else {
         Style::default()
     };
