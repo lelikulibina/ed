@@ -133,7 +133,10 @@ impl SearchScreen {
 
     pub fn from_config(config: &SearchConfig) -> Self {
         let mut screen = Self::new(SearchForm::from_config(config));
-        screen.selected_preset = PRESETS.len();
+        screen.selected_preset = PRESETS
+            .iter()
+            .position(|preset| preset.to_criteria() == config.criteria)
+            .unwrap_or(PRESETS.len());
         screen.advanced = true;
         screen
     }
@@ -820,6 +823,17 @@ mod tests {
             config.criteria.gravity,
             crate::domain::criteria::NumericRange { min: 0.1, max: 1.0 }
         );
+    }
+
+    #[test]
+    fn returning_from_search_restores_the_matching_profile() {
+        let original = SearchScreen::default();
+        let config = original.form.build().unwrap();
+
+        let restored = SearchScreen::from_config(&config);
+
+        assert_eq!(restored.selected_preset(), 0);
+        assert_eq!(restored.form, original.form);
     }
 
     #[test]
