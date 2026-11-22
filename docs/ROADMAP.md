@@ -230,12 +230,12 @@ cargo fmt -- --check && cargo clippy --locked --all-targets --all-features -- -D
 
 Цель: реальный прогресс вместо статичной заставки.
 
-- [ ] `enum SearchEvent { ResolvingSystem, SystemResolved { name }, PageLoaded { page, found }, Finished(Vec<Body>), Failed(SearchError) }` в `application/search.rs`.
-- [ ] В `BodySearch::search` добавить необязательный обратный вызов на каждую страницу. Алгоритм пагинации, фильтры и повторы запросов не менять.
-- [ ] Хранить `JoinHandle` поиска в состоянии приложения; Esc вызывает `abort()`; новый поиск гарантированно завершает старый.
-- [ ] `screens/running.rs` по макету: шаги с галочками, номер страницы, найдено X из N, отмена по Esc.
-- [ ] `screens/error.rs`: типизированная ошибка превращается в русское объяснение (`fn user_message(&SearchError) -> String`), действия «повторить» (r) и «изменить поиск» (e).
-- [ ] Тесты: порядок событий на mock-сервере; переходы Search → Running → Results и Running → Error; отмена не оставляет задач.
+- [x] `enum SearchEvent { ResolvingSystem, SystemResolved { name }, PageLoaded { page, found }, Finished(Vec<Body>), Failed(SearchError) }` в `application/search.rs`.
+- [x] В `BodySearch::search` добавить необязательный обратный вызов на каждую страницу. Алгоритм пагинации, фильтры и повторы запросов не менять.
+- [x] Хранить `JoinHandle` поиска в состоянии приложения; Esc вызывает `abort()`; новый поиск гарантированно завершает старый.
+- [x] `screens/running.rs` по макету: шаги с галочками, номер страницы, найдено X из N, отмена по Esc.
+- [x] `screens/error.rs`: типизированная ошибка превращается в русское объяснение (`fn user_message(&SearchError) -> String`), действия «повторить» (r) и «изменить поиск» (e).
+- [x] Тесты: порядок событий на mock-сервере; переходы Search → Running → Results и Running → Error; отмена не оставляет задач.
 
 **Приёмка:** во время поиска интерфейс перерисовывается и реагирует на Esc; события приходят по порядку; пустой результат и сетевая ошибка ведут на экраны с понятными действиями.
 
