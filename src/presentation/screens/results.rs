@@ -402,11 +402,7 @@ fn render_planet_table(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Re
         .style(theme::Theme::default().accent)
         .bottom_margin(0),
     )
-    .row_highlight_style(
-        Style::default()
-            .add_modifier(Modifier::BOLD)
-            .bg(ratatui::style::Color::DarkGray),
-    )
+    .row_highlight_style(theme::Theme::default().selection())
     .highlight_symbol("▸ ")
     .block(
         Block::default()
