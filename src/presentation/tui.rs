@@ -10,7 +10,11 @@ use ratatui::{
 
 use crate::application::config::SearchConfig;
 
-use super::{terminal::TerminalGuard, theme};
+use super::{
+    screens::search::{self, SearchScreen, SearchScreenAction},
+    terminal::TerminalGuard,
+    theme,
+};
 
 pub async fn run<F, Fut>(initial: Option<SearchConfig>, search: F) -> Result<()>
 where
@@ -21,7 +25,7 @@ where
     let mut initial = initial;
 
     loop {
-        let Some(config) = super::setup::run_setup_in_session(&mut session, initial.take())? else {
+        let Some(config) = run_search_screen_in_session(&mut session, initial.take())? else {
             break;
         };
         let previous_config = config.clone();
@@ -33,6 +37,35 @@ where
     }
 
     Ok(())
+}
+
+fn run_search_screen_in_session(
+    session: &mut TerminalGuard,
+    initial: Option<SearchConfig>,
+) -> Result<Option<SearchConfig>> {
+    let mut screen = initial
+        .as_ref()
+        .map(SearchScreen::from_config)
+        .unwrap_or_default();
+
+    loop {
+        session
+            .terminal_mut()
+            .draw(|frame| search::render(frame, &screen))?;
+
+        match event::read()? {
+            Event::Key(key) => match screen.handle_key(key) {
+                SearchScreenAction::Start(config) => return Ok(Some(config)),
+                SearchScreenAction::Exit => return Ok(None),
+                SearchScreenAction::None => {}
+            },
+            Event::Paste(text) => {
+                screen.handle_paste(&text);
+            }
+            Event::Resize(_, _) => {}
+            _ => {}
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
