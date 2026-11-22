@@ -26,9 +26,10 @@ where
     let mut start_immediately = initial.is_some();
 
     loop {
-        let next_config = take_immediate_config(&mut initial, &mut start_immediately)
-            .map(Some)
-            .unwrap_or(run_search_screen_in_session(&mut session, initial.take())?);
+        let next_config = match take_immediate_config(&mut initial, &mut start_immediately) {
+            Some(config) => Some(config),
+            None => run_search_screen_in_session(&mut session, initial.take())?,
+        };
         let Some(config) = next_config else {
             break;
         };
