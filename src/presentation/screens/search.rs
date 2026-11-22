@@ -705,6 +705,102 @@ mod tests {
     }
 
     #[test]
+    fn cli_configuration_prefills_the_screen_without_changing_criteria() {
+        let config = SearchForm {
+            system: "Colonia".to_owned(),
+            surface_types: vec![SurfaceType::RockyBody, SurfaceType::HighMetalContentWorld],
+            atmosphere_types: vec![AtmosphereType::Water],
+            temperature: "395-450".to_owned(),
+            gravity: "0.1-1.0".to_owned(),
+            pressure: "0.040-0.063".to_owned(),
+            count: "6".to_owned(),
+            exclude_with_bio_signals: true,
+        }
+        .build()
+        .unwrap();
+
+        let screen = SearchScreen::from_config(&config);
+
+        assert_eq!(screen.form.build().unwrap(), config);
+        assert_eq!(screen.selected_preset(), PRESETS.len());
+        assert!(screen.advanced());
+    }
+
+    #[test]
+    fn selected_profile_preserves_or_surfaces_and_gravity_range() {
+        let mut screen = SearchScreen::default();
+        screen.select_preset(2);
+        let config = screen.form.build().unwrap();
+
+        assert_eq!(
+            config.criteria.surface,
+            crate::domain::criteria::Filter::one_of(vec![
+                SurfaceType::RockyBody,
+                SurfaceType::HighMetalContentWorld,
+            ])
+        );
+        assert_eq!(
+            config.criteria.gravity,
+            crate::domain::criteria::NumericRange { min: 0.1, max: 1.0 }
+        );
+    }
+
+    #[test]
+    fn profile_one_preserves_temperature_pressure_and_bio_switch() {
+        let mut screen = SearchScreen::default();
+        screen.form.exclude_with_bio_signals = true;
+        let config = screen.form.build().unwrap();
+
+        assert_eq!(
+            config.criteria.temperature,
+            crate::domain::criteria::NumericRange { min: 190.0, max: 195.0 }
+        );
+        assert_eq!(
+            config.criteria.pressure,
+            crate::domain::criteria::NumericRange { min: 0.042, max: 0.237 }
+        );
+        assert!(config.criteria.exclude_with_bio_signals);
+    }
+
+    #[test]
+    fn surface_selection_supports_or_and_any_is_exclusive() {
+        let mut screen = SearchScreen::new(SearchForm::default());
+        screen.set_advanced(true);
+        for _ in 0..4 {
+            screen.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+        }
+
+        screen.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        assert_eq!(
+            screen.form.surface_types,
+            vec![SurfaceType::RockyBody, SurfaceType::IcyBody]
+        );
+
+        screen.handle_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        assert_eq!(screen.form.surface_types, vec![SurfaceType::IcyBody]);
+
+        screen.handle_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        assert_eq!(screen.form.surface_types, vec![SurfaceType::Any]);
+    }
+
+    #[test]
+    fn invalid_submission_renders_the_field_error_in_the_screen() {
+        let form = SearchForm {
+            system: String::new(),
+            ..SearchForm::default()
+        };
+        let mut screen = SearchScreen::new(form);
+        screen.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+
+        assert!(rendered(&screen, 120, 40).contains("Укажите центральную систему"));
+    }
+
+    #[test]
     fn search_screen_shows_profiles_fields_summary_and_keyboard_hints() {
         let screen = SearchScreen::default();
         let rendered = rendered(&screen, 120, 40);
