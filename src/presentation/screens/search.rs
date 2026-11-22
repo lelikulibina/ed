@@ -753,11 +753,17 @@ mod tests {
 
         assert_eq!(
             config.criteria.temperature,
-            crate::domain::criteria::NumericRange { min: 190.0, max: 195.0 }
+            crate::domain::criteria::NumericRange {
+                min: 190.0,
+                max: 195.0
+            }
         );
         assert_eq!(
             config.criteria.pressure,
-            crate::domain::criteria::NumericRange { min: 0.042, max: 0.237 }
+            crate::domain::criteria::NumericRange {
+                min: 0.042,
+                max: 0.237
+            }
         );
         assert!(config.criteria.exclude_with_bio_signals);
     }
