@@ -3,6 +3,7 @@ use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
+    text::{Line, Span, Text},
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
 };
 
@@ -447,57 +448,67 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     );
 
     let mut fields = vec![
-        format!("Система             {}", screen.form.system),
-        format!("Сколько             {}", screen.form.count),
-        format!(
+        Line::from(format!(
+            "Система             {}",
+            display_input(&screen.system_input, screen.focus == SearchField::System)
+        )),
+        Line::from(format!(
+            "Сколько             {}",
+            display_input(&screen.count_input, screen.focus == SearchField::Count)
+        )),
+        Line::from(format!(
             "Без биосигналов     {}",
-            if screen.form.exclude_with_bio_signals {
-                "[x]"
-            } else {
-                "[ ]"
-            }
-        ),
+            if screen.form.exclude_with_bio_signals { "[x]" } else { "[ ]" }
+        )),
     ];
+    push_error(&mut fields, screen, FormField::System);
+    push_error(&mut fields, screen, FormField::Count);
+
     if screen.advanced {
         fields.extend([
-            format!(
+            Line::from(format!(
                 "Поверхность         {}",
-                screen
-                    .form
-                    .surface_types
-                    .iter()
-                    .map(|value| value.label_ru())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ),
-            format!(
+                screen.form.surface_types.iter().map(|value| value.label_ru()).collect::<Vec<_>>().join(", ")
+            )),
+            Line::from(format!(
                 "Атмосфера           {}",
-                screen
-                    .form
-                    .atmosphere_types
-                    .iter()
-                    .map(|value| value.label_ru())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ),
-            format!("Температура         {} K", screen.form.temperature),
-            format!("Гравитация          {} g", screen.form.gravity),
-            format!("Давление            {} atm", screen.form.pressure),
+                screen.form.atmosphere_types.iter().map(|value| value.label_ru()).collect::<Vec<_>>().join(", ")
+            )),
+            Line::from(format!(
+                "Температура         {} — {} K",
+                display_input(&screen.temperature_min, screen.focus == SearchField::TemperatureMin),
+                display_input(&screen.temperature_max, screen.focus == SearchField::TemperatureMax)
+            )),
+            Line::from(format!(
+                "Гравитация          {} — {} g",
+                display_input(&screen.gravity_min, screen.focus == SearchField::GravityMin),
+                display_input(&screen.gravity_max, screen.focus == SearchField::GravityMax)
+            )),
+            Line::from(format!(
+                "Давление            {} — {} atm",
+                display_input(&screen.pressure_min, screen.focus == SearchField::PressureMin),
+                display_input(&screen.pressure_max, screen.focus == SearchField::PressureMax)
+            )),
         ]);
+        push_error(&mut fields, screen, FormField::Surface);
+        push_error(&mut fields, screen, FormField::Atmosphere);
+        push_error(&mut fields, screen, FormField::Temperature);
+        push_error(&mut fields, screen, FormField::Gravity);
+        push_error(&mut fields, screen, FormField::Pressure);
     } else {
-        fields.push("▸ Дополнительно (F2)".to_owned());
+        fields.push(Line::from("▸ Дополнительно (F2)"));
     }
-    fields.push(String::new());
-    fields.push(format!(
+    fields.push(Line::from(""));
+    fields.push(Line::from(format!(
         "Потенциал профиля   {} млн CR",
         PRESETS
             .get(screen.selected_preset)
             .map(|preset| preset.potential_value_cr / 1_000_000)
             .unwrap_or_default()
-    ));
+    )));
 
     frame.render_widget(
-        Paragraph::new(fields.join("\n"))
+        Paragraph::new(Text::from(fields))
             .block(
                 Block::default()
                     .title(" Параметры ")
@@ -528,6 +539,24 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         .style(Style::default().fg(Color::Gray)),
         root[3],
     );
+}
+
+fn display_input(input: &TextInput, focused: bool) -> String {
+    if !focused {
+        return input.value().to_owned();
+    }
+    let mut characters = input.value().chars().collect::<Vec<_>>();
+    characters.insert(input.cursor(), '▏');
+    characters.into_iter().collect()
+}
+
+fn push_error(fields: &mut Vec<Line<'static>>, screen: &SearchScreen, field: FormField) {
+    if let Some(error) = screen.errors.iter().find(|error| error.field == field) {
+        fields.push(Line::from(Span::styled(
+            format!("  ! {}", error.message),
+            theme::Theme::default().error,
+        )));
+    }
 }
 
 fn profile_item(name: &'static str, selected: bool) -> ListItem<'static> {
