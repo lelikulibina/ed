@@ -135,7 +135,7 @@ mod tests {
             &mut app,
             AppEvent::Search(SearchEvent::Failed(
                 crate::application::search::SearchError::Resolve(
-                    crate::spansh::ResolveError::NoCandidates("Sol".to_owned()),
+                    crate::spansh::ResolveError::NotFound("Sol".to_owned()),
                 ),
             )),
         );
