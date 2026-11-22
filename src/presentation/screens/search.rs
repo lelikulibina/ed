@@ -135,7 +135,14 @@ impl SearchScreen {
         let mut screen = Self::new(SearchForm::from_config(config));
         screen.selected_preset = PRESETS
             .iter()
-            .position(|preset| preset.to_criteria() == config.criteria)
+            .position(|preset| {
+                preset
+                    .to_criteria(
+                        config.criteria.count,
+                        config.criteria.exclude_with_bio_signals,
+                    )
+                    .is_ok_and(|criteria| criteria == config.criteria)
+            })
             .unwrap_or(PRESETS.len());
         screen.advanced = true;
         screen
