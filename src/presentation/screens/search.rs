@@ -9,9 +9,9 @@ use ratatui::{
 
 use crate::{
     application::{
-    config::SearchConfig,
-    form::{FieldError, FormField, SearchForm},
-    presets::PRESETS,
+        config::SearchConfig,
+        form::{FieldError, FormField, SearchForm},
+        presets::PRESETS,
     },
     domain::catalog::{AtmosphereType, SurfaceType},
 };
@@ -204,7 +204,11 @@ impl SearchScreen {
                 };
             }
             KeyCode::Up if self.focus == SearchField::Profile => {
-                let next = if self.selected_preset == 0 { PRESETS.len() } else { self.selected_preset - 1 };
+                let next = if self.selected_preset == 0 {
+                    PRESETS.len()
+                } else {
+                    self.selected_preset - 1
+                };
                 self.select_preset(next);
                 return SearchScreenAction::None;
             }
@@ -241,7 +245,10 @@ impl SearchScreen {
             SearchField::GravityMax => self.gravity_max.handle_key(key),
             SearchField::PressureMin => self.pressure_min.handle_key(key),
             SearchField::PressureMax => self.pressure_max.handle_key(key),
-            SearchField::Profile | SearchField::BioSignals | SearchField::Surface | SearchField::Atmosphere => false,
+            SearchField::Profile
+            | SearchField::BioSignals
+            | SearchField::Surface
+            | SearchField::Atmosphere => false,
         };
         if changed {
             self.sync_form_from_inputs();
@@ -270,16 +277,28 @@ impl SearchScreen {
     }
 
     fn move_focus(&mut self, direction: isize) {
-        let mut fields = vec![SearchField::Profile, SearchField::System, SearchField::Count, SearchField::BioSignals];
+        let mut fields = vec![
+            SearchField::Profile,
+            SearchField::System,
+            SearchField::Count,
+            SearchField::BioSignals,
+        ];
         if self.advanced {
             fields.extend([
-                SearchField::Surface, SearchField::Atmosphere,
-                SearchField::TemperatureMin, SearchField::TemperatureMax,
-                SearchField::GravityMin, SearchField::GravityMax,
-                SearchField::PressureMin, SearchField::PressureMax,
+                SearchField::Surface,
+                SearchField::Atmosphere,
+                SearchField::TemperatureMin,
+                SearchField::TemperatureMax,
+                SearchField::GravityMin,
+                SearchField::GravityMax,
+                SearchField::PressureMin,
+                SearchField::PressureMax,
             ]);
         }
-        let index = fields.iter().position(|field| *field == self.focus).unwrap_or_default();
+        let index = fields
+            .iter()
+            .position(|field| *field == self.focus)
+            .unwrap_or_default();
         let next = (index as isize + direction).rem_euclid(fields.len() as isize) as usize;
         self.focus = fields[next];
     }
@@ -289,7 +308,8 @@ impl SearchScreen {
     }
 
     fn move_atmosphere(&mut self, direction: isize) {
-        self.atmosphere_cursor = (self.atmosphere_cursor as isize + direction).rem_euclid(17) as usize;
+        self.atmosphere_cursor =
+            (self.atmosphere_cursor as isize + direction).rem_euclid(17) as usize;
         self.form.atmosphere_types = vec![atmosphere_at(self.atmosphere_cursor)];
         self.mark_custom();
     }
@@ -299,8 +319,15 @@ impl SearchScreen {
         if selected == SurfaceType::Any {
             self.form.surface_types = vec![SurfaceType::Any];
         } else {
-            self.form.surface_types.retain(|surface| *surface != SurfaceType::Any);
-            if let Some(index) = self.form.surface_types.iter().position(|surface| *surface == selected) {
+            self.form
+                .surface_types
+                .retain(|surface| *surface != SurfaceType::Any);
+            if let Some(index) = self
+                .form
+                .surface_types
+                .iter()
+                .position(|surface| *surface == selected)
+            {
                 self.form.surface_types.remove(index);
             } else {
                 self.form.surface_types.push(selected);
@@ -315,9 +342,17 @@ impl SearchScreen {
     fn sync_form_from_inputs(&mut self) {
         self.form.system = self.system_input.value().to_owned();
         self.form.count = self.count_input.value().to_owned();
-        self.form.temperature = format!("{}-{}", self.temperature_min.value(), self.temperature_max.value());
+        self.form.temperature = format!(
+            "{}-{}",
+            self.temperature_min.value(),
+            self.temperature_max.value()
+        );
         self.form.gravity = format!("{}-{}", self.gravity_min.value(), self.gravity_max.value());
-        self.form.pressure = format!("{}-{}", self.pressure_min.value(), self.pressure_max.value());
+        self.form.pressure = format!(
+            "{}-{}",
+            self.pressure_min.value(),
+            self.pressure_max.value()
+        );
         self.errors.clear();
     }
 
@@ -339,17 +374,23 @@ impl SearchScreen {
     }
 
     fn is_advanced_field(&self) -> bool {
-        matches!(self.focus,
-            SearchField::Surface | SearchField::Atmosphere |
-            SearchField::TemperatureMin | SearchField::TemperatureMax |
-            SearchField::GravityMin | SearchField::GravityMax |
-            SearchField::PressureMin | SearchField::PressureMax
+        matches!(
+            self.focus,
+            SearchField::Surface
+                | SearchField::Atmosphere
+                | SearchField::TemperatureMin
+                | SearchField::TemperatureMax
+                | SearchField::GravityMin
+                | SearchField::GravityMax
+                | SearchField::PressureMin
+                | SearchField::PressureMax
         )
     }
 }
 
 fn split_range(value: &str, default_min: &str, default_max: &str) -> (String, String) {
-    value.split_once('-')
+    value
+        .split_once('-')
         .map(|(min, max)| (min.to_owned(), max.to_owned()))
         .unwrap_or_else(|| (default_min.to_owned(), default_max.to_owned()))
 }
@@ -458,7 +499,11 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         )),
         Line::from(format!(
             "Без биосигналов     {}",
-            if screen.form.exclude_with_bio_signals { "[x]" } else { "[ ]" }
+            if screen.form.exclude_with_bio_signals {
+                "[x]"
+            } else {
+                "[ ]"
+            }
         )),
     ];
     push_error(&mut fields, screen, FormField::System);
@@ -468,16 +513,34 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         fields.extend([
             Line::from(format!(
                 "Поверхность         {}",
-                screen.form.surface_types.iter().map(|value| value.label_ru()).collect::<Vec<_>>().join(", ")
+                screen
+                    .form
+                    .surface_types
+                    .iter()
+                    .map(|value| value.label_ru())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             )),
             Line::from(format!(
                 "Атмосфера           {}",
-                screen.form.atmosphere_types.iter().map(|value| value.label_ru()).collect::<Vec<_>>().join(", ")
+                screen
+                    .form
+                    .atmosphere_types
+                    .iter()
+                    .map(|value| value.label_ru())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             )),
             Line::from(format!(
                 "Температура         {} — {} K",
-                display_input(&screen.temperature_min, screen.focus == SearchField::TemperatureMin),
-                display_input(&screen.temperature_max, screen.focus == SearchField::TemperatureMax)
+                display_input(
+                    &screen.temperature_min,
+                    screen.focus == SearchField::TemperatureMin
+                ),
+                display_input(
+                    &screen.temperature_max,
+                    screen.focus == SearchField::TemperatureMax
+                )
             )),
             Line::from(format!(
                 "Гравитация          {} — {} g",
@@ -486,8 +549,14 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
             )),
             Line::from(format!(
                 "Давление            {} — {} atm",
-                display_input(&screen.pressure_min, screen.focus == SearchField::PressureMin),
-                display_input(&screen.pressure_max, screen.focus == SearchField::PressureMax)
+                display_input(
+                    &screen.pressure_min,
+                    screen.focus == SearchField::PressureMin
+                ),
+                display_input(
+                    &screen.pressure_max,
+                    screen.focus == SearchField::PressureMax
+                )
             )),
         ]);
         push_error(&mut fields, screen, FormField::Surface);
