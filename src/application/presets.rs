@@ -3,10 +3,7 @@ use crate::domain::{
     criteria::{CriteriaError, Filter, NumericRange, SearchCriteria},
 };
 
-pub const PRESET_GRAVITY_RANGE: NumericRange = NumericRange {
-    min: 0.1,
-    max: 1.0,
-};
+pub const PRESET_GRAVITY_RANGE: NumericRange = NumericRange { min: 0.1, max: 1.0 };
 
 #[derive(Debug, Clone, Copy)]
 pub struct SearchPreset {

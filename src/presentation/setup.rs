@@ -54,7 +54,6 @@ const ATMOSPHERES: [&str; 17] = [
     AtmosphereType::Oxygen.spansh_value(),
 ];
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Step {
     Profiles,
