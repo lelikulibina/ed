@@ -705,11 +705,11 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     );
 
     let summary = format!(
-        "{}: {} · {}: {}",
+        "{}: {} · {}: {} св. лет",
         ui::SEARCH_SUMMARY_PREFIX,
         screen.form.summary().replace('\n', " · "),
         ui::SEARCH_RADIUS_LABEL,
-        format!("{} св. лет", screen.form.radius)
+        screen.form.radius
     );
     frame.render_widget(
         Paragraph::new(summary).wrap(Wrap { trim: true }).block(
