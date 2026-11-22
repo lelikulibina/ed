@@ -25,6 +25,10 @@ pub mod ui {
     pub const SEARCH_PROFILE_VALUE_LABEL: &str = "Потенциал профиля";
     pub const SEARCH_SUMMARY_PREFIX: &str = "Ищем";
     pub const SEARCH_RADIUS_LABEL: &str = "Радиус";
+    pub const SEARCH_SPECIES_LABEL: &str = "видов";
+    pub const SEARCH_SURFACE_CHOICE_LABEL: &str = "выбор";
+    pub const SEARCH_PROFILE_VALUE_UNIT: &str = "млн CR";
+    pub const SEARCH_RADIUS_VALUE: &str = "1000 св. лет";
     pub const FORM_ERROR_MARKER: &str = "  ! ";
     pub const RUNNING_TITLE: &str = " Поиск планет ";
     pub const RUNNING_PANEL_TITLE: &str = " Выполнение ";
