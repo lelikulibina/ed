@@ -145,6 +145,10 @@ pub(crate) fn parse_range_i32(s: &str) -> Result<(i32, i32)> {
 #[cfg(test)]
 mod tests {
     use super::Args;
+    use crate::domain::{
+        catalog::{AtmosphereType, SurfaceType},
+        criteria::Filter,
+    };
     use clap::Parser;
 
     #[test]
@@ -249,38 +253,123 @@ mod tests {
     }
 
     #[test]
-    fn converts_arguments_to_shared_search_configuration() {
-        let config = Args::try_parse_from([
-            "ed_planet_search",
-            "--system",
-            "  Sol  ",
-            "--planet-type",
-            "Rocky body",
-            "--atmosphere-type",
-            "Water",
-            "--temperature",
-            "395-450",
-            "--gravity",
-            "0.1-1.0",
-            "--pressure",
-            "0.040-0.063",
-            "--count",
-            "6",
-            "--exclude-with-bio-signals",
-        ])
-        .unwrap()
-        .into_search_config()
-        .unwrap();
+    fn converts_cli_arguments_to_typed_search_criteria() {
+        struct Case {
+            name: &'static str,
+            arguments: Vec<&'static str>,
+            surface: Filter<SurfaceType>,
+            atmosphere: Filter<AtmosphereType>,
+            temperature: (f64, f64),
+            gravity: (f64, f64),
+            pressure: (f64, f64),
+            count: usize,
+            exclude_with_bio_signals: bool,
+        }
 
-        assert_eq!(config.system, "Sol");
-        assert_eq!(config.criteria.count, 6);
-        assert!(config.criteria.exclude_with_bio_signals);
-        assert_eq!(config.criteria.temperature.min, 395.0);
-        assert_eq!(config.criteria.temperature.max, 450.0);
-        assert_eq!(config.criteria.gravity.min, 0.1);
-        assert_eq!(config.criteria.gravity.max, 1.0);
-        assert_eq!(config.criteria.pressure.min, 0.040);
-        assert_eq!(config.criteria.pressure.max, 0.063);
+        let cases = [
+            Case {
+                name: "any filters use unfiltered selections and defaults",
+                arguments: vec![
+                    "ed_planet_search",
+                    "--system",
+                    "Sol",
+                    "--planet-type",
+                    "any",
+                    "--atmosphere-type",
+                    "any",
+                ],
+                surface: Filter::Any,
+                atmosphere: Filter::Any,
+                temperature: (0.0, 5_000.0),
+                gravity: (0.1, 1.0),
+                pressure: (0.0, 10.0),
+                count: 5,
+                exclude_with_bio_signals: false,
+            },
+            Case {
+                name: "canonical values and explicit ranges",
+                arguments: vec![
+                    "ed_planet_search",
+                    "--system",
+                    "  Sol  ",
+                    "--planet-type",
+                    "Rocky body",
+                    "--atmosphere-type",
+                    "Water",
+                    "--temperature",
+                    "395-450",
+                    "--gravity",
+                    "0.1-1.0",
+                    "--pressure",
+                    "0.040-0.063",
+                    "--count",
+                    "6",
+                    "--exclude-with-bio-signals",
+                ],
+                surface: Filter::one_of(vec![SurfaceType::RockyBody]),
+                atmosphere: Filter::one_of(vec![AtmosphereType::Water]),
+                temperature: (395.0, 450.0),
+                gravity: (0.1, 1.0),
+                pressure: (0.040, 0.063),
+                count: 6,
+                exclude_with_bio_signals: true,
+            },
+            Case {
+                name: "legacy aliases normalize to canonical enum values",
+                arguments: vec![
+                    "ed_planet_search",
+                    "--system",
+                    "Sol",
+                    "--planet-type",
+                    "rocky",
+                    "--atmosphere-type",
+                    "carbon-dioxide",
+                ],
+                surface: Filter::one_of(vec![SurfaceType::RockyBody]),
+                atmosphere: Filter::one_of(vec![AtmosphereType::CarbonDioxide]),
+                temperature: (0.0, 5_000.0),
+                gravity: (0.1, 1.0),
+                pressure: (0.0, 10.0),
+                count: 5,
+                exclude_with_bio_signals: false,
+            },
+        ];
+
+        for case in cases {
+            let config = Args::try_parse_from(case.arguments)
+                .unwrap_or_else(|error| panic!("{}: {error}", case.name))
+                .into_search_config()
+                .unwrap_or_else(|error| panic!("{}: {error}", case.name));
+
+            assert_eq!(config.system, "Sol", "{}", case.name);
+            assert_eq!(config.criteria.surface, case.surface, "{}", case.name);
+            assert_eq!(config.criteria.atmosphere, case.atmosphere, "{}", case.name);
+            assert_eq!(
+                (config.criteria.temperature.min, config.criteria.temperature.max),
+                case.temperature,
+                "{}",
+                case.name
+            );
+            assert_eq!(
+                (config.criteria.gravity.min, config.criteria.gravity.max),
+                case.gravity,
+                "{}",
+                case.name
+            );
+            assert_eq!(
+                (config.criteria.pressure.min, config.criteria.pressure.max),
+                case.pressure,
+                "{}",
+                case.name
+            );
+            assert_eq!(config.criteria.count, case.count, "{}", case.name);
+            assert_eq!(
+                config.criteria.exclude_with_bio_signals,
+                case.exclude_with_bio_signals,
+                "{}",
+                case.name
+            );
+        }
     }
 
     #[test]
