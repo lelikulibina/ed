@@ -242,7 +242,7 @@ fn profile_item(name: &'static str, selected: bool) -> ListItem<'static> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crossterm::event::{KeyCode, KeyModifiers};
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
     fn rendered(screen: &SearchScreen, width: u16, height: u16) -> String {
         let backend = ratatui::backend::TestBackend::new(width, height);
