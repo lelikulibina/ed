@@ -15,6 +15,7 @@ use super::{
     app::{self, App, AppEvent, Command, Screen},
     events::poll_and_send,
     terminal::TerminalGuard,
+    text::ui,
 };
 
 pub async fn run<F, Fut>(initial: Option<SearchConfig>, search: F) -> Result<()>
@@ -66,7 +67,9 @@ where
                 Some(Command::CopySystem(system)) => {
                     send_osc52(&system)?;
                     app.results_screen.set_status_message(format!(
-                        "Скопировано: {system} · если OSC 52 не поддерживается, выделите имя вручную"
+                        "{}: {system} · {}",
+                        ui::COPY_STATUS_PREFIX,
+                        ui::COPY_MANUAL_FALLBACK
                     ));
                 }
                 None => {}
@@ -90,7 +93,7 @@ async fn start_search_task<F, Fut>(
     cancel_search_task(app).await;
     app.screen = Screen::Running;
     app.config = config.clone();
-    app.progress_message = Some("Подготовка поиска…".to_owned());
+    app.progress_message = Some(ui::APP_SEARCH_PREPARING.to_owned());
     app.resolved_system = None;
     app.current_page = 0;
     app.found_count = 0;
