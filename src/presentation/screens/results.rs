@@ -272,10 +272,12 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
 
     frame.render_widget(
         Paragraph::new(format!(
-            "{}: {}  ·  СИСТЕМА: {}  ·  СОРТИРОВКА: {}",
+            "{}: {}  ·  {}: {}  ·  {}: {}",
             ui::RESULTS_SUMMARY_LABEL,
             app.results.len(),
+            ui::RESULTS_SYSTEM_HEADER.to_uppercase(),
             app.config.system,
+            "СОРТИРОВКА",
             app.results_screen.sort_label()
         ))
         .alignment(Alignment::Center)
@@ -457,9 +459,10 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
             display_number(body.gravity, 3)
         )),
         Line::from(format!(
-            "{}: {} св. л.",
+            "{}: {} {}",
             ui::RESULTS_DETAIL_DISTANCE,
-            display_number(body.distance_ly, 2)
+            display_number(body.distance_ly, 2),
+            ui::RESULTS_DISTANCE_HEADER
         )),
         Line::from(format!(
             "{}: {}",
