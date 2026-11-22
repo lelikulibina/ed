@@ -189,6 +189,14 @@ impl ResultsScreen {
         let arrow = if self.descending { "▼" } else { "▲" };
         format!("{} {arrow}", self.sort_mode.label())
     }
+
+    fn header_label(&self, mode: SortMode, label: &str) -> String {
+        if self.sort_mode == mode {
+            format!("{label} {}", if self.descending { "▼" } else { "▲" })
+        } else {
+            label.to_owned()
+        }
+    }
 }
 
 fn compare_optional(left: Option<f64>, right: Option<f64>) -> Ordering {
@@ -319,7 +327,6 @@ fn render_empty(frame: &mut ratatui::Frame<'_>, app: &App) {
 fn render_planet_table(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, app: &App) {
     let ordered = app.results_screen.ordered_bodies(&app.results);
     let selected = app.results_screen.selected_index(&ordered);
-    let selected_body = app.results_screen.selected_body(&ordered);
     let rows = ordered
         .iter()
         .map(|body| {
@@ -351,29 +358,13 @@ fn render_planet_table(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Re
     )
     .header(
         Row::new(vec![
-            "Планета",
-            "Система",
-            if app.results_screen.sort_mode == SortMode::Distance {
-                "св. л. ▲"
-            } else {
-                "св. л."
-            },
-            if app.results_screen.sort_mode == SortMode::Temperature {
-                "K ▲"
-            } else {
-                "K"
-            },
-            if app.results_screen.sort_mode == SortMode::Pressure {
-                "atm ▲"
-            } else {
-                "atm"
-            },
-            if app.results_screen.sort_mode == SortMode::Gravity {
-                "g ▲"
-            } else {
-                "g"
-            },
-            "Выручка",
+            Cell::from("Планета"),
+            Cell::from("Система"),
+            Cell::from(app.results_screen.header_label(SortMode::Distance, "св. л.")),
+            Cell::from(app.results_screen.header_label(SortMode::Temperature, "K")),
+            Cell::from(app.results_screen.header_label(SortMode::Pressure, "atm")),
+            Cell::from(app.results_screen.header_label(SortMode::Gravity, "g")),
+            Cell::from("Выручка"),
         ])
         .style(theme::Theme::default().accent)
         .bottom_margin(0),
@@ -386,7 +377,6 @@ fn render_planet_table(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Re
     .highlight_symbol("▸ ")
     .block(Block::default().title(" Планеты ").borders(Borders::ALL));
 
-    let _ = selected_body;
     frame.render_stateful_widget(table, area, &mut state);
 }
 
@@ -481,29 +471,35 @@ fn render_exobiology(
         frame.render_widget(
             Paragraph::new("Экзобиологические кандидаты не найдены.")
                 .wrap(Wrap { trim: true })
-                .block(
-                    Block::default()
-                        .title(" Экзобиология ")
-                        .borders(Borders::ALL),
-                ),
+                .block(Block::default().title(" Экзобиология ").borders(Borders::ALL)),
             area,
         );
         return;
     };
 
     if view.rows.is_empty() {
+        let mut lines = vec![Line::from(view.headline.as_str())];
+        lines.extend(view.summary.iter().map(|line| Line::from(line.as_str())));
+        lines.extend(view.notes.iter().map(|line| Line::from(line.as_str())));
         frame.render_widget(
-            Paragraph::new(view.headline.as_str())
+            Paragraph::new(lines)
                 .wrap(Wrap { trim: true })
-                .block(
-                    Block::default()
-                        .title(" Экзобиология ")
-                        .borders(Borders::ALL),
-                ),
+                .block(Block::default().title(" Экзобиология ").borders(Borders::ALL)),
             area,
         );
         return;
     }
+
+    let sections = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(2), Constraint::Min(2), Constraint::Length(2)])
+        .split(area);
+    frame.render_widget(
+        Paragraph::new(view.headline.as_str())
+            .wrap(Wrap { trim: true })
+            .block(Block::default().title(" Экзобиология ").borders(Borders::ALL)),
+        sections[0],
+    );
 
     let rows = view
         .rows
@@ -527,12 +523,22 @@ fn render_exobiology(
         ],
     )
     .header(Row::new(["Группа", "Вид", "За 3 образца", "Статус"]))
-    .block(
-        Block::default()
-            .title(" Экзобиология ")
-            .borders(Borders::ALL),
+    .block(Block::default().borders(Borders::ALL));
+    frame.render_widget(table, sections[1]);
+
+    let footer = view
+        .summary
+        .iter()
+        .chain(view.notes.iter())
+        .cloned()
+        .collect::<Vec<_>>()
+        .join(" · ");
+    frame.render_widget(
+        Paragraph::new(footer)
+            .wrap(Wrap { trim: true })
+            .block(Block::default().borders(Borders::ALL)),
+        sections[2],
     );
-    frame.render_widget(table, area);
 }
 
 #[cfg(test)]
