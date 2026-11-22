@@ -181,7 +181,7 @@ cargo fmt -- --check && cargo clippy --all-targets --all-features -- -D warnings
 - [x] Проверить, достижима ли ветка «картографирована» в `draw_results`; если нет — удалить (будет переписано на этапе 6).
 - [x] В `Cargo.toml` оставить у `tokio` только нужные продакшену фичи; `net` и `io-util` перенести в `[dev-dependencies]`, если сборка без них проходит.
 - [x] Добавить `.gitignore` (`/target`).
-- [ ] Не трогать `SearchPreset::criteria` под `#[cfg(test)]`: он заменяется на этапе 2.
+- [x] Не трогать `SearchPreset::criteria` под `#[cfg(test)]` на этапе 1; отложенную замену выполнить на этапе 2. На этапе 2 функция перенесена в production как `SearchPreset::to_criteria()`.
 
 **Приёмка:** гейт зелёный; в PR таблица «удалено / перенесено / оставлено» по списку из этапа 0; live-тест один; `spansh/bodies.rs` заметно короче (ожидаемо меньше 800 строк).
 
