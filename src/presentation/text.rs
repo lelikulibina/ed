@@ -110,7 +110,8 @@ pub fn exobiology_view(body: &Body) -> Result<Option<ExobiologyView>, EstimateEr
         notes.push("вероятности появления видов не рассчитаны");
     }
     notes.push("учтены только условия, внесённые в справочник");
-    notes.push("внутри одной биологической группы учитывается один вид, а не сумма всех кандидатов");
+    notes
+        .push("внутри одной биологической группы учитывается один вид, а не сумма всех кандидатов");
 
     Ok(Some(ExobiologyView {
         headline,
@@ -187,7 +188,11 @@ mod tests {
         assert!(!view.rows.is_empty());
         assert!(view.rows.iter().any(|row| row.genus == "Оссии"));
         assert!(view.rows.iter().any(|row| row.species == "Discus"));
-        assert!(view.rows.iter().any(|row| row.status.starts_with("Проверить:")));
+        assert!(
+            view.rows
+                .iter()
+                .any(|row| row.status.starts_with("Проверить:"))
+        );
         assert!(view.maximum_base_value_cr > 0);
         assert!(view.summary[0].contains("Потенциальная базовая выручка"));
         assert!(view.summary[1].contains("First Logged ×5"));
@@ -203,7 +208,11 @@ mod tests {
 
         let view = exobiology_view(&body).unwrap().unwrap();
         assert!(view.headline.contains("указанных Spansh"));
-        assert!(view.rows.iter().all(|row| row.genus == "Оссии" || row.genus == "Дерновина"));
+        assert!(
+            view.rows
+                .iter()
+                .all(|row| row.genus == "Оссии" || row.genus == "Дерновина")
+        );
         assert!(!view.rows.iter().any(|row| row.genus == "Бактерии"));
     }
 
