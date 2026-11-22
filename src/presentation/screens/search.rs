@@ -260,10 +260,7 @@ mod tests {
     #[test]
     fn selecting_a_profile_applies_it_immediately() {
         let mut screen = SearchScreen::default();
-        let action = screen.handle_key(KeyEvent::new(
-            KeyCode::Down,
-            KeyModifiers::NONE,
-        ));
+        let action = screen.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
 
         assert_eq!(action, SearchScreenAction::None);
         assert_eq!(screen.selected_preset(), 1);
@@ -280,17 +277,21 @@ mod tests {
 
     #[test]
     fn invalid_submission_keeps_input_and_reports_the_field_error() {
-        let mut form = SearchForm::default();
-        form.system = String::new();
+        let form = SearchForm {
+            system: String::new(),
+            ..SearchForm::default()
+        };
         let mut screen = SearchScreen::new(form);
-        let action = screen.handle_key(KeyEvent::new(
-            KeyCode::Enter,
-            KeyModifiers::NONE,
-        ));
+        let action = screen.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
 
         assert_eq!(action, SearchScreenAction::None);
         assert_eq!(screen.form.system, "");
-        assert!(screen.errors().iter().any(|error| error.field == crate::application::form::FormField::System));
+        assert!(
+            screen
+                .errors()
+                .iter()
+                .any(|error| error.field == crate::application::form::FormField::System)
+        );
     }
 
     #[test]
