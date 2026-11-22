@@ -234,185 +234,189 @@ fn encode_query_component(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::spansh::test_support::{MockResponse, MockServer};
 
     #[test]
-    fn exact_candidate_skips_prefix_matches_and_returns_none_without_exact_name() {
-        let value = serde_json::json!({
-            "results": [
-                {"name": "Sol Alpha", "id64": "1"},
-                {"name": "Sol", "id64": "2"}
-            ]
-        });
+    fn exact_candidate_selects_only_valid_exact_names_across_response_sections() {
+        let cases = [
+            (
+                "exact name after prefix candidate",
+                serde_json::json!({
+                    "results": [
+                        {"name": "Sol Alpha", "id64": "1"},
+                        {"name": "Sol", "id64": "2"}
+                    ]
+                }),
+                "sol",
+                Some(("Sol", "2")),
+            ),
+            (
+                "prefix-only results do not become exact matches",
+                serde_json::json!({"results": [{"name": "Sol Alpha", "id64": "1"}]}),
+                "Sol Beta",
+                None,
+            ),
+            (
+                "min_max supplies an exact candidate when results are prefixes",
+                serde_json::json!({
+                    "results": [{"name": "Thraikuae NS-U e2-18", "id64": "1"}],
+                    "values": ["Thraikuae NS-U e2-2"],
+                    "min_max": [{
+                        "name": "Thraikuae NS-U e2-2",
+                        "id64": "2",
+                        "x": 10.0,
+                        "y": 20.0,
+                        "z": 30.0
+                    }]
+                }),
+                "Thraikuae NS-U e2-2",
+                Some(("Thraikuae NS-U e2-2", "2")),
+            ),
+            (
+                "matching candidate without id64 is skipped",
+                serde_json::json!({
+                    "results": [
+                        {"name": "Sol"},
+                        {"name": "Sol", "id64": "42"}
+                    ]
+                }),
+                "Sol",
+                Some(("Sol", "42")),
+            ),
+        ];
 
-        let exact = exact_candidate(&value, "sol").unwrap();
-        assert_eq!(exact.name.as_deref(), Some("Sol"));
-        assert_eq!(exact.id64.as_deref(), Some("2"));
-        assert!(exact_candidate(&value, "Sol Beta").is_none());
+        for (case, response, requested, expected) in cases {
+            let candidate = exact_candidate(&response, requested);
+            match expected {
+                Some((name, id64)) => {
+                    let candidate =
+                        candidate.unwrap_or_else(|| panic!("{case}: no exact candidate"));
+                    assert_eq!(candidate.name.as_deref(), Some(name), "{case}");
+                    assert_eq!(candidate.id64.as_deref(), Some(id64), "{case}");
+                }
+                None => assert!(candidate.is_none(), "{case}"),
+            }
+        }
     }
 
     #[test]
-    fn skips_name_only_candidates_and_selects_first_resolvable_fallback() {
-        let value = serde_json::json!({
-            "results": [
+    fn first_candidate_parses_supported_shapes_and_skips_name_only_entries() {
+        let cases = [
+            (
+                "name-only candidate is skipped",
+                serde_json::json!({
+                    "results": [
+                        "Col 285 Sector BQ-Y",
+                        {"name": "Col 285 Sector BQ-Y", "id64": "9223372036854775807"}
+                    ]
+                }),
                 "Col 285 Sector BQ-Y",
-                {"name": "Col 285 Sector BQ-Y", "id64": "9223372036854775807"}
-            ]
-        });
-        let candidate = first_candidate(&value).unwrap();
-        assert_eq!(candidate.id64.as_deref(), Some("9223372036854775807"));
-        assert_eq!(candidate.name.as_deref(), Some("Col 285 Sector BQ-Y"));
+                "9223372036854775807",
+                None,
+            ),
+            (
+                "flat coordinates are preserved",
+                serde_json::json!({
+                    "results": [{
+                        "name": "Sol",
+                        "id64": "10477373803",
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    }]
+                }),
+                "Sol",
+                "10477373803",
+                Some(Coordinates {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0
+                }),
+            ),
+            (
+                "large string id64 is not rounded",
+                serde_json::json!({
+                    "results": [{
+                        "name": "Sol",
+                        "id64": "9223372036854775807"
+                    }]
+                }),
+                "Sol",
+                "9223372036854775807",
+                None,
+            ),
+            (
+                "numeric u64 id64 is normalized to a string",
+                serde_json::json!([{
+                    "system_name": "Sol",
+                    "system_id64": 123456789_u64
+                }]),
+                "Sol",
+                "123456789",
+                None,
+            ),
+        ];
+
+        for (case, response, name, id64, coordinates) in cases {
+            let candidate = first_candidate(&response)
+                .unwrap_or_else(|| panic!("{case}: no candidate returned"));
+            assert_eq!(candidate.name.as_deref(), Some(name), "{case}");
+            assert_eq!(candidate.id64.as_deref(), Some(id64), "{case}");
+            assert_eq!(candidate.coordinates, coordinates, "{case}");
+        }
     }
 
     #[test]
-    fn exact_candidate_checks_min_max_even_when_results_only_has_prefixes() {
-        let value = serde_json::json!({
-            "results": [{"name": "Thraikuae NS-U e2-18", "id64": "1"}],
-            "values": ["Thraikuae NS-U e2-2"],
-            "min_max": [
-                {"name": "Thraikuae NS-U e2-2", "id64": "2", "x": 10.0, "y": 20.0, "z": 30.0}
-            ]
-        });
-        let candidate = exact_candidate(&value, "Thraikuae NS-U e2-2").unwrap();
-        assert_eq!(candidate.name.as_deref(), Some("Thraikuae NS-U e2-2"));
-        assert_eq!(candidate.id64.as_deref(), Some("2"));
-    }
+    fn detail_parser_accepts_supported_spansh_record_shapes() {
+        let coordinates = Coordinates {
+            x: 1.0,
+            y: 2.0,
+            z: 3.0,
+        };
+        let cases = [
+            (
+                "record envelope",
+                serde_json::json!({
+                    "record": {
+                        "name": "Sol",
+                        "id64": "42",
+                        "x": 1.0,
+                        "y": 2.0,
+                        "z": 3.0
+                    }
+                }),
+            ),
+            (
+                "nested system coordinates",
+                serde_json::json!({
+                    "system": {
+                        "name": "Sol",
+                        "id64": "42",
+                        "coords": {"x": 1.0, "y": 2.0, "z": 3.0}
+                    }
+                }),
+            ),
+        ];
 
-    #[test]
-    fn exact_candidate_skips_matching_name_without_id64() {
-        let value = serde_json::json!({
-            "results": [
-                {"name": "Sol"},
-                {"name": "Sol", "id64": "42"}
-            ]
-        });
-        let candidate = exact_candidate(&value, "Sol").unwrap();
-        assert_eq!(candidate.id64.as_deref(), Some("42"));
-    }
-
-    #[test]
-    fn candidate_parser_reads_flat_system_coordinates() {
-        let value = serde_json::json!({
-            "results": [{
-                "name": "Sol",
-                "id64": "10477373803",
-                "x": 0.0,
-                "y": 0.0,
-                "z": 0.0
-            }]
-        });
-        let candidate = first_candidate(&value).unwrap();
-        assert_eq!(
-            candidate.coordinates,
-            Some(Coordinates {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0
-            })
-        );
-    }
-
-    #[test]
-    fn candidate_parser_preserves_large_id64_as_string() {
-        let value = serde_json::json!({
-            "results": [{
-                "name": "Sol",
-                "id64": "9223372036854775807"
-            }]
-        });
-        let candidate = first_candidate(&value).unwrap();
-        assert_eq!(candidate.id64.as_deref(), Some("9223372036854775807"));
-        assert_eq!(candidate.name.as_deref(), Some("Sol"));
-    }
-
-    #[test]
-    fn candidate_parser_accepts_numeric_u64_id64() {
-        let value = serde_json::json!([{
-            "system_name": "Sol",
-            "system_id64": 123456789_u64
-        }]);
-        let candidate = first_candidate(&value).unwrap();
-        assert_eq!(candidate.id64.as_deref(), Some("123456789"));
-    }
-
-    #[test]
-    fn detail_parser_accepts_spansh_record_envelope() {
-        let detail = serde_json::json!({
-            "record": {
-                "name": "Sol",
-                "id64": "42",
-                "x": 1.0,
-                "y": 2.0,
-                "z": 3.0
-            }
-        });
-
-        let system = system_from_detail(&detail, "0".to_owned(), None).unwrap();
-        assert_eq!(system.name, "Sol");
-        assert_eq!(system.id64, "42");
-        assert_eq!(
-            system.coordinates,
-            Coordinates {
-                x: 1.0,
-                y: 2.0,
-                z: 3.0
-            }
-        );
-    }
-
-    #[test]
-    fn detail_parser_accepts_nested_coords() {
-        let detail = serde_json::json!({
-            "system": {
-                "name": "Sol",
-                "id64": "42",
-                "coords": {"x": 1.0, "y": 2.0, "z": 3.0}
-            }
-        });
-        let system = system_from_detail(&detail, "0".to_owned(), None).unwrap();
-        assert_eq!(system.name, "Sol");
-        assert_eq!(system.id64, "42");
-        assert_eq!(
-            system.coordinates,
-            Coordinates {
-                x: 1.0,
-                y: 2.0,
-                z: 3.0
-            }
-        );
+        for (case, detail) in cases {
+            let system = system_from_detail(&detail, "0".to_owned(), None)
+                .unwrap_or_else(|| panic!("{case}: detail could not be parsed"));
+            assert_eq!(system.name, "Sol", "{case}");
+            assert_eq!(system.id64, "42", "{case}");
+            assert_eq!(system.coordinates, coordinates, "{case}");
+        }
     }
 
     #[tokio::test]
     async fn resolver_drops_trailing_components_and_loads_system_details() {
-        use tokio::{
-            io::{AsyncReadExt, AsyncWriteExt},
-            net::TcpListener,
-        };
-
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
         let responses = [
             r#"{"results":[]}"#,
             r#"{"results":[{"name":"Col 285 Sector BQ-Y","id64":"9223372036854775807"}]}"#,
             r#"{"name":"Col 285 Sector BQ-Y","id64":"9223372036854775807","coords":{"x":10.0,"y":20.0,"z":30.0}}"#,
         ];
-        let server = tokio::spawn(async move {
-            let mut requests = Vec::new();
-            for body in responses {
-                let (mut socket, _) = listener.accept().await.unwrap();
-                let mut request = [0_u8; 4096];
-                let size = socket.read(&mut request).await.unwrap();
-                requests.push(String::from_utf8_lossy(&request[..size]).to_string());
-                let response = format!(
-                    "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
-                    body.len(),
-                    body
-                );
-                socket.write_all(response.as_bytes()).await.unwrap();
-            }
-            requests
-        });
+        let server = MockServer::start(responses.into_iter().map(MockResponse::ok).collect()).await;
 
-        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let resolver = SystemResolver::new(client);
         let system = resolver.resolve("Col 285 Sector BQ-Y d40").await.unwrap();
 
@@ -427,7 +431,7 @@ mod tests {
             }
         );
 
-        let requests = server.await.unwrap();
+        let requests = server.finish().await;
         assert!(requests[0].starts_with(
             "GET /api/systems/field_values/system_names?q=Col%20285%20Sector%20BQ-Y%20d40 "
         ));
@@ -439,29 +443,9 @@ mod tests {
 
     #[tokio::test]
     async fn resolver_uses_coordinates_from_search_without_detail_request() {
-        use tokio::{
-            io::{AsyncReadExt, AsyncWriteExt},
-            net::TcpListener,
-        };
-
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
-        let server = tokio::spawn(async move {
-            let (mut socket, _) = listener.accept().await.unwrap();
-            let mut request = [0_u8; 2048];
-            let size = socket.read(&mut request).await.unwrap();
-            let request = String::from_utf8_lossy(&request[..size]).to_string();
-            let body = r#"{"count":1,"query":"Sol","results":[{"name":"Sol","id64":"42","x":1.0,"y":2.0,"z":3.0}]}"#;
-            let response = format!(
-                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
-                body.len(),
-                body
-            );
-            socket.write_all(response.as_bytes()).await.unwrap();
-            request
-        });
-
-        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let body = r#"{"count":1,"query":"Sol","results":[{"name":"Sol","id64":"42","x":1.0,"y":2.0,"z":3.0}]}"#;
+        let server = MockServer::start(vec![MockResponse::ok(body)]).await;
+        let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let system = SystemResolver::new(client).resolve("Sol").await.unwrap();
 
         assert_eq!(system.id64, "42");
@@ -474,58 +458,25 @@ mod tests {
                 z: 3.0
             }
         );
-        assert!(
-            server
-                .await
-                .unwrap()
-                .starts_with("GET /api/systems/field_values/system_names?q=Sol ")
-        );
+        let requests = server.finish().await;
+        assert_eq!(requests.len(), 1);
+        assert!(requests[0].starts_with("GET /api/systems/field_values/system_names?q=Sol "));
     }
 
     #[tokio::test]
     async fn exact_system_name_wins_over_earlier_prefix_candidate() {
-        use tokio::{
-            io::{AsyncReadExt, AsyncWriteExt},
-            net::TcpListener,
-        };
-
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
         let responses = [
             r#"{"results":[{"name":"Sol Alpha","id64":"1"},{"name":"Sol","id64":"2"}]}"#,
             r#"{"name":"Sol","id64":"2","coords":{"x":1.0,"y":2.0,"z":3.0}}"#,
         ];
-        let server = tokio::spawn(async move {
-            let mut requests = Vec::new();
-            for body in responses {
-                let (mut socket, _) = listener.accept().await.unwrap();
-                let mut request = [0_u8; 2048];
-                let size = socket.read(&mut request).await.unwrap();
-                requests.push(String::from_utf8_lossy(&request[..size]).to_string());
-                let response = format!(
-                    "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
-                    body.len(),
-                    body
-                );
-                socket.write_all(response.as_bytes()).await.unwrap();
-            }
-            requests
-        });
-
-        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let server = MockServer::start(responses.into_iter().map(MockResponse::ok).collect()).await;
+        let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let system = SystemResolver::new(client).resolve("Sol").await.unwrap();
 
         assert_eq!(system.name, "Sol");
         assert_eq!(system.id64, "2");
-        let requests = server.await.unwrap();
+        let requests = server.finish().await;
         assert!(requests[1].starts_with("GET /api/system/2 "));
     }
-
-    #[test]
-    fn query_component_is_percent_encoded() {
-        assert_eq!(
-            encode_query_component("Col 285 Sector BQ-Y d40"),
-            "Col%20285%20Sector%20BQ-Y%20d40"
-        );
-    }
 }
+

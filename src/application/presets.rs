@@ -228,6 +228,22 @@ mod tests {
             );
             assert_eq!(preset.expensive_species, row.7);
             assert_eq!(preset.potential_value_cr, row.8);
+
+            let criteria = preset.criteria(5, true).unwrap();
+            assert_eq!(
+                criteria.planet_types,
+                preset
+                    .surface_types
+                    .iter()
+                    .map(|surface_type| (*surface_type).to_owned())
+                    .collect::<Vec<_>>()
+            );
+            assert_eq!(criteria.atmosphere_type, preset.atmosphere);
+            assert_eq!(criteria.temperature, preset.temperature);
+            assert_eq!(criteria.pressure, preset.pressure);
+            assert_eq!(criteria.gravity, NumericRange { min: 0.1, max: 1.0 });
+            assert_eq!(criteria.count, 5);
+            assert!(criteria.exclude_with_bio_signals);
         }
     }
 }
