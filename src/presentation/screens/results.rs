@@ -584,7 +584,9 @@ fn render_exobiology(
 
     let footer = view.summary.join(" · ");
     frame.render_widget(
-        Paragraph::new(footer).wrap(Wrap { trim: true }),
+        Paragraph::new(footer)
+            .wrap(Wrap { trim: true })
+            .block(Block::default().borders(Borders::TOP)),
         sections[1],
     );
 }
