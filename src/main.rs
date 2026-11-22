@@ -1,18 +1,15 @@
-mod application;
-mod cli;
-mod domain;
-mod presentation;
-mod spansh;
-
 use std::io::IsTerminal;
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
 
-use application::{config::SearchConfig, search::SearchUseCase};
-use cli::Args;
-use presentation::tui;
-use spansh::SpanshClient;
+use ed_planet_search::{
+    application::{config::SearchConfig, search::SearchUseCase},
+    cli::Args,
+    domain,
+    presentation::tui,
+    spansh::SpanshClient,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
