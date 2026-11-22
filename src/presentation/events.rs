@@ -31,9 +31,7 @@ fn to_app_event(event: Event) -> Option<AppEvent> {
     match event {
         Event::Key(key) => Some(AppEvent::Key(key)),
         Event::Paste(text) => Some(AppEvent::Paste(text)),
-        Event::Resize(width, height) => {
-            Some(AppEvent::Resize(Rect::new(0, 0, width, height)))
-        }
+        Event::Resize(width, height) => Some(AppEvent::Resize(Rect::new(0, 0, width, height))),
         _ => None,
     }
 }
@@ -56,7 +54,11 @@ mod tests {
         ));
         assert!(matches!(
             to_app_event(Event::Resize(120, 40)),
-            Some(AppEvent::Resize(Rect { width: 120, height: 40, .. }))
+            Some(AppEvent::Resize(Rect {
+                width: 120,
+                height: 40,
+                ..
+            }))
         ));
         assert!(to_app_event(Event::FocusGained).is_none());
     }

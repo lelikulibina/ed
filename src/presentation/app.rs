@@ -168,9 +168,14 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         Screen::Search => ("ПОИСК ПЛАНЕТ", "Enter — начать поиск · Esc — выход"),
         Screen::Running => (
             "ПОИСК ВЫПОЛНЯЕТСЯ",
-            app.progress_message.as_deref().unwrap_or("Ожидание событий…"),
+            app.progress_message
+                .as_deref()
+                .unwrap_or("Ожидание событий…"),
         ),
-        Screen::Results => ("РЕЗУЛЬТАТЫ", "↑↓ — выбор · c — копировать систему · n — новый поиск"),
+        Screen::Results => (
+            "РЕЗУЛЬТАТЫ",
+            "↑↓ — выбор · c — копировать систему · n — новый поиск",
+        ),
         Screen::Error => (
             "ОШИБКА ПОИСКА",
             app.error_message.as_deref().unwrap_or("Неизвестная ошибка"),
@@ -182,7 +187,6 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         area,
     );
 }
-
 
 #[cfg(test)]
 mod tests {
