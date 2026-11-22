@@ -118,12 +118,27 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
             None
         }
         AppEvent::Key(key) => {
-            if key.kind != KeyEventKind::Press {
-                return None;
+            if key.code == KeyCode::Esc {
+                return match app.screen {
+                    Screen::Search => Some(Command::Quit),
+                    Screen::Running => {
+                        app.screen = Screen::Search;
+                        app.progress_message = None;
+                        Some(Command::CancelSearch)
+                    }
+                    Screen::Results | Screen::Error => {
+                        app.screen = Screen::Search;
+                        None
+                    }
+                };
             }
 
             if key.code == KeyCode::Char('q') && key.modifiers.contains(KeyModifiers::CONTROL) {
                 return Some(Command::Quit);
+            }
+
+            if key.kind != KeyEventKind::Press {
+                return None;
             }
 
             match app.screen {

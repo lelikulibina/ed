@@ -175,12 +175,14 @@ impl SearchScreen {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) -> SearchScreenAction {
+        if key.code == KeyCode::Esc {
+            return SearchScreenAction::Exit;
+        }
         if key.kind != KeyEventKind::Press {
             return SearchScreenAction::None;
         }
 
         match key.code {
-            KeyCode::Esc => return SearchScreenAction::Exit,
             KeyCode::Char('?') => {
                 self.show_help = !self.show_help;
                 return SearchScreenAction::None;
@@ -536,15 +538,15 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
 
     let mut fields = vec![
         Line::from(format!(
-            "Система             {}",
+            "Система: {}",
             display_input(&screen.system_input, screen.focus == SearchField::System)
         )),
         Line::from(format!(
-            "Сколько             {}",
+            "Количество: {}",
             display_input(&screen.count_input, screen.focus == SearchField::Count)
         )),
         Line::from(format!(
-            "Без биосигналов     {}",
+            "Без биосигналов: {}",
             if screen.form.exclude_with_bio_signals {
                 "[x]"
             } else {
