@@ -260,14 +260,12 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
             frame.area().height.saturating_sub(4),
         );
         frame.render_widget(
-            Paragraph::new(content)
-                .wrap(Wrap { trim: true })
-                .block(
-                    Block::default()
-                        .title(ui::HELP_TITLE)
-                        .borders(Borders::ALL)
-                        .border_style(super::theme::Theme::default().accent),
-                ),
+            Paragraph::new(content).wrap(Wrap { trim: true }).block(
+                Block::default()
+                    .title(ui::HELP_TITLE)
+                    .borders(Borders::ALL)
+                    .border_style(super::theme::Theme::default().accent),
+            ),
             area,
         );
     }
@@ -562,7 +560,12 @@ mod tests {
 
     #[test]
     fn question_mark_opens_global_help_on_every_screen() {
-        for screen in [Screen::Search, Screen::Running, Screen::Results, Screen::Error] {
+        for screen in [
+            Screen::Search,
+            Screen::Running,
+            Screen::Results,
+            Screen::Error,
+        ] {
             let mut app = app();
             app.screen = screen;
             let command = update(
@@ -601,11 +604,15 @@ mod tests {
 
         terminal.draw(|frame| render(frame, &app)).unwrap();
 
-        let rendered = terminal.backend().buffer().content().iter()
-            .map(|cell| cell.symbol()).collect::<String>();
+        let rendered = terminal
+            .backend()
+            .buffer()
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
         assert!(rendered.contains("ВЫПОЛНЕНИЕ"));
         assert!(rendered.contains("Esc — отменить поиск"));
         assert!(rendered.contains("Ctrl+Q — выход"));
     }
-
 }
