@@ -275,9 +275,9 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
             "{}: {}  ·  {}: {}  ·  {}: {}",
             ui::RESULTS_SUMMARY_LABEL,
             app.results.len(),
-            ui::RESULTS_SYSTEM_HEADER.to_uppercase(),
+            ui::RESULTS_SUMMARY_SYSTEM_LABEL,
             app.config.system,
-            "СОРТИРОВКА",
+            ui::RESULTS_SUMMARY_SORT_LABEL,
             app.results_screen.sort_label()
         ))
         .alignment(Alignment::Center)
