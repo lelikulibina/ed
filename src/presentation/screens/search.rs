@@ -481,9 +481,13 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     if screen.show_help {
         frame.render_widget(
             Paragraph::new(ui::HELP_SEARCH)
-            .wrap(Wrap { trim: true })
-            .block(Block::default().title(ui::HELP_TITLE).borders(Borders::ALL)),
-            theme::centered(area, area.width.saturating_sub(4), area.height.saturating_sub(4)),
+                .wrap(Wrap { trim: true })
+                .block(Block::default().title(ui::HELP_TITLE).borders(Borders::ALL)),
+            theme::centered(
+                area,
+                area.width.saturating_sub(4),
+                area.height.saturating_sub(4),
+            ),
         );
         return;
     }
@@ -675,11 +679,9 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     );
 
     frame.render_widget(
-        Paragraph::new(
-            ui::SEARCH_HINTS,
-        )
-        .alignment(Alignment::Center)
-        .style(Style::default().fg(Color::Gray)),
+        Paragraph::new(ui::SEARCH_HINTS)
+            .alignment(Alignment::Center)
+            .style(Style::default().fg(Color::Gray)),
         root[3],
     );
 }
