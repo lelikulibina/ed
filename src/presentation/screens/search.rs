@@ -5,13 +5,7 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
 };
 
-use crate::{
-    application::{
-        config::SearchConfig,
-        form::SearchForm,
-        presets::PRESETS,
-    },
-};
+use crate::application::{config::SearchConfig, form::SearchForm, presets::PRESETS};
 
 use super::super::theme;
 
@@ -87,7 +81,11 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     frame.render_widget(
         Paragraph::new("ED Planet Search")
             .alignment(Alignment::Center)
-            .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+            .style(
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )
             .block(Block::default().borders(Borders::ALL)),
         root[0],
     );
@@ -133,11 +131,23 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         fields.extend([
             format!(
                 "Поверхность         {}",
-                screen.form.surface_types.iter().map(|value| value.label_ru()).collect::<Vec<_>>().join(", ")
+                screen
+                    .form
+                    .surface_types
+                    .iter()
+                    .map(|value| value.label_ru())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ),
             format!(
                 "Атмосфера           {}",
-                screen.form.atmosphere_types.iter().map(|value| value.label_ru()).collect::<Vec<_>>().join(", ")
+                screen
+                    .form
+                    .atmosphere_types
+                    .iter()
+                    .map(|value| value.label_ru())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ),
             format!("Температура         {} K", screen.form.temperature),
             format!("Гравитация          {} g", screen.form.gravity),
@@ -171,14 +181,20 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     frame.render_widget(
         Paragraph::new(format!("Ищем: {summary} · радиус 1000 св. лет"))
             .wrap(Wrap { trim: true })
-            .block(Block::default().title(" Поиск по критериям ").borders(Borders::ALL)),
+            .block(
+                Block::default()
+                    .title(" Поиск по критериям ")
+                    .borders(Borders::ALL),
+            ),
         root[2],
     );
 
     frame.render_widget(
-        Paragraph::new("Enter — искать · Tab — поле · F2 — дополнительно · ? — помощь · Esc — выход")
-            .alignment(Alignment::Center)
-            .style(Style::default().fg(Color::Gray)),
+        Paragraph::new(
+            "Enter — искать · Tab — поле · F2 — дополнительно · ? — помощь · Esc — выход",
+        )
+        .alignment(Alignment::Center)
+        .style(Style::default().fg(Color::Gray)),
         root[3],
     );
 }
