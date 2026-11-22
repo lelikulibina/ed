@@ -64,7 +64,7 @@ impl App {
         let config = search_screen
             .form
             .build()
-            .expect("Профиль поиска по умолчанию должен быть корректным");
+            .expect(ui::APP_DEFAULT_CONFIG_ERROR);
         Self::with_search_screen(config, search_screen)
     }
 
@@ -117,8 +117,9 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     app.current_page = page;
                     app.found_count = found;
                     app.progress_message = Some(format!(
-                        "{}: {page} · найдено {found}",
-                        ui::APP_SEARCH_PAGE_LOADED_PREFIX
+                        "{}: {page} · {} {found}",
+                        ui::APP_SEARCH_PAGE_LOADED_PREFIX,
+                        ui::APP_SEARCH_PAGE_FOUND_SUFFIX
                     ));
                 }
                 SearchEvent::Finished(results) => {
