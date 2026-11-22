@@ -360,7 +360,10 @@ fn render_planet_table(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Re
         Row::new(vec![
             Cell::from("Планета"),
             Cell::from("Система"),
-            Cell::from(app.results_screen.header_label(SortMode::Distance, "св. л.")),
+            Cell::from(
+                app.results_screen
+                    .header_label(SortMode::Distance, "св. л."),
+            ),
             Cell::from(app.results_screen.header_label(SortMode::Temperature, "K")),
             Cell::from(app.results_screen.header_label(SortMode::Pressure, "atm")),
             Cell::from(app.results_screen.header_label(SortMode::Gravity, "g")),
@@ -471,7 +474,11 @@ fn render_exobiology(
         frame.render_widget(
             Paragraph::new("Экзобиологические кандидаты не найдены.")
                 .wrap(Wrap { trim: true })
-                .block(Block::default().title(" Экзобиология ").borders(Borders::ALL)),
+                .block(
+                    Block::default()
+                        .title(" Экзобиология ")
+                        .borders(Borders::ALL),
+                ),
             area,
         );
         return;
@@ -492,7 +499,11 @@ fn render_exobiology(
 
     let sections = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(2), Constraint::Min(2), Constraint::Length(2)])
+        .constraints([
+            Constraint::Length(2),
+            Constraint::Min(2),
+            Constraint::Length(2),
+        ])
         .split(area);
     frame.render_widget(
         Paragraph::new(view.headline.as_str())
@@ -642,10 +653,7 @@ mod tests {
 
     #[test]
     fn copy_action_uses_the_selected_planets_system() {
-        let bodies = vec![
-            body("Near", "1", Some(1.0)),
-            body("Far", "2", Some(10.0)),
-        ];
+        let bodies = vec![body("Near", "1", Some(1.0)), body("Far", "2", Some(10.0))];
         let mut screen = ResultsScreen::default();
         screen.reset(&bodies);
         screen.handle_key(
