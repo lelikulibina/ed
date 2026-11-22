@@ -29,6 +29,7 @@ pub enum SearchScreenAction {
 enum SearchField {
     Profile,
     System,
+    Radius,
     Count,
     BioSignals,
     Surface,
@@ -48,6 +49,7 @@ pub struct SearchScreen {
     errors: Vec<FieldError>,
     focus: SearchField,
     system_input: TextInput,
+    radius_input: TextInput,
     count_input: TextInput,
     temperature_min: TextInput,
     temperature_max: TextInput,
@@ -113,6 +115,7 @@ impl SearchScreen {
 
         Self {
             system_input: TextInput::new(form.system.clone()),
+            radius_input: TextInput::new(form.radius.clone()),
             count_input: TextInput::new(form.count.clone()),
             temperature_min: TextInput::new(temperature_min),
             temperature_max: TextInput::new(temperature_max),
@@ -141,6 +144,10 @@ impl SearchScreen {
                         config.criteria.count,
                         config.criteria.exclude_with_bio_signals,
                     )
+                    .map(|mut criteria| {
+                        criteria.radius_ly = config.criteria.radius_ly;
+                        criteria
+                    })
                     .is_ok_and(|criteria| criteria == config.criteria)
             })
             .unwrap_or(PRESETS.len());
@@ -262,6 +269,7 @@ impl SearchScreen {
 
         let changed = match self.focus {
             SearchField::System => self.system_input.handle_key(key),
+            SearchField::Radius => self.radius_input.handle_key(key),
             SearchField::Count => self.count_input.handle_key(key),
             SearchField::TemperatureMin => self.temperature_min.handle_key(key),
             SearchField::TemperatureMax => self.temperature_max.handle_key(key),
@@ -286,6 +294,7 @@ impl SearchScreen {
     pub fn handle_paste(&mut self, text: &str) -> bool {
         let changed = match self.focus {
             SearchField::System => self.system_input.paste(text),
+            SearchField::Radius => self.radius_input.paste(text),
             SearchField::Count => self.count_input.paste(text),
             SearchField::TemperatureMin => self.temperature_min.paste(text),
             SearchField::TemperatureMax => self.temperature_max.paste(text),
@@ -311,6 +320,7 @@ impl SearchScreen {
         let mut fields = vec![
             SearchField::Profile,
             SearchField::System,
+            SearchField::Radius,
             SearchField::Count,
             SearchField::BioSignals,
         ];
@@ -372,6 +382,7 @@ impl SearchScreen {
 
     fn sync_form_from_inputs(&mut self) {
         self.form.system = self.system_input.value().to_owned();
+        self.form.radius = self.radius_input.value().to_owned();
         self.form.count = self.count_input.value().to_owned();
         self.form.temperature = format!(
             "{}-{}",
@@ -461,6 +472,7 @@ fn atmosphere_at(index: usize) -> AtmosphereType {
 fn field_for_error(field: FormField) -> SearchField {
     match field {
         FormField::System => SearchField::System,
+        FormField::Radius => SearchField::Radius,
         FormField::Count => SearchField::Count,
         FormField::Surface => SearchField::Surface,
         FormField::Atmosphere => SearchField::Atmosphere,
@@ -557,6 +569,11 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
             screen.focus == SearchField::System,
         ),
         parameter_line(
+            format!("{}: ", ui::SEARCH_RADIUS_LABEL),
+            format!("{} св. лет", display_input(&screen.radius_input, screen.focus == SearchField::Radius)),
+            screen.focus == SearchField::Radius,
+        ),
+        parameter_line(
             format!("{}: ", ui::SEARCH_COUNT_LABEL),
             display_input(&screen.count_input, screen.focus == SearchField::Count),
             screen.focus == SearchField::Count,
@@ -572,6 +589,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         ),
     ];
     push_error(&mut fields, screen, FormField::System);
+    push_error(&mut fields, screen, FormField::Radius);
     push_error(&mut fields, screen, FormField::Count);
 
     if screen.advanced {
@@ -688,7 +706,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         ui::SEARCH_SUMMARY_PREFIX,
         screen.form.summary().replace('\n', " · "),
         ui::SEARCH_RADIUS_LABEL,
-        ui::SEARCH_RADIUS_VALUE
+        format!("{} св. лет", screen.form.radius)
     );
     frame.render_widget(
         Paragraph::new(summary).wrap(Wrap { trim: true }).block(
