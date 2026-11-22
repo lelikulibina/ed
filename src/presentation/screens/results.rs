@@ -611,7 +611,7 @@ fn render_exobiology(
 
     let sections = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(2), Constraint::Length(1)])
+        .constraints([Constraint::Min(2), Constraint::Length(2)])
         .split(inner);
 
     let rows = view
