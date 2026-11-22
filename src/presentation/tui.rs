@@ -475,26 +475,41 @@ fn draw_results(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
 
-    #[test]
-    fn cli_config_runs_immediately_once_but_returning_to_setup_does_not() {
-        let mut initial = Some("cli config");
-        let mut start_immediately = true;
+    struct DropFlag(Arc<AtomicBool>);
 
-        assert_eq!(
-            take_immediate_config(&mut initial, &mut start_immediately),
-            Some("cli config")
-        );
-        assert_eq!(
-            take_immediate_config(&mut initial, &mut start_immediately),
-            None
-        );
+    impl Drop for DropFlag {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::SeqCst);
+        }
+    }
 
-        initial = Some("previous search");
-        assert_eq!(
-            take_immediate_config(&mut initial, &mut start_immediately),
-            None
-        );
-        assert_eq!(initial, Some("previous search"));
+    #[tokio::test]
+    async fn replacing_a_search_aborts_and_joins_the_previous_task() {
+        let mut app = App::new_default();
+        let previous_cancelled = Arc::new(AtomicBool::new(false));
+        let previous_flag = Arc::clone(&previous_cancelled);
+        app.search_task = Some(tokio::spawn(async move {
+            let _guard = DropFlag(previous_flag);
+            std::future::pending::<()>().await;
+        }));
+        tokio::task::yield_now().await;
+
+        let (sender, _receiver) = mpsc::channel(8);
+        let search = |_: SearchConfig, _: mpsc::UnboundedSender<SearchEvent>| async {
+            std::future::pending::<Result<Vec<Body>, SearchError>>().await
+        };
+        let config = app.config.clone();
+        start_search_task(&mut app, config, sender, &search).await;
+
+        assert!(previous_cancelled.load(Ordering::SeqCst));
+        assert!(app.search_task.is_some());
+
+        cancel_search_task(&mut app).await;
+        assert!(app.search_task.is_none());
     }
 }
