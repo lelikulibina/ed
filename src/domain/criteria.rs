@@ -1,4 +1,7 @@
-use super::body::Body;
+use super::{
+    body::Body,
+    catalog::{AtmosphereType, SurfaceType},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct NumericRange {
@@ -16,12 +19,26 @@ impl NumericRange {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Filter<T> {
+    Any,
+    OneOf(Vec<T>),
+}
+
+impl<T> Filter<T> {
+    pub fn one_of(values: Vec<T>) -> Self {
+        if values.is_empty() {
+            Self::Any
+        } else {
+            Self::OneOf(values)
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct SearchCriteria {
-    pub planet_type: String,
-    /// Допустимые типы поверхности; несколько значений трактуются как OR.
-    pub planet_types: Vec<String>,
-    pub atmosphere_type: String,
+    pub surface: Filter<SurfaceType>,
+    pub atmosphere: Filter<AtmosphereType>,
     pub temperature: NumericRange,
     pub gravity: NumericRange,
     pub pressure: NumericRange,
@@ -30,9 +47,9 @@ pub struct SearchCriteria {
 }
 
 impl SearchCriteria {
-    pub fn from_cli(
-        planet_type: &str,
-        atmosphere_type: &str,
+    pub fn new(
+        surface: Filter<SurfaceType>,
+        atmosphere: Filter<AtmosphereType>,
         temperature: NumericRange,
         gravity: NumericRange,
         pressure: NumericRange,
@@ -42,17 +59,9 @@ impl SearchCriteria {
             return Err(CriteriaError::Count);
         }
 
-        let planet_type = normalize_planet_type(planet_type)?;
-        let planet_types = if planet_type == "any" {
-            Vec::new()
-        } else {
-            vec![planet_type.clone()]
-        };
-
         Ok(Self {
-            planet_type,
-            planet_types,
-            atmosphere_type: normalize_atmosphere_type(atmosphere_type)?,
+            surface,
+            atmosphere,
             temperature,
             gravity,
             pressure,
@@ -67,23 +76,25 @@ impl SearchCriteria {
     }
 
     pub fn matches(&self, body: &Body) -> bool {
-        (if self.planet_types.is_empty() {
-            self.planet_type == "any"
-                || body
-                    .subtype
-                    .as_deref()
-                    .is_some_and(|value| value.eq_ignore_ascii_case(&self.planet_type))
-        } else {
-            body.subtype.as_deref().is_some_and(|value| {
-                self.planet_types
+        let surface_matches = match &self.surface {
+            Filter::Any => true,
+            Filter::OneOf(allowed) => body.subtype.as_deref().is_some_and(|value| {
+                allowed
                     .iter()
-                    .any(|allowed| value.eq_ignore_ascii_case(allowed))
-            })
-        }) && (self.atmosphere_type == "any"
-            || body
-                .atmosphere
-                .as_deref()
-                .is_some_and(|value| value.eq_ignore_ascii_case(&self.atmosphere_type)))
+                    .any(|surface| value.eq_ignore_ascii_case(surface.spansh_value()))
+            }),
+        };
+        let atmosphere_matches = match &self.atmosphere {
+            Filter::Any => true,
+            Filter::OneOf(allowed) => body.atmosphere.as_deref().is_some_and(|value| {
+                allowed
+                    .iter()
+                    .any(|atmosphere| value.eq_ignore_ascii_case(atmosphere.spansh_value()))
+            }),
+        };
+
+        surface_matches
+            && atmosphere_matches
             && self.temperature.contains(body.surface_temperature)
             && self.gravity.contains(body.gravity)
             && self.pressure.contains(body.surface_pressure)
@@ -101,57 +112,10 @@ fn has_biological_evidence(body: &Body) -> bool {
             .is_some_and(|genera| !genera.is_empty())
 }
 
-#[derive(Debug, thiserror::Error, PartialEq)]
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum CriteriaError {
-    #[error("неизвестный тип поверхности планеты: {0}")]
-    PlanetType(String),
-    #[error("неизвестный тип атмосферы: {0}")]
-    AtmosphereType(String),
     #[error("количество результатов должно быть больше нуля")]
     Count,
-}
-
-fn normalize_planet_type(value: &str) -> Result<String, CriteriaError> {
-    let normalized = value.trim().to_ascii_lowercase();
-    let canonical = match normalized.as_str() {
-        "" | "any" => "any",
-        "rocky body" | "rocky" | "rock" => "Rocky body",
-        "icy body" | "icy" | "ice" => "Icy body",
-        "rocky ice world" | "rocky-ice world" | "rocky ice" => "Rocky ice world",
-        "high metal content world" | "high-metal content" | "high metal" => {
-            "High metal content world"
-        }
-        _ => return Err(CriteriaError::PlanetType(value.to_owned())),
-    };
-    Ok(canonical.to_owned())
-}
-
-fn normalize_atmosphere_type(value: &str) -> Result<String, CriteriaError> {
-    let normalized = value.trim().to_ascii_lowercase();
-    let canonical = match normalized.as_str() {
-        "" | "any" => "any",
-        "ammonia" => "Ammonia",
-        "water" => "Water",
-        "carbon dioxide" | "carbon-dioxide" | "carbondioxide" => "Carbon dioxide",
-        "sulphur dioxide" | "sulphur-dioxide" | "sulfur dioxide" | "sulfur-dioxide"
-        | "sulfurdioxide" => "Sulphur dioxide",
-        "nitrogen" => "Nitrogen",
-        "water-rich" | "water rich" => "Water-rich",
-        "methane-rich" | "methan-rich" | "methane rich" => "Methane-rich",
-        "carbon dioxide-rich" | "carbon-dioxide rich" | "carbon dioxide rich" => {
-            "Carbon dioxide-rich"
-        }
-        "methane" | "methan" => "Methane",
-        "helium" => "Helium",
-        "silicate vapour" | "silicate vapor" => "Silicate vapour",
-        "neon-rich" | "neon rich" => "Neon-rich",
-        "argon-rich" | "argon rich" => "Argon-rich",
-        "neon" => "Neon",
-        "argon" => "Argon",
-        "oxygen" => "Oxygen",
-        _ => return Err(CriteriaError::AtmosphereType(value.to_owned())),
-    };
-    Ok(canonical.to_owned())
 }
 
 #[cfg(test)]
@@ -159,9 +123,9 @@ mod tests {
     use super::*;
 
     fn criteria() -> SearchCriteria {
-        SearchCriteria::from_cli(
-            "Rocky body",
-            "Nitrogen",
+        SearchCriteria::new(
+            Filter::one_of(vec![SurfaceType::RockyBody]),
+            Filter::one_of(vec![AtmosphereType::Nitrogen]),
             NumericRange {
                 min: 200.0,
                 max: 300.0,
@@ -188,21 +152,11 @@ mod tests {
     }
 
     #[test]
-    fn normalizes_legacy_cli_values() {
-        assert_eq!(normalize_planet_type("rocky").unwrap(), "Rocky body");
-        assert_eq!(
-            normalize_atmosphere_type("carbon-dioxide").unwrap(),
-            "Carbon dioxide"
-        );
-        assert_eq!(normalize_atmosphere_type("any").unwrap(), "any");
-    }
-
-    #[test]
     fn any_filters_match_bodies_with_unknown_or_missing_surface_and_atmosphere() {
         let base = criteria();
-        let criteria = SearchCriteria::from_cli(
-            "any",
-            "any",
+        let criteria = SearchCriteria::new(
+            Filter::Any,
+            Filter::Any,
             base.temperature,
             base.gravity,
             base.pressure,
@@ -235,48 +189,6 @@ mod tests {
     }
 
     #[test]
-    fn accepts_every_legacy_planet_and_atmosphere_value() {
-        for value in [
-            "any",
-            "rocky body",
-            "icy body",
-            "rocky ice world",
-            "high metal content world",
-        ] {
-            assert!(
-                normalize_planet_type(value).is_ok(),
-                "legacy planet type must be accepted: {value}"
-            );
-        }
-
-        for value in [
-            "any",
-            "ammonia",
-            "water",
-            "carbon-dioxide",
-            "sulphur dioxide",
-            "sulphur-dioxide",
-            "nitrogen",
-            "water-rich",
-            "methane-rich",
-            "carbon dioxide-rich",
-            "methane",
-            "helium",
-            "silicate vapour",
-            "neon-rich",
-            "argon-rich",
-            "neon",
-            "argon",
-            "oxygen",
-        ] {
-            assert!(
-                normalize_atmosphere_type(value).is_ok(),
-                "legacy atmosphere type must be accepted: {value}"
-            );
-        }
-    }
-
-    #[test]
     fn requires_body_to_match_all_legacy_filters() {
         let body = Body {
             id64: Some("1".to_owned()),
@@ -304,10 +216,10 @@ mod tests {
     #[test]
     fn alternative_surface_types_match_either_allowed_type() {
         let mut criteria = criteria();
-        criteria.planet_types = vec![
-            "Rocky body".to_owned(),
-            "High metal content world".to_owned(),
-        ];
+        criteria.surface = Filter::one_of(vec![
+            SurfaceType::RockyBody,
+            SurfaceType::HighMetalContentWorld,
+        ]);
 
         let mut body = Body {
             id64: None,
