@@ -109,19 +109,19 @@ impl ResultsScreen {
             }
             KeyCode::PageUp => self.detail_scroll = self.detail_scroll.saturating_sub(6),
             KeyCode::PageDown => self.detail_scroll = self.detail_scroll.saturating_add(6),
-            KeyCode::Char('s') => {
+            KeyCode::Char('s' | 'ы') => {
                 let selected_identity = self.selected_identity.clone();
                 self.sort_mode = self.sort_mode.next();
                 self.selected_identity = selected_identity;
             }
-            KeyCode::Char('S') => self.descending = !self.descending,
-            KeyCode::Char('c') => {
+            KeyCode::Char('S' | 'Ы') => self.descending = !self.descending,
+            KeyCode::Char('c' | 'с') => {
                 return ordered
                     .get(selected)
                     .and_then(|body| body.system_name.clone())
                     .map(ResultsAction::CopySystem);
             }
-            KeyCode::Char('e' | 'E' | 'n' | 'N') => {
+            KeyCode::Char('e' | 'E' | 'у' | 'У' | 'n' | 'N' | 'т' | 'Т') => {
                 return Some(ResultsAction::BackToSearch);
             }
             _ => {}
