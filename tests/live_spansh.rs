@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 mod application {
-    #[path = "../src/application/presets.rs"]
+    #[path = "../../src/application/presets.rs"]
     pub mod presets;
 }
 
