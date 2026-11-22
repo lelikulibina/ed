@@ -253,9 +253,9 @@ mod tests {
         assert!(
             view.rows
                 .iter()
-                .any(|row| row.status.starts_with("Проверить:"))
+                .any(|row| row.status.starts_with("Нужно проверить:"))
         );
-        assert!(view.maximum_base_value_cr > 0);
+        assert!(view.maximum_value_cr > 0);
         assert!(view.summary[0].contains("бонус ×5 не подтверждён"));
     }
 
@@ -273,6 +273,17 @@ mod tests {
                 .all(|row| row.genus == "Оссии" || row.genus == "Дерновина")
         );
         assert!(!view.rows.iter().any(|row| row.genus == "Бактерии"));
+    }
+
+    #[test]
+    fn existing_biological_signals_keep_standard_reward_without_multiplier() {
+        let mut body = body();
+        body.biological_signal_count = Some(2);
+
+        let view = exobiology_view(&body).unwrap().unwrap();
+        assert!(view.summary[0].contains("без ×5"));
+        let base = exobiology::estimate(&body).unwrap().maximum_base_value_cr;
+        assert_eq!(view.maximum_value_cr, base);
     }
 
     #[test]
