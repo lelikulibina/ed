@@ -1,10 +1,4 @@
-use std::{
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-    time::Duration,
-};
+use std::time::Duration;
 
 use crossterm::event::{self, Event};
 use ratatui::layout::Rect;
@@ -16,11 +10,9 @@ pub fn spawn_event_stream(
     sender: mpsc::Sender<AppEvent>,
     animation_enabled: bool,
 ) -> JoinHandle<()> {
-    let stop = Arc::new(AtomicBool::new(false));
-    let worker_stop = Arc::clone(&stop);
     tokio::task::spawn_blocking(move || {
         loop {
-            if worker_stop.load(Ordering::SeqCst) || sender.is_closed() {
+            if sender.is_closed() {
                 break;
             }
             let event = match event::poll(Duration::from_millis(100)) {
