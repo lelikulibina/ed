@@ -517,7 +517,7 @@ fn render_exobiology(
             .wrap(Wrap { trim: true })
             .block(
                 Block::default()
-                    .title(" Экзобиология ")
+                    .title(ui::RESULTS_EXOBIOLOGY_TITLE)
                     .borders(Borders::ALL),
             ),
         sections[0],
