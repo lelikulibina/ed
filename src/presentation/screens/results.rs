@@ -279,7 +279,9 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         app.results_screen.sort_label()
     ))];
     if let Some(resolved) = app.resolved_system.as_deref().filter(|resolved| {
-        !resolved.trim().eq_ignore_ascii_case(app.config.system.trim())
+        !resolved
+            .trim()
+            .eq_ignore_ascii_case(app.config.system.trim())
     }) {
         summary.push(Line::from(Span::styled(
             format!(
@@ -341,14 +343,20 @@ fn render_empty(frame: &mut ratatui::Frame<'_>, app: &App) {
             ui::RESULTS_EMPTY_SYSTEM_LABEL,
             app.config.system,
             ui::RESULTS_EMPTY_HINT,
-            app.resolved_system.as_deref().filter(|resolved| {
-                !resolved.trim().eq_ignore_ascii_case(app.config.system.trim())
-            }).map(|resolved| format!(
-                "\n\n{}: «{}» → «{}»",
-                ui::SYSTEM_REPLACED_WARNING,
-                app.config.system,
-                resolved
-            )).unwrap_or_default(),
+            app.resolved_system
+                .as_deref()
+                .filter(|resolved| {
+                    !resolved
+                        .trim()
+                        .eq_ignore_ascii_case(app.config.system.trim())
+                })
+                .map(|resolved| format!(
+                    "\n\n{}: «{}» → «{}»",
+                    ui::SYSTEM_REPLACED_WARNING,
+                    app.config.system,
+                    resolved
+                ))
+                .unwrap_or_default(),
             ui::RESULTS_EMPTY_ACTIONS
         ))
         .alignment(Alignment::Center)
