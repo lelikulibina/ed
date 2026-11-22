@@ -3,7 +3,6 @@ use std::cmp::Ordering;
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Modifier, Style},
     text::Line,
     widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState, Wrap},
 };
