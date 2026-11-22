@@ -1,4 +1,4 @@
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextInput {
@@ -21,12 +21,47 @@ impl TextInput {
         self.cursor
     }
 
-    pub fn handle_key(&mut self, _key: KeyEvent) -> bool {
-        false
+    pub fn handle_key(&mut self, key: KeyEvent) -> bool {
+        if key.kind != KeyEventKind::Press {
+            return false;
+        }
+
+        let mut characters = self.value.chars().collect::<Vec<_>>();
+        match key.code {
+            KeyCode::Char(character) if !character.is_control() => {
+                characters.insert(self.cursor, character);
+                self.cursor += 1;
+            }
+            KeyCode::Backspace if self.cursor > 0 => {
+                characters.remove(self.cursor - 1);
+                self.cursor -= 1;
+            }
+            KeyCode::Delete if self.cursor < characters.len() => {
+                characters.remove(self.cursor);
+            }
+            KeyCode::Left if self.cursor > 0 => self.cursor -= 1,
+            KeyCode::Right if self.cursor < characters.len() => self.cursor += 1,
+            KeyCode::Home => self.cursor = 0,
+            KeyCode::End => self.cursor = characters.len(),
+            _ => return false,
+        }
+
+        self.value = characters.into_iter().collect();
+        true
     }
 
-    pub fn paste(&mut self, _text: &str) -> bool {
-        false
+    pub fn paste(&mut self, text: &str) -> bool {
+        let pasted = text.chars().filter(|character| !character.is_control()).collect::<Vec<_>>();
+        if pasted.is_empty() {
+            return false;
+        }
+
+        let mut characters = self.value.chars().collect::<Vec<_>>();
+        let pasted_len = pasted.len();
+        characters.splice(self.cursor..self.cursor, pasted);
+        self.cursor += pasted_len;
+        self.value = characters.into_iter().collect();
+        true
     }
 }
 
