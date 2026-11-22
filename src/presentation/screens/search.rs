@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
+    style::Style,
     text::{Line, Span, Text},
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
 };
@@ -504,11 +504,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     frame.render_widget(
         Paragraph::new(ui::APP_TITLE)
             .alignment(Alignment::Center)
-            .style(
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
-            )
+            .style(theme::Theme::default().accent)
             .block(Block::default().borders(Borders::ALL)),
         root[0],
     );
@@ -681,7 +677,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     frame.render_widget(
         Paragraph::new(ui::SEARCH_HINTS)
             .alignment(Alignment::Center)
-            .style(Style::default().fg(Color::Gray)),
+            .style(theme::Theme::default().muted),
         root[3],
     );
 }
@@ -698,7 +694,7 @@ fn display_input(input: &TextInput, focused: bool) -> String {
 fn push_error(fields: &mut Vec<Line<'static>>, screen: &SearchScreen, field: FormField) {
     if let Some(error) = screen.errors.iter().find(|error| error.field == field) {
         fields.push(Line::from(Span::styled(
-            format!("  ! {}", error.message),
+            format!("{}{}", ui::FORM_ERROR_MARKER, error.message),
             theme::Theme::default().error,
         )));
     }
