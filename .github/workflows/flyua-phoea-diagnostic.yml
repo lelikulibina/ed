@@ -1,4 +1,5 @@
 name: Flyua Phoea Distance Investigation
+# Temporary branch-only live probe for the Flyua Phoea resolver.
 
 on:
   push:
