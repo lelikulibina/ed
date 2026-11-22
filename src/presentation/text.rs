@@ -2,7 +2,7 @@ pub mod ui {
     pub const MIN_TERMINAL_SIZE: &str = "Увеличьте окно терминала до 80×24";
     pub const APP_TITLE: &str = "ED Planet Search";
     pub const HELP_TITLE: &str = " Справка ";
-    pub const HELP_COMMON: &str = "? — закрыть справку\nCtrl+Q — выход";
+    pub const HELP_COMMON: &str = "? / Esc — закрыть справку\nCtrl+Q — выход";
     pub const HELP_SEARCH: &str = "УПРАВЛЕНИЕ ПОИСКОМ\n↑/↓ — выбор сценария или значения\nTab / Shift+Tab — переход между полями\nПробел — переключить флаг или поверхность\nF2 — показать/скрыть дополнительные фильтры\nHome / End — начало / конец строки\nBackspace / Delete — удалить символ\nВставка текста — вставить из буфера\nEnter — запустить поиск\n? — закрыть справку";
     pub const HELP_RUNNING: &str = "ВЫПОЛНЕНИЕ\nEsc — отменить поиск";
     pub const HELP_RESULTS: &str = "РЕЗУЛЬТАТЫ\n↑/↓ — выбрать планету · s / ы — сортировка · S / Ы — порядок\nc / с — копировать систему · e / у — изменить параметры\nn / т — новый поиск · PgUp / PgDn — подробности";
