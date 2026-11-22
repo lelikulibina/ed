@@ -167,7 +167,10 @@ mod tests {
 
     #[tokio::test]
     async fn retries_transient_statuses_and_returns_successful_json() {
-        for status in [StatusCode::SERVICE_UNAVAILABLE, StatusCode::TOO_MANY_REQUESTS] {
+        for status in [
+            StatusCode::SERVICE_UNAVAILABLE,
+            StatusCode::TOO_MANY_REQUESTS,
+        ] {
             let server = MockServer::start(vec![
                 MockResponse::with_status(status, ""),
                 MockResponse::ok(r#"{"ok":true}"#),

@@ -188,8 +188,21 @@ mod tests {
             Case {
                 name: "short flags with explicit ranges",
                 arguments: vec![
-                    "ed_planet_search", "-S", "Sol", "-P", "any", "-A", "any", "-t",
-                    "100-900", "-g", "0.2-0.8", "-p", "0.0-2.5", "-c", "12",
+                    "ed_planet_search",
+                    "-S",
+                    "Sol",
+                    "-P",
+                    "any",
+                    "-A",
+                    "any",
+                    "-t",
+                    "100-900",
+                    "-g",
+                    "0.2-0.8",
+                    "-p",
+                    "0.0-2.5",
+                    "-c",
+                    "12",
                 ],
                 planet_type: "any",
                 atmosphere_type: "any",
@@ -232,8 +245,7 @@ mod tests {
             assert_eq!(args.pressure, case.pressure, "{}", case.name);
             assert_eq!(args.count, case.count, "{}", case.name);
             assert_eq!(
-                args.exclude_with_bio_signals,
-                case.exclude_with_bio_signals,
+                args.exclude_with_bio_signals, case.exclude_with_bio_signals,
                 "{}",
                 case.name
             );
