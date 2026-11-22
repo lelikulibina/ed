@@ -12,7 +12,7 @@ use crate::{
     domain::body::Body,
     presentation::{
         app::App,
-        text::{ExobiologyView, exobiology_view, format_credits},
+        text::{ExobiologyView, exobiology_view, format_credits, ui},
         theme,
     },
 };
@@ -39,11 +39,11 @@ impl SortMode {
 
     fn label(self) -> &'static str {
         match self {
-            Self::Distance => "расстояние",
-            Self::Temperature => "температура",
-            Self::Pressure => "давление",
-            Self::Gravity => "гравитация",
-            Self::Name => "название",
+            Self::Distance => ui::RESULTS_SORT_DISTANCE,
+            Self::Temperature => ui::RESULTS_SORT_TEMPERATURE,
+            Self::Pressure => ui::RESULTS_SORT_PRESSURE,
+            Self::Gravity => ui::RESULTS_SORT_GRAVITY,
+            Self::Name => ui::RESULTS_SORT_NAME,
         }
     }
 }
@@ -248,7 +248,7 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let area = frame.area();
     if !theme::supports_minimum_size(area) {
         frame.render_widget(
-            Paragraph::new("Увеличьте окно терминала до 80×24")
+            Paragraph::new(ui::MIN_TERMINAL_SIZE)
                 .alignment(Alignment::Center)
                 .block(Block::default().borders(Borders::ALL)),
             area,
@@ -272,7 +272,7 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
 
     frame.render_widget(
         Paragraph::new(format!(
-            "НАЙДЕНО: {}  ·  СИСТЕМА: {}  ·  СОРТИРОВКА: {}",
+            ui::RESULTS_SUMMARY,
             app.results.len(),
             app.config.system,
             app.results_screen.sort_label()
@@ -300,7 +300,7 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     render_details(frame, panes[1], app);
 
     let hint = app.results_screen.status_message.as_deref().map_or_else(
-        || "↑/↓ выбор · s сортировка · S порядок · c копировать систему · e/n новый поиск · PgUp/PgDn подробности",
+        || ui::RESULTS_HINTS,
         |status| status,
     );
     frame.render_widget(
@@ -325,7 +325,7 @@ fn render_empty(frame: &mut ratatui::Frame<'_>, app: &App) {
         ))
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: true })
-        .block(Block::default().title(" Нет результатов ").borders(Borders::ALL)),
+        .block(Block::default().title(ui::RESULTS_EMPTY_TITLE).borders(Borders::ALL)),
         area,
     );
 }
@@ -364,16 +364,16 @@ fn render_planet_table(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Re
     )
     .header(
         Row::new(vec![
-            Cell::from(app.results_screen.header_label(SortMode::Name, "Планета")),
-            Cell::from("Система"),
+            Cell::from(app.results_screen.header_label(SortMode::Name, ui::RESULTS_PLANET_HEADER)),
+            Cell::from(ui::RESULTS_SYSTEM_HEADER),
             Cell::from(
                 app.results_screen
-                    .header_label(SortMode::Distance, "св. л."),
+                    .header_label(SortMode::Distance, ui::RESULTS_DISTANCE_HEADER),
             ),
-            Cell::from(app.results_screen.header_label(SortMode::Temperature, "K")),
-            Cell::from(app.results_screen.header_label(SortMode::Pressure, "atm")),
-            Cell::from(app.results_screen.header_label(SortMode::Gravity, "g")),
-            Cell::from("Выручка"),
+            Cell::from(app.results_screen.header_label(SortMode::Temperature, ui::RESULTS_TEMPERATURE_HEADER)),
+            Cell::from(app.results_screen.header_label(SortMode::Pressure, ui::RESULTS_PRESSURE_HEADER)),
+            Cell::from(app.results_screen.header_label(SortMode::Gravity, ui::RESULTS_GRAVITY_HEADER)),
+            Cell::from(ui::RESULTS_REVENUE_HEADER),
         ])
         .style(theme::Theme::default().accent)
         .bottom_margin(0),
@@ -384,7 +384,7 @@ fn render_planet_table(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Re
             .bg(ratatui::style::Color::DarkGray),
     )
     .highlight_symbol("▸ ")
-    .block(Block::default().title(" Планеты ").borders(Borders::ALL));
+    .block(Block::default().title(ui::RESULTS_TABLE_TITLE).borders(Borders::ALL));
 
     frame.render_stateful_widget(table, area, &mut state);
 }
@@ -395,62 +395,62 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
         return;
     };
     let details = vec![
-        Line::from(format!("Планета: {}", body.name)),
+        Line::from(format!(ui::RESULTS_DETAIL_PLANET, body.name)),
         Line::from(format!(
-            "Система: {}",
+            ui::RESULTS_DETAIL_SYSTEM,
             body.system_name.as_deref().unwrap_or("—")
         )),
         Line::from(format!(
-            "Тип поверхности: {}",
+            ui::RESULTS_DETAIL_SURFACE,
             body.subtype.as_deref().unwrap_or("—")
         )),
         Line::from(format!(
-            "Атмосфера: {}",
+            ui::RESULTS_DETAIL_ATMOSPHERE,
             body.atmosphere.as_deref().unwrap_or("—")
         )),
         Line::from(format!(
-            "Температура: {} K",
+            ui::RESULTS_DETAIL_TEMPERATURE,
             display_number(body.surface_temperature, 2)
         )),
         Line::from(format!(
-            "Давление: {} atm",
+            ui::RESULTS_DETAIL_PRESSURE,
             display_number(body.surface_pressure, 4)
         )),
-        Line::from(format!("Гравитация: {} g", display_number(body.gravity, 3))),
+        Line::from(format!(ui::RESULTS_DETAIL_GRAVITY, display_number(body.gravity, 3))),
         Line::from(format!(
-            "Расстояние: {} св. л.",
+            ui::RESULTS_DETAIL_DISTANCE,
             display_number(body.distance_ly, 2)
         )),
         Line::from(format!(
-            "Посадка: {}",
+            ui::RESULTS_DETAIL_LANDING,
             body.is_landable
-                .map_or("—", |value| if value { "Да" } else { "Нет" })
+                .map_or("—", |value| if value { ui::RESULTS_YES } else { ui::RESULTS_NO })
         )),
         Line::from(format!(
-            "Картографирование: {}",
+            ui::RESULTS_DETAIL_MAPPED,
             body.is_mapped
                 .map_or("—", |value| if value { "Да" } else { "Нет" })
         )),
         Line::from(format!(
-            "Обновление данных Spansh: {}",
+            ui::RESULTS_DETAIL_DATA_UPDATED,
             body.last_updated_at.as_deref().unwrap_or("—")
         )),
         Line::from(format!(
-            "Обновление сигналов: {}",
+            ui::RESULTS_DETAIL_SIGNALS_UPDATED,
             body.signals_updated_at.as_deref().unwrap_or("—")
         )),
         Line::from(format!(
-            "Биосигналы Spansh: {}",
+            ui::RESULTS_DETAIL_BIO_COUNT,
             body.biological_signal_count
                 .map_or_else(|| "—".to_owned(), |value| value.to_string())
         )),
         Line::from(format!(
-            "Геосигналы Spansh: {}",
+            ui::RESULTS_DETAIL_GEO_COUNT,
             body.geological_signal_count
                 .map_or_else(|| "—".to_owned(), |value| value.to_string())
         )),
         Line::from(format!(
-            "Биологические группы: {}",
+            ui::RESULTS_DETAIL_BIO_GROUPS,
             body.biological_genera
                 .as_ref()
                 .filter(|values| !values.is_empty())
@@ -464,7 +464,7 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
                 )
         )),
         Line::from(format!(
-            "Вулканизм: {}",
+            ui::RESULTS_DETAIL_VOLCANISM,
             body.volcanism_type.as_deref().unwrap_or("—")
         )),
     ];
@@ -479,7 +479,7 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
             .wrap(Wrap { trim: true })
             .block(
                 Block::default()
-                    .title(" Подробности ")
+                    .title(ui::RESULTS_DETAILS_TITLE)
                     .borders(Borders::ALL),
             ),
         detail_layout[0],
@@ -496,11 +496,11 @@ fn render_exobiology(
 ) {
     let Some(view) = view else {
         frame.render_widget(
-            Paragraph::new("Экзобиологические кандидаты не найдены.")
+            Paragraph::new(ui::RESULTS_EXOBIOLOGY_EMPTY)
                 .wrap(Wrap { trim: true })
                 .block(
                     Block::default()
-                        .title(" Экзобиология ")
+                        .title(ui::RESULTS_EXOBIOLOGY_TITLE)
                         .borders(Borders::ALL),
                 ),
             area,
@@ -563,7 +563,7 @@ fn render_exobiology(
             Constraint::Percentage(42),
         ],
     )
-    .header(Row::new(["Группа", "Вид", "За 3 образца", "Статус"]))
+    .header(Row::new([ui::RESULTS_EXOBIOLOGY_GROUP_HEADER, ui::RESULTS_EXOBIOLOGY_SPECIES_HEADER, ui::RESULTS_EXOBIOLOGY_VALUE_HEADER, ui::RESULTS_EXOBIOLOGY_STATUS_HEADER]))
     .block(Block::default().borders(Borders::ALL));
     frame.render_widget(table, sections[1]);
 
