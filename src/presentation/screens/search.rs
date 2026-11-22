@@ -842,6 +842,45 @@ mod tests {
     }
 
     #[test]
+    fn advanced_temperature_and_gravity_bounds_are_independent_inputs() {
+        let mut screen = SearchScreen::default();
+        screen.set_advanced(true);
+        for _ in 0..6 {
+            screen.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+        }
+        screen.handle_key(KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::Char('0'), KeyModifiers::NONE));
+        assert_eq!(screen.form.temperature, "1900-195");
+
+        screen.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::Char('5'), KeyModifiers::NONE));
+        assert_eq!(screen.form.temperature, "1900-1955");
+    }
+
+    #[test]
+    fn atmosphere_selection_cycles_to_the_next_typed_value() {
+        let mut screen = SearchScreen::default();
+        screen.set_advanced(true);
+        for _ in 0..5 {
+            screen.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+        }
+        screen.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
+
+        assert_eq!(screen.form.atmosphere_types, vec![AtmosphereType::SulphurDioxide]);
+    }
+
+    #[test]
+    fn enter_returns_a_valid_search_configuration() {
+        let mut screen = SearchScreen::default();
+
+        let action = screen.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+
+        assert!(matches!(action, SearchScreenAction::Start(config) if config.system == "Sol"));
+        assert!(screen.errors().is_empty());
+    }
+
+    #[test]
     fn surface_selection_supports_or_and_any_is_exclusive() {
         let mut screen = SearchScreen::new(SearchForm::default());
         screen.set_advanced(true);
@@ -919,6 +958,8 @@ mod tests {
         assert!(rendered.contains("Сценарий"));
         assert!(rendered.contains("Ищем"));
         assert!(rendered.contains("Sol"));
+        assert!(rendered.contains("Количество: 5"));
+        assert!(rendered.contains("Радиус: 1000 св. лет"));
     }
 
     #[test]
