@@ -31,7 +31,10 @@ where
 {
     let mut session = TerminalGuard::enter()?;
     let (sender, mut receiver) = mpsc::channel(32);
-    let mut app = initial.clone().map(App::new).unwrap_or_else(App::new_default);
+    let mut app = initial
+        .clone()
+        .map(App::new)
+        .unwrap_or_else(App::new_default);
 
     if let Some(config) = initial {
         app.screen = Screen::Running;
@@ -51,9 +54,7 @@ where
             );
             let command = app::update(&mut app, event);
 
-            if terminal_event
-                && let Some(task) = app.search_task.take()
-            {
+            if terminal_event && let Some(task) = app.search_task.take() {
                 let _ = task.await;
             }
 
