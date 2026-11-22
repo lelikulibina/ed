@@ -495,7 +495,11 @@ fn render_exobiology(
         frame.render_widget(
             Paragraph::new(view.headline.as_str())
                 .wrap(Wrap { trim: true })
-                .block(Block::default().title(" Экзобиология ").borders(Borders::ALL)),
+                .block(
+                    Block::default()
+                        .title(" Экзобиология ")
+                        .borders(Borders::ALL),
+                ),
             area,
         );
         return;
