@@ -213,9 +213,10 @@ mod tests {
         assert!(requests[0].starts_with(
             "GET /api/systems/field_values/system_names?q=Flyua%20Phoea%20WB-K%20b1 "
         ));
-        assert!(requests[1].starts_with(
-            "GET /api/systems/field_values/system_names?q=Flyua%20Phoea%20WB-K "
-        ));
+        assert!(
+            requests[1]
+                .starts_with("GET /api/systems/field_values/system_names?q=Flyua%20Phoea%20WB-K ")
+        );
         assert!(requests[2].starts_with("POST /api/bodies/search "));
         let request_body = requests[2]
             .split_once("\r\n\r\n")
