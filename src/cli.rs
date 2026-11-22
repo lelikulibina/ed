@@ -98,6 +98,7 @@ impl Args {
     pub(crate) fn into_search_config(self) -> Result<SearchConfig> {
         let form = SearchForm {
             system: self.system,
+            radius: "1000".to_owned(),
             surface_types: vec![self.planet_type.parse::<SurfaceType>()?],
             atmosphere_types: vec![self.atmosphere_type.parse::<AtmosphereType>()?],
             temperature: self.temperature,
