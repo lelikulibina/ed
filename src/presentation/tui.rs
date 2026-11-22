@@ -523,7 +523,10 @@ mod tests {
             tokio::time::timeout(std::time::Duration::from_secs(1), receiver.recv())
                 .await
                 .unwrap(),
-            Some(AppEvent::Search(SearchEvent::PageLoaded { page: 1, found: 0 }))
+            Some(AppEvent::Search(SearchEvent::PageLoaded {
+                page: 1,
+                found: 0
+            }))
         ));
         assert!(matches!(
             tokio::time::timeout(std::time::Duration::from_secs(1), receiver.recv())
