@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          { sleep 2; printf '\\021'; } | TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 80 rows 24; before=$(stty -g); ./target/release/ed_planet_search; after=$(stty -g); test "$before" = "$after"' tty-artifacts/tty-ctrl-q-80x24.log
+          { sleep 2; printf '\021'; } | TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 80 rows 24; before=$(stty -g); ./target/release/ed_planet_search; after=$(stty -g); test "$before" = "$after"' tty-artifacts/tty-ctrl-q-80x24.log
       - name: Verify NO_COLOR at minimum supported 80x24
         shell: bash
         run: |
