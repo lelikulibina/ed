@@ -33,6 +33,7 @@ pub mod ui {
     pub const RUNNING_PREPARING: &str = "Подготовка запроса…";
     pub const RUNNING_CANCEL_HINT: &str = "Esc — отменить поиск";
     pub const ERROR_TITLE: &str = " Ошибка поиска ";
+    pub const ERROR_HEADING: &str = "Поиск не выполнен";
     pub const ERROR_FALLBACK: &str = "Не удалось выполнить поиск. Попробуйте ещё раз.";
     pub const ERROR_HINTS: &str = "r / к — повторить поиск\ne / у / Enter / Esc — изменить параметры\nCtrl+Q / Ctrl+Й — выход";
     pub const RESULTS_EMPTY_TITLE: &str = " Нет результатов ";
