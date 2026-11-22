@@ -279,8 +279,8 @@ mod tests {
         body.biological_signal_count = Some(2);
 
         let view = exobiology_view(&body).unwrap().unwrap();
-        assert_eq!(view.summary[0], format!("Ожидаемая выручка: {} CR", format_credits(base)));
         let base = exobiology::estimate(&body).unwrap().maximum_base_value_cr;
+        assert_eq!(view.summary[0], format!("Ожидаемая выручка: {} CR", format_credits(base)));
         assert_eq!(view.maximum_value_cr, base);
     }
 
