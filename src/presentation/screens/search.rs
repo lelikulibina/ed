@@ -1020,8 +1020,10 @@ mod tests {
             .buffer()
             .content()
             .iter()
-            .find(|cell| cell.symbol() == "S")
-            .expect("default system value should be rendered");
+            .enumerate()
+            .find(|(index, cell)| index / 120 == 4 && cell.symbol() == "S")
+            .map(|(_, cell)| cell)
+            .expect("default system value should be rendered in the system row");
 
         assert_eq!(system_value.fg, ratatui::style::Color::Green);
     }
