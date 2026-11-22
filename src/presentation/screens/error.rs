@@ -8,14 +8,13 @@ use crate::presentation::{app::App, text::ui, theme};
 pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let area = frame.area();
     let panel = theme::centered(area, area.width * 80 / 100, area.height * 55 / 100);
-    let message = app
-        .error_message
-        .as_deref()
-        .unwrap_or(ui::ERROR_FALLBACK);
+    let message = app.error_message.as_deref().unwrap_or(ui::ERROR_FALLBACK);
 
     frame.render_widget(
         Paragraph::new(format!(
-            "{}\n\n{message}\n\n{}", ui::ERROR_HEADING, ui::ERROR_HINTS
+            "{}\n\n{message}\n\n{}",
+            ui::ERROR_HEADING,
+            ui::ERROR_HINTS
         ))
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: true })
