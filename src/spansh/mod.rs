@@ -7,6 +7,6 @@ mod system;
 pub(crate) mod test_support;
 
 pub use bodies::{BodySearch, BodySearchError};
-pub use client::SpanshClient;
+pub use client::{SpanshClient, SpanshError};
 
 pub use system::{ResolveError, ResolvedSystem, SystemResolver};
