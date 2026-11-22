@@ -110,12 +110,16 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                 }
                 SearchEvent::SystemResolved { name } => {
                     app.resolved_system = Some(name.clone());
-                    app.progress_message = Some(format!("{}: {name}", ui::APP_SEARCH_SYSTEM_FOUND_PREFIX));
+                    app.progress_message =
+                        Some(format!("{}: {name}", ui::APP_SEARCH_SYSTEM_FOUND_PREFIX));
                 }
                 SearchEvent::PageLoaded { page, found } => {
                     app.current_page = page;
                     app.found_count = found;
-                    app.progress_message = Some(format!("{}: {page} · найдено {found}", ui::APP_SEARCH_PAGE_LOADED_PREFIX));
+                    app.progress_message = Some(format!(
+                        "{}: {page} · найдено {found}",
+                        ui::APP_SEARCH_PAGE_LOADED_PREFIX
+                    ));
                 }
                 SearchEvent::Finished(results) => {
                     app.results_screen.reset(&results);
