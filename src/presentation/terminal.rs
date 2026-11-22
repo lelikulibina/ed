@@ -13,6 +13,8 @@ use crossterm::{
 };
 use ratatui::{Terminal, backend::CrosstermBackend};
 
+use super::text::ui;
+
 static TERMINAL_ACTIVE: AtomicBool = AtomicBool::new(false);
 static PANIC_HOOK: Once = Once::new();
 
@@ -23,7 +25,7 @@ pub struct TerminalGuard {
 impl TerminalGuard {
     pub fn enter() -> Result<Self> {
         Self::install_panic_hook();
-        enable_raw_mode().context("Не удалось включить raw mode")?;
+        enable_raw_mode().context(ui::TERMINAL_RAW_MODE_ERROR)?;
         TERMINAL_ACTIVE.store(true, Ordering::SeqCst);
 
         let mut stdout = io::stdout();
