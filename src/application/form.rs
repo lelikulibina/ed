@@ -274,8 +274,10 @@ mod tests {
 
     #[test]
     fn default_form_builds_unfiltered_criteria() {
-        let mut form = SearchForm::default();
-        form.system = " Sol ".to_owned();
+        let form = SearchForm {
+            system: " Sol ".to_owned(),
+            ..SearchForm::default()
+        };
 
         let config = form.build().unwrap();
         assert_eq!(config.system, "Sol");

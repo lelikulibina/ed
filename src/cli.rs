@@ -1,4 +1,4 @@
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Result, anyhow};
 use clap::Parser;
 
 use crate::{
@@ -96,15 +96,16 @@ impl Args {
     /// Преобразует аргументы командной строки в ту же конфигурацию,
     /// которую использует интерактивный интерфейс.
     pub(crate) fn into_search_config(self) -> Result<SearchConfig> {
-        let mut form = SearchForm::default();
-        form.system = self.system;
-        form.surface_types = vec![self.planet_type.parse::<SurfaceType>()?];
-        form.atmosphere_types = vec![self.atmosphere_type.parse::<AtmosphereType>()?];
-        form.temperature = self.temperature;
-        form.gravity = self.gravity;
-        form.pressure = self.pressure;
-        form.count = self.count.to_string();
-        form.exclude_with_bio_signals = self.exclude_with_bio_signals;
+        let form = SearchForm {
+            system: self.system,
+            surface_types: vec![self.planet_type.parse::<SurfaceType>()?],
+            atmosphere_types: vec![self.atmosphere_type.parse::<AtmosphereType>()?],
+            temperature: self.temperature,
+            gravity: self.gravity,
+            pressure: self.pressure,
+            count: self.count.to_string(),
+            exclude_with_bio_signals: self.exclude_with_bio_signals,
+        };
 
         form.build().map_err(|errors| {
             anyhow!(

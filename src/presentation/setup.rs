@@ -312,19 +312,20 @@ impl App {
     }
 
     fn selection(&self) -> Result<SearchConfig> {
-        let mut form = SearchForm::default();
-        form.system = self.system.clone();
-        form.surface_types = self
-            .surfaces
-            .iter()
-            .map(|value| value.parse::<SurfaceType>())
-            .collect::<std::result::Result<Vec<_>, _>>()?;
-        form.atmosphere_types = vec![self.atmosphere.parse::<AtmosphereType>()?];
-        form.temperature = self.temperature.clone();
-        form.gravity = self.gravity.clone();
-        form.pressure = self.pressure.clone();
-        form.count = self.count.clone();
-        form.exclude_with_bio_signals = self.bio;
+        let form = SearchForm {
+            system: self.system.clone(),
+            surface_types: self
+                .surfaces
+                .iter()
+                .map(|value| value.parse::<SurfaceType>())
+                .collect::<std::result::Result<Vec<_>, _>>()?,
+            atmosphere_types: vec![self.atmosphere.parse::<AtmosphereType>()?],
+            temperature: self.temperature.clone(),
+            gravity: self.gravity.clone(),
+            pressure: self.pressure.clone(),
+            count: self.count.clone(),
+            exclude_with_bio_signals: self.bio,
+        };
 
         form.build().map_err(|errors| {
             anyhow!(
