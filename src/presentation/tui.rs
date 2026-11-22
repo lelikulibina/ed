@@ -39,7 +39,7 @@ where
             SearchUiAction::BackToSetup => {
                 initial = Some(previous_config);
                 start_immediately = false;
-            },
+            }
             SearchUiAction::Exit => break,
         }
     }
