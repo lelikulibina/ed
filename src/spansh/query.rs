@@ -174,7 +174,7 @@ mod tests {
                 y: 17.5,
                 z: 27.1,
             },
-            1_000.0,
+            5_000.0,
             100,
         )
         .unwrap();
@@ -192,8 +192,7 @@ mod tests {
             },
             15,
         )
-        .unwrap()
-        .with_radius(5_000.0);
+        .unwrap();
 
         let payload = query.to_payload_with_criteria(&criteria);
         assert_eq!(payload["filters"]["distance"]["max"], 5_000.0);
