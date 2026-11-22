@@ -24,4 +24,4 @@ jobs:
       - name: Verify formatting
         run: cargo fmt -- --check
       - name: Run live Flyua Phoea resolver and distance diagnostic
-        run: cargo test --test live_spansh live_flyua_phoea_center_and_distances_are_consistent -- --ignored --nocapture
+        run: cargo test --test live_spansh live_flyua_phoea_resolver_reproduces_wrong_center -- --ignored --nocapture
