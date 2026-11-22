@@ -154,10 +154,7 @@ impl FromStr for AtmosphereType {
             "ammonia" => Ok(Self::Ammonia),
             "water" => Ok(Self::Water),
             "carbon dioxide" | "carbon-dioxide" | "carbondioxide" => Ok(Self::CarbonDioxide),
-            "sulphur dioxide"
-            | "sulphur-dioxide"
-            | "sulfur dioxide"
-            | "sulfur-dioxide"
+            "sulphur dioxide" | "sulphur-dioxide" | "sulfur dioxide" | "sulfur-dioxide"
             | "sulfurdioxide" => Ok(Self::SulphurDioxide),
             "nitrogen" => Ok(Self::Nitrogen),
             "water-rich" | "water rich" => Ok(Self::WaterRich),
@@ -199,7 +196,10 @@ mod tests {
             ("icy body", SurfaceType::IcyBody),
             ("icy", SurfaceType::IcyBody),
             ("rocky ice world", SurfaceType::RockyIceWorld),
-            ("high metal content world", SurfaceType::HighMetalContentWorld),
+            (
+                "high metal content world",
+                SurfaceType::HighMetalContentWorld,
+            ),
         ];
 
         for (legacy, expected) in cases {
