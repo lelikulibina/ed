@@ -145,33 +145,48 @@ impl SearchForm {
             }
         };
 
-        let temperature = parse_integer_range(
+        let temperature = match parse_integer_range(
             &self.temperature,
             FormField::Temperature,
             "Температура: ожидается диапазон min-max в K",
             "Некорректная температура",
-        )
-        .unwrap_or(NumericRange {
-            min: 0.0,
-            max: 5_000.0,
-        });
-        let gravity = parse_float_range(
+        ) {
+            Ok(range) => range,
+            Err(error) => {
+                errors.push(error);
+                NumericRange {
+                    min: 0.0,
+                    max: 5_000.0,
+                }
+            }
+        };
+        let gravity = match parse_float_range(
             &self.gravity,
             FormField::Gravity,
             "Гравитация: ожидается диапазон min-max в g",
             "Некорректная гравитация",
-        )
-        .unwrap_or(NumericRange { min: 0.1, max: 1.0 });
-        let pressure = parse_float_range(
+        ) {
+            Ok(range) => range,
+            Err(error) => {
+                errors.push(error);
+                NumericRange { min: 0.1, max: 1.0 }
+            }
+        };
+        let pressure = match parse_float_range(
             &self.pressure,
             FormField::Pressure,
             "Давление: ожидается диапазон min-max в atm",
             "Некорректное давление",
-        )
-        .unwrap_or(NumericRange {
-            min: 0.0,
-            max: 10.0,
-        });
+        ) {
+            Ok(range) => range,
+            Err(error) => {
+                errors.push(error);
+                NumericRange {
+                    min: 0.0,
+                    max: 10.0,
+                }
+            }
+        };
 
         if !errors.is_empty() {
             return Err(errors);
@@ -384,7 +399,7 @@ mod tests {
 
         let summary = form.summary();
         assert!(summary.contains("Каменистая"));
-        assert!(summary.contains("Высоким содержанием металлов"));
+        assert!(summary.contains("С высоким содержанием металлов"));
         assert!(summary.contains("Водная"));
     }
 }
