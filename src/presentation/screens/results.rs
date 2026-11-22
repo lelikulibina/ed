@@ -300,10 +300,11 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     render_planet_table(frame, panes[0], app);
     render_details(frame, panes[1], app);
 
-    let hint = app.results_screen.status_message.as_deref().map_or_else(
-        || ui::RESULTS_HINTS,
-        |status| status,
-    );
+    let hint = app
+        .results_screen
+        .status_message
+        .as_deref()
+        .map_or_else(|| ui::RESULTS_HINTS, |status| status);
     frame.render_widget(
         Paragraph::new(hint)
             .alignment(Alignment::Center)
@@ -330,7 +331,11 @@ fn render_empty(frame: &mut ratatui::Frame<'_>, app: &App) {
         ))
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: true })
-        .block(Block::default().title(ui::RESULTS_EMPTY_TITLE).borders(Borders::ALL)),
+        .block(
+            Block::default()
+                .title(ui::RESULTS_EMPTY_TITLE)
+                .borders(Borders::ALL),
+        ),
         area,
     );
 }
@@ -369,15 +374,27 @@ fn render_planet_table(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Re
     )
     .header(
         Row::new(vec![
-            Cell::from(app.results_screen.header_label(SortMode::Name, ui::RESULTS_PLANET_HEADER)),
+            Cell::from(
+                app.results_screen
+                    .header_label(SortMode::Name, ui::RESULTS_PLANET_HEADER),
+            ),
             Cell::from(ui::RESULTS_SYSTEM_HEADER),
             Cell::from(
                 app.results_screen
                     .header_label(SortMode::Distance, ui::RESULTS_DISTANCE_HEADER),
             ),
-            Cell::from(app.results_screen.header_label(SortMode::Temperature, ui::RESULTS_TEMPERATURE_HEADER)),
-            Cell::from(app.results_screen.header_label(SortMode::Pressure, ui::RESULTS_PRESSURE_HEADER)),
-            Cell::from(app.results_screen.header_label(SortMode::Gravity, ui::RESULTS_GRAVITY_HEADER)),
+            Cell::from(
+                app.results_screen
+                    .header_label(SortMode::Temperature, ui::RESULTS_TEMPERATURE_HEADER),
+            ),
+            Cell::from(
+                app.results_screen
+                    .header_label(SortMode::Pressure, ui::RESULTS_PRESSURE_HEADER),
+            ),
+            Cell::from(
+                app.results_screen
+                    .header_label(SortMode::Gravity, ui::RESULTS_GRAVITY_HEADER),
+            ),
             Cell::from(ui::RESULTS_REVENUE_HEADER),
         ])
         .style(theme::Theme::default().accent)
@@ -389,7 +406,11 @@ fn render_planet_table(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Re
             .bg(ratatui::style::Color::DarkGray),
     )
     .highlight_symbol("▸ ")
-    .block(Block::default().title(ui::RESULTS_TABLE_TITLE).borders(Borders::ALL));
+    .block(
+        Block::default()
+            .title(ui::RESULTS_TABLE_TITLE)
+            .borders(Borders::ALL),
+    );
 
     frame.render_stateful_widget(table, area, &mut state);
 }
@@ -404,17 +425,23 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
         Line::from(format!(
             "{}: {}",
             ui::RESULTS_DETAIL_SYSTEM,
-            body.system_name.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE)
+            body.system_name
+                .as_deref()
+                .unwrap_or(ui::RESULTS_MISSING_VALUE)
         )),
         Line::from(format!(
             "{}: {}",
             ui::RESULTS_DETAIL_SURFACE,
-            body.subtype.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE)
+            body.subtype
+                .as_deref()
+                .unwrap_or(ui::RESULTS_MISSING_VALUE)
         )),
         Line::from(format!(
             "{}: {}",
             ui::RESULTS_DETAIL_ATMOSPHERE,
-            body.atmosphere.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE)
+            body.atmosphere
+                .as_deref()
+                .unwrap_or(ui::RESULTS_MISSING_VALUE)
         )),
         Line::from(format!(
             "{}: {} K",
@@ -426,7 +453,11 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
             ui::RESULTS_DETAIL_PRESSURE,
             display_number(body.surface_pressure, 4)
         )),
-        Line::from(format!("{}: {} g", ui::RESULTS_DETAIL_GRAVITY, display_number(body.gravity, 3))),
+        Line::from(format!(
+            "{}: {} g",
+            ui::RESULTS_DETAIL_GRAVITY,
+            display_number(body.gravity, 3)
+        )),
         Line::from(format!(
             "{}: {} св. л.",
             ui::RESULTS_DETAIL_DISTANCE,
@@ -435,19 +466,75 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
         Line::from(format!(
             "{}: {}",
             ui::RESULTS_DETAIL_LANDING,
-            body.is_landable.map_or(ui::RESULTS_MISSING_VALUE, |value| if value { ui::RESULTS_YES } else { ui::RESULTS_NO })
+            body.is_landable
+                .map_or(ui::RESULTS_MISSING_VALUE, |value| if value {
+                    ui::RESULTS_YES
+                } else {
+                    ui::RESULTS_NO
+                })
         )),
         Line::from(format!(
             "{}: {}",
             ui::RESULTS_DETAIL_MAPPED,
-            body.is_mapped.map_or(ui::RESULTS_MISSING_VALUE, |value| if value { ui::RESULTS_YES } else { ui::RESULTS_NO })
+            body.is_mapped
+                .map_or(ui::RESULTS_MISSING_VALUE, |value| if value {
+                    ui::RESULTS_YES
+                } else {
+                    ui::RESULTS_NO
+                })
         )),
-        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_DATA_UPDATED, body.last_updated_at.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
-        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_SIGNALS_UPDATED, body.signals_updated_at.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
-        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_BIO_COUNT, body.biological_signal_count.map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |value| value.to_string()))),
-        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_GEO_COUNT, body.geological_signal_count.map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |value| value.to_string()))),
-        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_BIO_GROUPS, body.biological_genera.as_ref().filter(|values| !values.is_empty()).map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |values| values.iter().map(|value| crate::presentation::text::russian_group_name(value)).collect::<Vec<_>>().join(", ")))),
-        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_VOLCANISM, body.volcanism_type.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
+        Line::from(format!(
+            "{}: {}",
+            ui::RESULTS_DETAIL_DATA_UPDATED,
+            body.last_updated_at
+                .as_deref()
+                .unwrap_or(ui::RESULTS_MISSING_VALUE)
+        )),
+        Line::from(format!(
+            "{}: {}",
+            ui::RESULTS_DETAIL_SIGNALS_UPDATED,
+            body.signals_updated_at
+                .as_deref()
+                .unwrap_or(ui::RESULTS_MISSING_VALUE)
+        )),
+        Line::from(format!(
+            "{}: {}",
+            ui::RESULTS_DETAIL_BIO_COUNT,
+            body.biological_signal_count.map_or_else(
+                || ui::RESULTS_MISSING_VALUE.to_owned(),
+                |value| value.to_string()
+            )
+        )),
+        Line::from(format!(
+            "{}: {}",
+            ui::RESULTS_DETAIL_GEO_COUNT,
+            body.geological_signal_count.map_or_else(
+                || ui::RESULTS_MISSING_VALUE.to_owned(),
+                |value| value.to_string()
+            )
+        )),
+        Line::from(format!(
+            "{}: {}",
+            ui::RESULTS_DETAIL_BIO_GROUPS,
+            body.biological_genera
+                .as_ref()
+                .filter(|values| !values.is_empty())
+                .map_or_else(
+                    || ui::RESULTS_MISSING_VALUE.to_owned(),
+                    |values| values
+                        .iter()
+                        .map(|value| crate::presentation::text::russian_group_name(value))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+        )),
+        Line::from(format!(
+            "{}: {}",
+            ui::RESULTS_DETAIL_VOLCANISM,
+            body.volcanism_type
+                .as_deref()
+                .unwrap_or(ui::RESULTS_MISSING_VALUE)
+        )),
     ];
 
     let detail_layout = Layout::default()
@@ -544,7 +631,12 @@ fn render_exobiology(
             Constraint::Percentage(42),
         ],
     )
-    .header(Row::new([ui::RESULTS_EXOBIOLOGY_GROUP_HEADER, ui::RESULTS_EXOBIOLOGY_SPECIES_HEADER, ui::RESULTS_EXOBIOLOGY_VALUE_HEADER, ui::RESULTS_EXOBIOLOGY_STATUS_HEADER]))
+    .header(Row::new([
+        ui::RESULTS_EXOBIOLOGY_GROUP_HEADER,
+        ui::RESULTS_EXOBIOLOGY_SPECIES_HEADER,
+        ui::RESULTS_EXOBIOLOGY_VALUE_HEADER,
+        ui::RESULTS_EXOBIOLOGY_STATUS_HEADER,
+    ]))
     .block(Block::default().borders(Borders::ALL));
     frame.render_widget(table, sections[1]);
 
