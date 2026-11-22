@@ -13,6 +13,7 @@ pub struct Theme {
     pub warning: Style,
     pub error: Style,
     pub muted: Style,
+    no_color: bool,
 }
 
 impl Theme {
@@ -24,6 +25,7 @@ impl Theme {
                 warning: Style::default(),
                 error: Style::default().add_modifier(Modifier::BOLD),
                 muted: Style::default().add_modifier(Modifier::DIM),
+                no_color: true,
             };
         }
 
@@ -35,12 +37,13 @@ impl Theme {
             warning: Style::default().fg(Color::Yellow),
             error: Style::default().fg(Color::Red),
             muted: Style::default().fg(Color::DarkGray),
+            no_color: false,
         }
     }
 
     pub fn selection(&self) -> Style {
         let style = Style::default().add_modifier(Modifier::BOLD);
-        if std::env::var_os("NO_COLOR").is_some() {
+        if self.no_color {
             style
         } else {
             style.bg(Color::DarkGray)
@@ -103,7 +106,7 @@ mod tests {
             assert!(style.fg.is_none());
             assert!(style.bg.is_none());
         }
-        assert!(theme.accent.add_modifier(Modifier::BOLD).add_modifier(Modifier::DIM).fg.is_none());
+        assert!(theme.selection().bg.is_none());
     }
 
     #[test]
