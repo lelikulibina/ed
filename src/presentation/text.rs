@@ -91,10 +91,10 @@ pub mod ui {
     pub const RESULTS_DETAIL_DISTANCE: &str = "Расстояние";
     pub const RESULTS_DETAIL_LANDING: &str = "Посадка";
     pub const RESULTS_DETAIL_MAPPED: &str = "Картографирование";
-    pub const RESULTS_DETAIL_DATA_UPDATED: &str = "Обновление данных Spansh";
+    pub const RESULTS_DETAIL_DATA_UPDATED: &str = "Последнее обновление данных";
     pub const RESULTS_DETAIL_SIGNALS_UPDATED: &str = "Обновление сигналов";
-    pub const RESULTS_DETAIL_BIO_COUNT: &str = "Биосигналы Spansh";
-    pub const RESULTS_DETAIL_GEO_COUNT: &str = "Геосигналы Spansh";
+    pub const RESULTS_DETAIL_BIO_COUNT: &str = "Биосигналы";
+    pub const RESULTS_DETAIL_GEO_COUNT: &str = "Геосигналы";
     pub const RESULTS_DETAIL_BIO_GROUPS: &str = "Биологические группы";
     pub const RESULTS_DETAIL_VOLCANISM: &str = "Вулканизм";
     pub const RESULTS_EXOBIOLOGY_GROUP_HEADER: &str = "Группа";
@@ -134,7 +134,7 @@ pub fn exobiology_view(body: &Body) -> Result<Option<ExobiologyView>, EstimateEr
         return Ok(None);
     }
 
-    let first_logged = estimate.biological_signal_count == Some(0);
+    let first_logged = !estimate.biological_signal_count.is_some_and(|count| count > 0);
     let multiplier = if first_logged { 5 } else { 1 };
     let rows = estimate
         .genera
@@ -165,20 +165,12 @@ pub fn exobiology_view(body: &Body) -> Result<Option<ExobiologyView>, EstimateEr
     let maximum_value_cr = estimate.maximum_base_value_cr * multiplier;
     let summary = vec![if first_logged {
         format!(
-            "Максимальная оценка выручки (×5 за отсутствие биосигналов): {} CR",
-            format_credits(maximum_value_cr)
-        )
-    } else if estimate
-        .biological_signal_count
-        .is_some_and(|count| count > 0)
-    {
-        format!(
-            "Максимальная оценка выручки (без ×5: есть биосигналы): {} CR",
+            "Ожидаемая выручка (бонус ×5): {} CR",
             format_credits(maximum_value_cr)
         )
     } else {
         format!(
-            "Максимальная оценка выручки (бонус ×5 не подтверждён): {} CR",
+            "Ожидаемая выручка: {} CR",
             format_credits(maximum_value_cr)
         )
     }];
@@ -262,7 +254,7 @@ mod tests {
                 .any(|row| row.status.starts_with("Нужно проверить:"))
         );
         assert!(view.maximum_value_cr > 0);
-        assert!(view.summary[0].contains("бонус ×5 не подтверждён"));
+        assert!(view.summary[0].starts_with("Ожидаемая выручка (бонус ×5):"));
     }
 
     #[test]
@@ -287,9 +279,17 @@ mod tests {
         body.biological_signal_count = Some(2);
 
         let view = exobiology_view(&body).unwrap().unwrap();
-        assert!(view.summary[0].contains("без ×5"));
+        assert_eq!(view.summary[0], format!("Ожидаемая выручка: {} CR", format_credits(base)));
         let base = exobiology::estimate(&body).unwrap().maximum_base_value_cr;
         assert_eq!(view.maximum_value_cr, base);
+    }
+
+    #[test]
+    fn missing_biological_signal_count_assumes_first_logged_bonus() {
+        let view = exobiology_view(&body()).unwrap().unwrap();
+        assert!(view.summary[0].starts_with("Ожидаемая выручка (бонус ×5):"));
+        let base = exobiology::estimate(&body()).unwrap().maximum_base_value_cr;
+        assert_eq!(view.maximum_value_cr, base * 5);
     }
 
     #[test]
@@ -299,7 +299,7 @@ mod tests {
 
         let view = exobiology_view(&body).unwrap().unwrap();
         assert!(!view.rows.is_empty());
-        assert!(view.summary[0].contains("×5"));
+        assert!(view.summary[0].starts_with("Ожидаемая выручка (бонус ×5):"));
         assert!(view.maximum_value_cr > 0);
     }
 
