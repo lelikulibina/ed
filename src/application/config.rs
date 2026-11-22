@@ -59,14 +59,10 @@ mod tests {
     }
 
     #[test]
-    fn accepts_a_trimmed_non_empty_system_and_preserves_criteria() {
+    fn trims_valid_system_names_and_rejects_empty_names() {
         let config = SearchConfig::new("  Sol  ", criteria(7)).unwrap();
         assert_eq!(config.system, "Sol");
         assert_eq!(config.criteria.count, 7);
-    }
-
-    #[test]
-    fn rejects_an_empty_system_name() {
         assert_eq!(
             SearchConfig::new("  ", criteria(5)).unwrap_err(),
             SearchConfigError::EmptySystem

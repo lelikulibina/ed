@@ -166,33 +166,20 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn retries_server_errors_but_returns_successful_json() {
-        let server = MockServer::start(vec![
-            MockResponse::with_status(StatusCode::SERVICE_UNAVAILABLE, ""),
-            MockResponse::ok(r#"{"ok":true}"#),
-        ])
-        .await;
-        let mut client = SpanshClient::new(server.base_url(), 1).unwrap();
-        client.retry_delay = Duration::from_millis(1);
-        client.request_interval = Duration::from_millis(1);
-        let value = client.get_json("/fixture").await.unwrap();
-        assert!(value["ok"].as_bool().unwrap());
-        let _ = server.finish().await;
-    }
-
-    #[tokio::test]
-    async fn retries_rate_limit_responses_and_returns_successful_json() {
-        let server = MockServer::start(vec![
-            MockResponse::with_status(StatusCode::TOO_MANY_REQUESTS, ""),
-            MockResponse::ok(r#"{"ok":true}"#),
-        ])
-        .await;
-        let mut client = SpanshClient::new(server.base_url(), 1).unwrap();
-        client.retry_delay = Duration::from_millis(1);
-        client.request_interval = Duration::from_millis(1);
-        let value = client.get_json("/fixture").await.unwrap();
-        assert!(value["ok"].as_bool().unwrap());
-        let _ = server.finish().await;
+    async fn retries_transient_statuses_and_returns_successful_json() {
+        for status in [StatusCode::SERVICE_UNAVAILABLE, StatusCode::TOO_MANY_REQUESTS] {
+            let server = MockServer::start(vec![
+                MockResponse::with_status(status, ""),
+                MockResponse::ok(r#"{"ok":true}"#),
+            ])
+            .await;
+            let mut client = SpanshClient::new(server.base_url(), 1).unwrap();
+            client.retry_delay = Duration::from_millis(1);
+            client.request_interval = Duration::from_millis(1);
+            let value = client.get_json("/fixture").await.unwrap();
+            assert!(value["ok"].as_bool().unwrap());
+            assert_eq!(server.finish().await.len(), 2);
+        }
     }
 
     #[tokio::test]

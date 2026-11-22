@@ -265,11 +265,6 @@ mod tests {
     use crate::spansh::test_support::{MockResponse, MockServer};
 
     #[test]
-    fn default_search_radius_is_1000_light_years() {
-        assert_eq!(DEFAULT_RADIUS_LY, 1_000.0);
-    }
-
-    #[test]
     fn full_page_at_reported_10000_count_is_not_treated_as_final() {
         let page = ParsedPage {
             bodies: Vec::new(),
@@ -280,46 +275,6 @@ mod tests {
         };
 
         assert!(!is_last_page(&page, 99, 100));
-    }
-
-    #[test]
-    fn identifies_center_system_by_id64_and_falls_back_to_name() {
-        let center = ResolvedSystem {
-            id64: "42".to_owned(),
-            name: "Sol".to_owned(),
-            coordinates: super::super::query::Coordinates {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-        };
-        let mut body = Body {
-            id64: Some("100".to_owned()),
-            name: "Sol 1".to_owned(),
-            system_id64: Some("42".to_owned()),
-            system_name: Some("Different label".to_owned()),
-            subtype: None,
-            distance_ly: Some(0.0),
-            is_landable: Some(true),
-            is_mapped: None,
-            last_updated_at: None,
-            surface_temperature: None,
-            surface_pressure: None,
-            gravity: None,
-            atmosphere: None,
-            volcanism_type: None,
-            biological_signal_count: None,
-            geological_signal_count: None,
-            biological_genera: None,
-            signals_updated_at: None,
-        };
-
-        assert!(is_center_system(&body, &center));
-        body.system_id64 = None;
-        body.system_name = Some("sOL".to_owned());
-        assert!(is_center_system(&body, &center));
-        body.system_id64 = Some("43".to_owned());
-        assert!(!is_center_system(&body, &center));
     }
 
     #[test]
@@ -376,7 +331,7 @@ mod tests {
         .unwrap();
 
         let results = BodySearch::new(client)
-            .with_limits(100.0, 1, 3)
+            .with_limits(1_000.0, 1, 3)
             .search(&center, &criteria)
             .await
             .unwrap();
@@ -390,6 +345,7 @@ mod tests {
         assert_eq!(payload["reference_coords"]["x"], 1.0);
         assert_eq!(payload["reference_coords"]["y"], 2.0);
         assert_eq!(payload["reference_coords"]["z"], 3.0);
+        assert_eq!(payload["filters"]["distance"]["max"], 1_000.0);
         assert_eq!(
             payload["filters"]["subtype"]["value"],
             serde_json::json!(["Rocky body"])

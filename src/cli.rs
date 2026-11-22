@@ -152,68 +152,92 @@ mod tests {
     use clap::Parser;
 
     #[test]
-    fn keeps_legacy_long_flags_and_defaults() {
-        let args = Args::try_parse_from([
-            "ed_planet_search",
-            "--system",
-            "Sol",
-            "--planet-type",
-            "rocky body",
-            "--atmosphere-type",
-            "water",
-        ])
-        .unwrap();
-        assert_eq!(args.system, "Sol");
-        assert_eq!(args.planet_type, "rocky body");
-        assert_eq!(args.atmosphere_type, "water");
-        assert_eq!(args.temperature, "0-5000");
-        assert_eq!(args.gravity, "0.1-1.0");
-        assert_eq!(args.pressure, "0.0-10.0");
-        assert_eq!(args.count, 5);
-        assert!(!args.exclude_with_bio_signals);
-    }
+    fn parses_legacy_cli_flag_variants_and_defaults() {
+        struct Case {
+            name: &'static str,
+            arguments: Vec<&'static str>,
+            planet_type: &'static str,
+            atmosphere_type: &'static str,
+            temperature: &'static str,
+            gravity: &'static str,
+            pressure: &'static str,
+            count: usize,
+            exclude_with_bio_signals: bool,
+        }
 
-    #[test]
-    fn parses_exclude_with_bio_signals_flag() {
-        let args = Args::try_parse_from([
-            "ed_planet_search",
-            "-S",
-            "Sol",
-            "-P",
-            "any",
-            "-A",
-            "any",
-            "--exclude-with-bio-signals",
-        ])
-        .unwrap();
-        assert!(args.exclude_with_bio_signals);
-    }
+        let cases = [
+            Case {
+                name: "long flags with defaults",
+                arguments: vec![
+                    "ed_planet_search",
+                    "--system",
+                    "Sol",
+                    "--planet-type",
+                    "rocky body",
+                    "--atmosphere-type",
+                    "water",
+                ],
+                planet_type: "rocky body",
+                atmosphere_type: "water",
+                temperature: "0-5000",
+                gravity: "0.1-1.0",
+                pressure: "0.0-10.0",
+                count: 5,
+                exclude_with_bio_signals: false,
+            },
+            Case {
+                name: "short flags with explicit ranges",
+                arguments: vec![
+                    "ed_planet_search", "-S", "Sol", "-P", "any", "-A", "any", "-t",
+                    "100-900", "-g", "0.2-0.8", "-p", "0.0-2.5", "-c", "12",
+                ],
+                planet_type: "any",
+                atmosphere_type: "any",
+                temperature: "100-900",
+                gravity: "0.2-0.8",
+                pressure: "0.0-2.5",
+                count: 12,
+                exclude_with_bio_signals: false,
+            },
+            Case {
+                name: "bio-signal exclusion flag",
+                arguments: vec![
+                    "ed_planet_search",
+                    "-S",
+                    "Sol",
+                    "-P",
+                    "any",
+                    "-A",
+                    "any",
+                    "--exclude-with-bio-signals",
+                ],
+                planet_type: "any",
+                atmosphere_type: "any",
+                temperature: "0-5000",
+                gravity: "0.1-1.0",
+                pressure: "0.0-10.0",
+                count: 5,
+                exclude_with_bio_signals: true,
+            },
+        ];
 
-    #[test]
-    fn keeps_legacy_short_flags_and_range_values() {
-        let args = Args::try_parse_from([
-            "ed_planet_search",
-            "-S",
-            "Sol",
-            "-P",
-            "any",
-            "-A",
-            "any",
-            "-t",
-            "100-900",
-            "-g",
-            "0.2-0.8",
-            "-p",
-            "0.0-2.5",
-            "-c",
-            "12",
-        ])
-        .unwrap();
-        assert_eq!(args.system, "Sol");
-        assert_eq!(args.temperature, "100-900");
-        assert_eq!(args.gravity, "0.2-0.8");
-        assert_eq!(args.pressure, "0.0-2.5");
-        assert_eq!(args.count, 12);
+        for case in cases {
+            let args = Args::try_parse_from(case.arguments)
+                .unwrap_or_else(|error| panic!("{}: {error}", case.name));
+            assert_eq!(args.system, "Sol", "{}", case.name);
+            assert_eq!(args.planet_type, case.planet_type, "{}", case.name);
+            assert_eq!(args.atmosphere_type, case.atmosphere_type, "{}", case.name);
+            assert_eq!(args.temperature, case.temperature, "{}", case.name);
+            assert_eq!(args.gravity, case.gravity, "{}", case.name);
+            assert_eq!(args.pressure, case.pressure, "{}", case.name);
+            assert_eq!(args.count, case.count, "{}", case.name);
+            assert_eq!(
+                args.exclude_with_bio_signals,
+                case.exclude_with_bio_signals,
+                "{}",
+                case.name
+            );
+        }
     }
 
     #[test]
