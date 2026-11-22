@@ -8,8 +8,10 @@ pub struct SearchScreen {
 
 impl Default for SearchScreen {
     fn default() -> Self {
-        let mut form = SearchForm::default();
-        form.system = "Sol".to_owned();
+        let form = SearchForm {
+            system: "Sol".to_owned(),
+            ..SearchForm::default()
+        };
         Self { form }
     }
 }
