@@ -15,8 +15,18 @@ pub struct Theme {
     pub muted: Style,
 }
 
-impl Default for Theme {
-    fn default() -> Self {
+impl Theme {
+    fn from_no_color(no_color: bool) -> Self {
+        if no_color {
+            return Self {
+                accent: Style::default().add_modifier(Modifier::BOLD),
+                success: Style::default(),
+                warning: Style::default(),
+                error: Style::default().add_modifier(Modifier::BOLD),
+                muted: Style::default().add_modifier(Modifier::DIM),
+            };
+        }
+
         Self {
             accent: Style::default()
                 .fg(Color::Cyan)
@@ -26,6 +36,21 @@ impl Default for Theme {
             error: Style::default().fg(Color::Red),
             muted: Style::default().fg(Color::DarkGray),
         }
+    }
+
+    pub fn selection(&self) -> Style {
+        let style = Style::default().add_modifier(Modifier::BOLD);
+        if std::env::var_os("NO_COLOR").is_some() {
+            style
+        } else {
+            style.bg(Color::DarkGray)
+        }
+    }
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self::from_no_color(std::env::var_os("NO_COLOR").is_some())
     }
 }
 
@@ -62,6 +87,23 @@ mod tests {
         let panel = centered(area, 72, 25);
 
         assert_eq!(panel, Rect::new(1, 1, 58, 16));
+    }
+
+    #[test]
+    fn no_color_theme_uses_modifiers_without_foreground_or_background_colors() {
+        let theme = Theme::from_no_color(true);
+
+        for style in [
+            theme.accent,
+            theme.success,
+            theme.warning,
+            theme.error,
+            theme.muted,
+        ] {
+            assert!(style.fg.is_none());
+            assert!(style.bg.is_none());
+        }
+        assert!(theme.accent.add_modifier(Modifier::BOLD).add_modifier(Modifier::DIM).fg.is_none());
     }
 
     #[test]
