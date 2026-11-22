@@ -381,7 +381,10 @@ mod tests {
         let mut app = app();
 
         update(&mut app, AppEvent::Search(SearchEvent::ResolvingSystem));
-        assert_eq!(app.progress_message.as_deref(), Some("Поиск центральной системы…"));
+        assert_eq!(
+            app.progress_message.as_deref(),
+            Some("Поиск центральной системы…")
+        );
 
         update(
             &mut app,
