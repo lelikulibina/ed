@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Result, anyhow};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, ListState, Paragraph, Wrap},
 };
