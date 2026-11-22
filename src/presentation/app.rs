@@ -67,9 +67,15 @@ mod tests {
         let criteria = SearchCriteria::new(
             Filter::Any,
             Filter::Any,
-            NumericRange { min: 0.0, max: 5_000.0 },
+            NumericRange {
+                min: 0.0,
+                max: 5_000.0,
+            },
             NumericRange { min: 0.1, max: 1.0 },
-            NumericRange { min: 0.0, max: 10.0 },
+            NumericRange {
+                min: 0.0,
+                max: 10.0,
+            },
             5,
         )
         .unwrap();
@@ -108,9 +114,12 @@ mod tests {
     fn finished_search_moves_to_results_and_keeps_bodies() {
         let mut app = app();
         app.screen = Screen::Running;
-        let bodies = vec![Body::from_json(&serde_json::json!({"name":"Earth"})).unwrap()];
+        let bodies = vec![Body::from_json(&serde_json::json!({"name": "Earth"})).unwrap()];
 
-        let command = update(&mut app, AppEvent::Search(SearchEvent::Finished(bodies.clone())));
+        let command = update(
+            &mut app,
+            AppEvent::Search(SearchEvent::Finished(bodies.clone())),
+        );
 
         assert!(command.is_none());
         assert_eq!(app.screen, Screen::Results);
@@ -133,6 +142,10 @@ mod tests {
 
         assert!(command.is_none());
         assert_eq!(app.screen, Screen::Error);
-        assert!(app.error_message.as_deref().is_some_and(|message| !message.is_empty()));
+        assert!(
+            app.error_message
+                .as_deref()
+                .is_some_and(|message| !message.is_empty())
+        );
     }
 }
