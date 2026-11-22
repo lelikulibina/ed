@@ -140,106 +140,73 @@ pub enum SpanshError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio::{
-        io::{AsyncReadExt, AsyncWriteExt},
-        net::TcpListener,
-    };
-
-    async fn respond(listener: TcpListener, responses: Vec<&'static str>) {
-        for response in responses {
-            let (mut socket, _) = listener.accept().await.unwrap();
-            let mut request = [0_u8; 2048];
-            let _ = socket.read(&mut request).await.unwrap();
-            socket.write_all(response.as_bytes()).await.unwrap();
-        }
-    }
+    use crate::spansh::test_support::{MockResponse, MockServer};
 
     #[tokio::test]
     async fn get_json_decodes_response_from_injected_endpoint() {
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
-        let server = tokio::spawn(respond(
-            listener,
-            vec![
-                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 11\r\nconnection: close\r\n\r\n{\"ok\":true}",
-            ],
-        ));
-
-        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let server = MockServer::start(vec![MockResponse::ok(r#"{"ok":true}"#)]).await;
+        let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let value = client.get_json("/fixture").await.unwrap();
         assert!(value["ok"].as_bool().unwrap());
-        server.await.unwrap();
+        let _ = server.finish().await;
     }
 
     #[tokio::test]
     async fn enforces_configured_minimum_interval_between_requests() {
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
-        let response = "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 11\r\nconnection: close\r\n\r\n{\"ok\":true}";
-        let server = tokio::spawn(respond(listener, vec![response, response]));
-
-        let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let response = MockResponse::ok(r#"{"ok":true}"#);
+        let server = MockServer::start(vec![response.clone(), response]).await;
+        let mut client = SpanshClient::new(server.base_url(), 1).unwrap();
         client.request_interval = Duration::from_millis(25);
         let started = std::time::Instant::now();
         client.get_json("/first").await.unwrap();
         client.get_json("/second").await.unwrap();
 
         assert!(started.elapsed() >= Duration::from_millis(20));
-        server.await.unwrap();
+        let _ = server.finish().await;
     }
 
     #[tokio::test]
     async fn retries_server_errors_but_returns_successful_json() {
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
-        let server = tokio::spawn(respond(
-            listener,
-            vec![
-                "HTTP/1.1 503 Service Unavailable\r\ncontent-length: 0\r\nconnection: close\r\n\r\n",
-                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 11\r\nconnection: close\r\n\r\n{\"ok\":true}",
-            ],
-        ));
-
-        let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let server = MockServer::start(vec![
+            MockResponse::with_status(StatusCode::SERVICE_UNAVAILABLE, ""),
+            MockResponse::ok(r#"{"ok":true}"#),
+        ])
+        .await;
+        let mut client = SpanshClient::new(server.base_url(), 1).unwrap();
         client.retry_delay = Duration::from_millis(1);
         client.request_interval = Duration::from_millis(1);
         let value = client.get_json("/fixture").await.unwrap();
         assert!(value["ok"].as_bool().unwrap());
-        server.await.unwrap();
+        let _ = server.finish().await;
     }
 
     #[tokio::test]
     async fn retries_rate_limit_responses_and_returns_successful_json() {
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
-        let server = tokio::spawn(respond(
-            listener,
-            vec![
-                "HTTP/1.1 429 Too Many Requests\r\ncontent-length: 0\r\nconnection: close\r\n\r\n",
-                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 11\r\nconnection: close\r\n\r\n{\"ok\":true}",
-            ],
-        ));
-
-        let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let server = MockServer::start(vec![
+            MockResponse::with_status(StatusCode::TOO_MANY_REQUESTS, ""),
+            MockResponse::ok(r#"{"ok":true}"#),
+        ])
+        .await;
+        let mut client = SpanshClient::new(server.base_url(), 1).unwrap();
         client.retry_delay = Duration::from_millis(1);
         client.request_interval = Duration::from_millis(1);
         let value = client.get_json("/fixture").await.unwrap();
         assert!(value["ok"].as_bool().unwrap());
-        server.await.unwrap();
+        let _ = server.finish().await;
     }
 
     #[tokio::test]
     async fn returns_server_error_after_retry_budget_is_exhausted() {
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
         let unavailable =
-            "HTTP/1.1 503 Service Unavailable\r\ncontent-length: 0\r\nconnection: close\r\n\r\n";
-        let server = tokio::spawn(respond(
-            listener,
-            vec![unavailable, unavailable, unavailable, unavailable],
-        ));
-
-        let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+            MockResponse::with_status(StatusCode::SERVICE_UNAVAILABLE, "");
+        let server = MockServer::start(vec![
+            unavailable.clone(),
+            unavailable.clone(),
+            unavailable.clone(),
+            unavailable,
+        ])
+        .await;
+        let mut client = SpanshClient::new(server.base_url(), 1).unwrap();
         client.retry_delay = Duration::from_millis(1);
         client.request_interval = Duration::from_millis(1);
         let error = client.get_json("/fixture").await.unwrap_err();
@@ -251,19 +218,17 @@ mod tests {
                 ..
             }
         ));
-        server.await.unwrap();
+        let _ = server.finish().await;
     }
 
     #[tokio::test]
     async fn does_not_retry_non_retryable_client_errors() {
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
-        let server = tokio::spawn(respond(
-            listener,
-            vec!["HTTP/1.1 400 Bad Request\r\ncontent-length: 0\r\nconnection: close\r\n\r\n"],
-        ));
-
-        let mut client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let server = MockServer::start(vec![MockResponse::with_status(
+            StatusCode::BAD_REQUEST,
+            "",
+        )])
+        .await;
+        let mut client = SpanshClient::new(server.base_url(), 1).unwrap();
         client.retry_delay = Duration::from_millis(1);
         client.request_interval = Duration::from_millis(1);
         let error = client.get_json("/fixture").await.unwrap_err();
@@ -274,6 +239,7 @@ mod tests {
                 ..
             }
         ));
-        server.await.unwrap();
+        let requests = server.finish().await;
+        assert_eq!(requests.len(), 1);
     }
 }

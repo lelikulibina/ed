@@ -5,6 +5,7 @@ use tokio::{
     task::JoinHandle,
 };
 
+#[derive(Clone)]
 pub(crate) struct MockResponse {
     status: StatusCode,
     body: String,

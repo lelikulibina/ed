@@ -262,6 +262,7 @@ fn find_guid(value: &Value) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::spansh::test_support::{MockResponse, MockServer};
 
     #[test]
     fn default_search_radius_is_1000_light_years() {
@@ -346,61 +347,17 @@ mod tests {
 
     #[tokio::test]
     async fn search_posts_center_and_follows_recall_pages() {
-        use tokio::{
-            io::{AsyncReadExt, AsyncWriteExt},
-            net::TcpListener,
-        };
+        let first =
+            include_str!("../../tests/fixtures/spansh/body-search-page-0.json").to_owned();
+        let second =
+            include_str!("../../tests/fixtures/spansh/body-search-page-1.json").to_owned();
+        let server = MockServer::start(vec![
+            MockResponse::ok(first),
+            MockResponse::ok(second),
+        ])
+        .await;
 
-        async fn read_request(socket: &mut tokio::net::TcpStream) -> String {
-            let mut bytes = Vec::new();
-            let mut chunk = [0_u8; 2048];
-            loop {
-                let read = socket.read(&mut chunk).await.unwrap();
-                if read == 0 {
-                    break;
-                }
-                bytes.extend_from_slice(&chunk[..read]);
-                if let Some(header_end) = bytes.windows(4).position(|window| window == b"\r\n\r\n")
-                {
-                    let headers = String::from_utf8_lossy(&bytes[..header_end]);
-                    let content_length = headers
-                        .lines()
-                        .find_map(|line| {
-                            let (key, value) = line.split_once(':')?;
-                            key.eq_ignore_ascii_case("content-length")
-                                .then(|| value.trim().parse::<usize>().ok())
-                                .flatten()
-                        })
-                        .unwrap_or(0);
-                    if bytes.len() >= header_end + 4 + content_length {
-                        break;
-                    }
-                }
-            }
-            String::from_utf8_lossy(&bytes).to_string()
-        }
-
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
-        let first = include_str!("../../tests/fixtures/spansh/body-search-page-0.json").to_owned();
-        let second = include_str!("../../tests/fixtures/spansh/body-search-page-1.json").to_owned();
-
-        let server = tokio::spawn(async move {
-            let mut requests = Vec::new();
-            for body in [first, second] {
-                let (mut socket, _) = listener.accept().await.unwrap();
-                requests.push(read_request(&mut socket).await);
-                let response = format!(
-                    "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
-                    body.len(),
-                    body
-                );
-                socket.write_all(response.as_bytes()).await.unwrap();
-            }
-            requests
-        });
-
-        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let center = ResolvedSystem {
             id64: "42".to_owned(),
             name: "Sol".to_owned(),
@@ -431,7 +388,7 @@ mod tests {
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].name, "Nearby B 1");
-        let requests = server.await.unwrap();
+        let requests = server.finish().await;
         assert!(requests[0].starts_with("POST /api/bodies/search "));
         let (_, request_body) = requests[0].split_once("\r\n\r\n").unwrap();
         let payload: Value = serde_json::from_str(request_body).unwrap();
@@ -454,16 +411,8 @@ mod tests {
         assert_eq!(payload["filters"]["is_landable"]["value"], true);
         assert!(requests[1].starts_with("GET /api/bodies/search/recall/test-guid/1 "));
     }
-
     #[tokio::test]
     async fn search_uses_post_page_fallback_when_reference_is_missing() {
-        use tokio::{
-            io::{AsyncReadExt, AsyncWriteExt},
-            net::TcpListener,
-        };
-
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
         let responses = [
             r#"{"count":2,"from":0,"size":1,"results":[{
                 "name":"Central Body",
@@ -494,49 +443,15 @@ mod tests {
                 "distance":2.0
             }]}"#,
         ];
+        let server = MockServer::start(
+            responses
+                .into_iter()
+                .map(MockResponse::ok)
+                .collect(),
+        )
+        .await;
 
-        let server = tokio::spawn(async move {
-            let mut requests = Vec::new();
-            for body in responses {
-                let (mut socket, _) = listener.accept().await.unwrap();
-                let mut bytes = Vec::new();
-                let mut chunk = [0_u8; 2048];
-                loop {
-                    let read = socket.read(&mut chunk).await.unwrap();
-                    if read == 0 {
-                        break;
-                    }
-                    bytes.extend_from_slice(&chunk[..read]);
-                    if let Some(header_end) =
-                        bytes.windows(4).position(|window| window == b"\r\n\r\n")
-                    {
-                        let headers = String::from_utf8_lossy(&bytes[..header_end]);
-                        let content_length = headers
-                            .lines()
-                            .find_map(|line| {
-                                let (key, value) = line.split_once(':')?;
-                                key.eq_ignore_ascii_case("content-length")
-                                    .then(|| value.trim().parse::<usize>().ok())
-                                    .flatten()
-                            })
-                            .unwrap_or(0);
-                        if bytes.len() >= header_end + 4 + content_length {
-                            break;
-                        }
-                    }
-                }
-                requests.push(String::from_utf8_lossy(&bytes).to_string());
-                let response = format!(
-                    "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
-                    body.len(),
-                    body
-                );
-                socket.write_all(response.as_bytes()).await.unwrap();
-            }
-            requests
-        });
-
-        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let center = ResolvedSystem {
             id64: "42".to_owned(),
             name: "Sol".to_owned(),
@@ -567,7 +482,7 @@ mod tests {
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].name, "Unmapped Body");
-        let requests = server.await.unwrap();
+        let requests = server.finish().await;
         assert_eq!(requests.len(), 2);
         assert!(requests[0].starts_with("POST /api/bodies/search "));
         assert!(requests[1].starts_with("POST /api/bodies/search "));
@@ -575,45 +490,8 @@ mod tests {
         let payload: Value = serde_json::from_str(body).unwrap();
         assert_eq!(payload["page"], 1);
     }
-
     #[tokio::test]
     async fn falls_back_to_direct_post_when_recall_reference_has_expired() {
-        use tokio::{
-            io::{AsyncReadExt, AsyncWriteExt},
-            net::TcpListener,
-        };
-
-        async fn read_request(socket: &mut tokio::net::TcpStream) -> String {
-            let mut bytes = Vec::new();
-            let mut chunk = [0_u8; 2048];
-            loop {
-                let read = socket.read(&mut chunk).await.unwrap();
-                if read == 0 {
-                    break;
-                }
-                bytes.extend_from_slice(&chunk[..read]);
-                if let Some(header_end) = bytes.windows(4).position(|window| window == b"\r\n\r\n")
-                {
-                    let headers = String::from_utf8_lossy(&bytes[..header_end]);
-                    let content_length = headers
-                        .lines()
-                        .find_map(|line| {
-                            let (key, value) = line.split_once(':')?;
-                            key.eq_ignore_ascii_case("content-length")
-                                .then(|| value.trim().parse::<usize>().ok())
-                                .flatten()
-                        })
-                        .unwrap_or(0);
-                    if bytes.len() >= header_end + 4 + content_length {
-                        break;
-                    }
-                }
-            }
-            String::from_utf8_lossy(&bytes).to_string()
-        }
-
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
         let first = r#"{"guid":"expired-guid","count":2,"from":0,"results":[{
             "name":"Mapped Body",
             "id64":"1001",
@@ -642,27 +520,14 @@ mod tests {
             "gravity":1.0,
             "atmosphere":"Nitrogen"
         }]}"#;
-        let server = tokio::spawn(async move {
-            let responses = [
-                ("HTTP/1.1 200 OK", first),
-                ("HTTP/1.1 404 Not Found", ""),
-                ("HTTP/1.1 200 OK", second),
-            ];
-            let mut requests = Vec::new();
-            for (status, body) in responses {
-                let (mut socket, _) = listener.accept().await.unwrap();
-                requests.push(read_request(&mut socket).await);
-                let response = format!(
-                    "{status}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
-                    body.len(),
-                    body
-                );
-                socket.write_all(response.as_bytes()).await.unwrap();
-            }
-            requests
-        });
+        let server = MockServer::start(vec![
+            MockResponse::ok(first),
+            MockResponse::with_status(reqwest::StatusCode::NOT_FOUND, ""),
+            MockResponse::ok(second),
+        ])
+        .await;
 
-        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let center = ResolvedSystem {
             id64: "42".to_owned(),
             name: "Sol".to_owned(),
@@ -699,7 +564,7 @@ mod tests {
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].name, "Nearby Body");
-        let requests = server.await.unwrap();
+        let requests = server.finish().await;
         assert!(requests[0].starts_with("POST /api/bodies/search "));
         assert!(requests[1].starts_with("GET /api/bodies/search/recall/expired-guid/1 "));
         assert!(requests[2].starts_with("POST /api/bodies/search "));
@@ -707,16 +572,8 @@ mod tests {
         let payload: Value = serde_json::from_str(request_body).unwrap();
         assert_eq!(payload["page"], 1);
     }
-
     #[tokio::test]
     async fn returns_page_limit_error_instead_of_silent_partial_results() {
-        use tokio::{
-            io::{AsyncReadExt, AsyncWriteExt},
-            net::TcpListener,
-        };
-
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let address = listener.local_addr().unwrap();
         let response_body = r#"{"count":2,"from":0,"results":[{
             "name":"Mapped Body",
             "id64":"1001",
@@ -731,19 +588,9 @@ mod tests {
             "gravity":1.0,
             "atmosphere":"Nitrogen"
         }]}"#;
-        let server = tokio::spawn(async move {
-            let (mut socket, _) = listener.accept().await.unwrap();
-            let mut request = [0_u8; 2048];
-            let _ = socket.read(&mut request).await.unwrap();
-            let response = format!(
-                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
-                response_body.len(),
-                response_body
-            );
-            socket.write_all(response.as_bytes()).await.unwrap();
-        });
+        let server = MockServer::start(vec![MockResponse::ok(response_body)]).await;
 
-        let client = SpanshClient::new(format!("http://{address}"), 1).unwrap();
+        let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let center = ResolvedSystem {
             id64: "42".to_owned(),
             name: "Sol".to_owned(),
@@ -779,9 +626,8 @@ mod tests {
             .unwrap_err();
 
         assert!(matches!(error, BodySearchError::PageLimit(1)));
-        server.await.unwrap();
+        let _ = server.finish().await;
     }
-
     #[test]
     fn rejects_unknown_page_shape_instead_of_reporting_empty_results() {
         assert!(matches!(
