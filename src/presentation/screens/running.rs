@@ -1,6 +1,5 @@
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
-    style::Style,
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Wrap},
 };
@@ -87,7 +86,7 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
             Block::default()
                 .title(ui::RUNNING_PANEL_TITLE)
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(ratatui::style::Color::DarkGray)),
+                .border_style(theme::Theme::default().muted),
         ),
         sections[1],
     );
