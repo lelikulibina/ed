@@ -1,3 +1,58 @@
+pub mod ui {
+    pub const MIN_TERMINAL_SIZE: &str = "Увеличьте окно терминала до 80×24";
+    pub const APP_TITLE: &str = "ED Planet Search";
+    pub const HELP_TITLE: &str = " Справка ";
+    pub const HELP_COMMON: &str = "? / Esc — закрыть справку · Ctrl+Q / Ctrl+Й — выход";
+    pub const HELP_SEARCH: &str = "ПОИСК\n↑/↓ — сценарий или значение · Tab / Shift+Tab — поле\nПробел — флаг или поверхность · F2 — дополнительные фильтры\nHome / End — начало / конец строки · Backspace / Delete — удалить\nВставка из буфера — вставить текст · Enter — запустить · Esc — выйти";
+    pub const HELP_RUNNING: &str = "ВЫПОЛНЕНИЕ\nEsc — отменить поиск";
+    pub const HELP_RESULTS: &str = "РЕЗУЛЬТАТЫ\n↑/↓ — выбрать планету · s / ы — сортировка · S / Ы — порядок\nc / с — копировать систему · e / у — изменить параметры\nn / т — новый поиск · PgUp / PgDn — подробности";
+    pub const HELP_ERROR: &str = "ОШИБКА\nr / к — повторить поиск · e / у — изменить параметры\nEnter / Esc — вернуться к настройке";
+    pub const SEARCH_PROFILE_TITLE: &str = " Сценарий ";
+    pub const SEARCH_PARAMETERS_TITLE: &str = " Параметры ";
+    pub const SEARCH_SUMMARY_TITLE: &str = " Поиск по критериям ";
+    pub const SEARCH_HINTS: &str = "Enter — искать · Tab / Shift+Tab — поле · F2 — фильтры · ? — помощь · Esc — выход";
+    pub const SEARCH_CUSTOM_PROFILE: &str = "Свой поиск";
+    pub const SEARCH_SYSTEM_LABEL: &str = "Система";
+    pub const SEARCH_COUNT_LABEL: &str = "Количество";
+    pub const SEARCH_BIO_LABEL: &str = "Без биосигналов";
+    pub const SEARCH_SURFACE_LABEL: &str = "Поверхность";
+    pub const SEARCH_ATMOSPHERE_LABEL: &str = "Атмосфера";
+    pub const SEARCH_TEMPERATURE_LABEL: &str = "Температура";
+    pub const SEARCH_GRAVITY_LABEL: &str = "Гравитация";
+    pub const SEARCH_PRESSURE_LABEL: &str = "Давление";
+    pub const SEARCH_ADVANCED_LABEL: &str = "Дополнительно (F2)";
+    pub const SEARCH_PROFILE_VALUE_LABEL: &str = "Потенциал профиля";
+    pub const SEARCH_SUMMARY_PREFIX: &str = "Ищем";
+    pub const SEARCH_RADIUS_LABEL: &str = "Радиус";
+    pub const FORM_ERROR_MARKER: &str = "  ! ";
+    pub const RUNNING_TITLE: &str = " Поиск планет ";
+    pub const RUNNING_PANEL_TITLE: &str = " Выполнение ";
+    pub const RUNNING_SYSTEM_PENDING: &str = "Поиск центральной системы…";
+    pub const RUNNING_PAGE_PENDING: &str = "Ожидание первой страницы Spansh…";
+    pub const RUNNING_PREPARING: &str = "Подготовка запроса…";
+    pub const RUNNING_CANCEL_HINT: &str = "Esc — отменить поиск";
+    pub const ERROR_TITLE: &str = " Ошибка поиска ";
+    pub const ERROR_FALLBACK: &str = "Не удалось выполнить поиск. Попробуйте ещё раз.";
+    pub const ERROR_HINTS: &str = "r / к — повторить поиск\ne / у / Enter / Esc — изменить параметры\nCtrl+Q / Ctrl+Й — выход";
+    pub const RESULTS_EMPTY_TITLE: &str = " Нет результатов ";
+    pub const RESULTS_EMPTY_HINT: &str = "Попробуйте расширить диапазон температуры или снять ограничение по биосигналам.";
+    pub const RESULTS_EMPTY_ACTIONS: &str = "e / у — изменить параметры · n / т — новый поиск";
+    pub const RESULTS_HINTS: &str = "↑/↓ выбор · s/ы сортировка · S/Ы порядок · c/с копировать систему · e/у параметры · n/т новый поиск · PgUp/PgDn подробности";
+    pub const RESULTS_TABLE_TITLE: &str = " Планеты ";
+    pub const RESULTS_DETAILS_TITLE: &str = " Подробности ";
+    pub const RESULTS_EXOBIOLOGY_TITLE: &str = " Экзобиология ";
+    pub const RESULTS_EXOBIOLOGY_EMPTY: &str = "Экзобиологические кандидаты не найдены.";
+    pub const RESULTS_PLANET_HEADER: &str = "Планета";
+    pub const RESULTS_SYSTEM_HEADER: &str = "Система";
+    pub const RESULTS_DISTANCE_HEADER: &str = "св. л.";
+    pub const RESULTS_TEMPERATURE_HEADER: &str = "K";
+    pub const RESULTS_PRESSURE_HEADER: &str = "atm";
+    pub const RESULTS_GRAVITY_HEADER: &str = "g";
+    pub const RESULTS_REVENUE_HEADER: &str = "Выручка";
+    pub const COPY_STATUS_PREFIX: &str = "Скопировано";
+    pub const COPY_MANUAL_FALLBACK: &str = "если OSC 52 не поддерживается, выделите имя вручную";
+}
+
 use crate::domain::{
     body::Body,
     exobiology::{self, CandidateStatus, EstimateError},
