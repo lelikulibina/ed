@@ -272,7 +272,8 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
 
     frame.render_widget(
         Paragraph::new(format!(
-            ui::RESULTS_SUMMARY,
+            "{}: {}  ·  СИСТЕМА: {}  ·  СОРТИРОВКА: {},
+            ui::RESULTS_SUMMARY_LABEL,
             app.results.len(),
             app.config.system,
             app.results_screen.sort_label()
@@ -320,8 +321,12 @@ fn render_empty(frame: &mut ratatui::Frame<'_>, app: &App) {
     );
     frame.render_widget(
         Paragraph::new(format!(
-            "Подходящие планеты не найдены\n\nСистема: {}\n\nПопробуйте расширить диапазон температуры или снять ограничение по биосигналам.\n\ne — изменить параметры · n — новый поиск",
-            app.config.system
+            "{}\n\n{}: {}\n\n{}\n\n{}",
+            ui::RESULTS_EMPTY_MESSAGE,
+            ui::RESULTS_EMPTY_SYSTEM_LABEL,
+            app.config.system,
+            ui::RESULTS_EMPTY_HINT,
+            ui::RESULTS_EMPTY_ACTIONS
         ))
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: true })
@@ -395,78 +400,54 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
         return;
     };
     let details = vec![
-        Line::from(format!(ui::RESULTS_DETAIL_PLANET, body.name)),
+        Line::from(format!("{}: {}", ui::RESULTS_DETAIL_PLANET, body.name)),
         Line::from(format!(
+            "{}: {}",
             ui::RESULTS_DETAIL_SYSTEM,
-            body.system_name.as_deref().unwrap_or("—")
+            body.system_name.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE)
         )),
         Line::from(format!(
+            "{}: {}",
             ui::RESULTS_DETAIL_SURFACE,
-            body.subtype.as_deref().unwrap_or("—")
+            body.subtype.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE)
         )),
         Line::from(format!(
+            "{}: {}",
             ui::RESULTS_DETAIL_ATMOSPHERE,
-            body.atmosphere.as_deref().unwrap_or("—")
+            body.atmosphere.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE)
         )),
         Line::from(format!(
+            "{}: {} K",
             ui::RESULTS_DETAIL_TEMPERATURE,
             display_number(body.surface_temperature, 2)
         )),
         Line::from(format!(
+            "{}: {} atm",
             ui::RESULTS_DETAIL_PRESSURE,
             display_number(body.surface_pressure, 4)
         )),
-        Line::from(format!(ui::RESULTS_DETAIL_GRAVITY, display_number(body.gravity, 3))),
+        Line::from(format!("{}: {} g", ui::RESULTS_DETAIL_GRAVITY, display_number(body.gravity, 3))),
         Line::from(format!(
+            "{}: {} св. л.",
             ui::RESULTS_DETAIL_DISTANCE,
             display_number(body.distance_ly, 2)
         )),
         Line::from(format!(
+            "{}: {}",
             ui::RESULTS_DETAIL_LANDING,
-            body.is_landable
-                .map_or("—", |value| if value { ui::RESULTS_YES } else { ui::RESULTS_NO })
+            body.is_landable.map_or(ui::RESULTS_MISSING_VALUE, |value| if value { ui::RESULTS_YES } else { ui::RESULTS_NO })
         )),
         Line::from(format!(
+            "{}: {}",
             ui::RESULTS_DETAIL_MAPPED,
-            body.is_mapped
-                .map_or("—", |value| if value { "Да" } else { "Нет" })
+            body.is_mapped.map_or(ui::RESULTS_MISSING_VALUE, |value| if value { ui::RESULTS_YES } else { ui::RESULTS_NO })
         )),
-        Line::from(format!(
-            ui::RESULTS_DETAIL_DATA_UPDATED,
-            body.last_updated_at.as_deref().unwrap_or("—")
-        )),
-        Line::from(format!(
-            ui::RESULTS_DETAIL_SIGNALS_UPDATED,
-            body.signals_updated_at.as_deref().unwrap_or("—")
-        )),
-        Line::from(format!(
-            ui::RESULTS_DETAIL_BIO_COUNT,
-            body.biological_signal_count
-                .map_or_else(|| "—".to_owned(), |value| value.to_string())
-        )),
-        Line::from(format!(
-            ui::RESULTS_DETAIL_GEO_COUNT,
-            body.geological_signal_count
-                .map_or_else(|| "—".to_owned(), |value| value.to_string())
-        )),
-        Line::from(format!(
-            ui::RESULTS_DETAIL_BIO_GROUPS,
-            body.biological_genera
-                .as_ref()
-                .filter(|values| !values.is_empty())
-                .map_or_else(
-                    || "—".to_owned(),
-                    |values| values
-                        .iter()
-                        .map(|value| crate::presentation::text::russian_group_name(value))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-        )),
-        Line::from(format!(
-            ui::RESULTS_DETAIL_VOLCANISM,
-            body.volcanism_type.as_deref().unwrap_or("—")
-        )),
+        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_DATA_UPDATED, body.last_updated_at.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
+        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_SIGNALS_UPDATED, body.signals_updated_at.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
+        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_BIO_COUNT, body.biological_signal_count.map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |value| value.to_string()))),
+        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_GEO_COUNT, body.geological_signal_count.map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |value| value.to_string()))),
+        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_BIO_GROUPS, body.biological_genera.as_ref().filter(|values| !values.is_empty()).map_or_else(|| ui::RESULTS_MISSING_VALUE.to_owned(), |values| values.iter().map(|value| crate::presentation::text::russian_group_name(value)).collect::<Vec<_>>().join(", ")))),
+        Line::from(format!("{}: {{}}", ui::RESULTS_DETAIL_VOLCANISM, body.volcanism_type.as_deref().unwrap_or(ui::RESULTS_MISSING_VALUE))),
     ];
 
     let detail_layout = Layout::default()
@@ -515,7 +496,7 @@ fn render_exobiology(
         frame.render_widget(
             Paragraph::new(lines).wrap(Wrap { trim: true }).block(
                 Block::default()
-                    .title(" Экзобиология ")
+                    .title(ui::RESULTS_EXOBIOLOGY_TITLE)
                     .borders(Borders::ALL),
             ),
             area,
