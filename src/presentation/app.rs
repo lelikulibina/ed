@@ -6,7 +6,10 @@ use crate::{
     domain::body::Body,
 };
 
-use super::screens::search::{SearchScreen, SearchScreenAction};
+use super::screens::{
+    results::{ResultsAction, ResultsScreen},
+    search::{SearchScreen, SearchScreenAction},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
@@ -44,6 +47,7 @@ pub struct App {
     pub resolved_system: Option<String>,
     pub selected_index: usize,
     pub search_screen: SearchScreen,
+    pub results_screen: ResultsScreen,
     pub search_task: Option<tokio::task::JoinHandle<()>>,
 }
 
@@ -75,6 +79,7 @@ impl App {
             resolved_system: None,
             selected_index: 0,
             search_screen,
+            results_screen: ResultsScreen::default(),
             search_task: None,
         }
     }
@@ -111,6 +116,7 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     app.progress_message = Some(format!("Страница {page} · найдено {found}"));
                 }
                 SearchEvent::Finished(results) => {
+                    app.results_screen.reset(&results);
                     app.results = results;
                     app.selected_index = 0;
                     app.progress_message = None;
@@ -173,27 +179,13 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     }
                     _ => None,
                 },
-                Screen::Results => match key.code {
-                    KeyCode::Esc | KeyCode::Char('e') | KeyCode::Char('n') => {
+                Screen::Results => match app.results_screen.handle_key(key, &app.results) {
+                    Some(ResultsAction::BackToSearch) => {
                         app.screen = Screen::Search;
                         None
                     }
-                    KeyCode::Up => {
-                        app.selected_index = app.selected_index.saturating_sub(1);
-                        None
-                    }
-                    KeyCode::Down => {
-                        if app.selected_index + 1 < app.results.len() {
-                            app.selected_index += 1;
-                        }
-                        None
-                    }
-                    KeyCode::Char('c') => app
-                        .results
-                        .get(app.selected_index)
-                        .and_then(|body| body.system_name.clone())
-                        .map(Command::CopySystem),
-                    _ => None,
+                    Some(ResultsAction::CopySystem(system)) => Some(Command::CopySystem(system)),
+                    None => None,
                 },
                 Screen::Error => match key.code {
                     KeyCode::Char('r' | 'R') => {
@@ -219,11 +211,7 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         Screen::Search => super::screens::search::render(frame, &app.search_screen),
         Screen::Running => super::screens::running::render(frame, app),
         Screen::Error => super::screens::error::render(frame, app),
-        Screen::Results => render_placeholder(
-            frame,
-            "РЕЗУЛЬТАТЫ",
-            "Экран результатов будет подключён на этапе 6.",
-        ),
+        Screen::Results => super::screens::results::render(frame, app),
     }
 }
 
