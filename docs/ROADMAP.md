@@ -34,7 +34,7 @@ Nov 22, 2026 · @Leli
 - Слои `domain` / `spansh` / `application` разделены разумно; рефакторинг касается в основном `presentation` и границы с `domain::criteria`.
 - Доменные тесты (`criteria.rs`, `body.rs`, `exobiology.rs`) и тест каталога `tests/exobiology_catalog.rs` описывают бизнес-правила и сохраняются.
 - Семь пресетов с точными числами, OR-логика типов поверхности для профиля 3, независимость переключателя биосигналов, «вулканизм не фильтр» — зафиксированные требования владельца; менять только по явной просьбе.
-- CI: `fmt`, `clippy -D warnings`, `cargo test --locked --all-targets` — оставить как гейт.
+- CI: `fmt`, `clippy -D warnings`, `cargo test --all-targets` — оставить как гейт. `Cargo.lock` не хранится по решению владельца, поэтому `--locked` не используется.
 
 ## 2. Целевая архитектура и правила для агента
 
@@ -155,7 +155,7 @@ src/
 Каждый этап — отдельный PR в рабочую ветку `refactor/tui-cleanup`, созданную от `feature/interactive-terminal-ui`; внутри этапа — по одному коммиту на задачу. Переход к следующему этапу разрешён только при зелёном гейте:
 
 ```bash
-cargo fmt -- --check && cargo clippy --locked --all-targets --all-features -- -D warnings && cargo test --locked --all-targets
+cargo fmt -- --check && cargo clippy --all-targets --all-features -- -D warnings && cargo test --all-targets
 ```
 
 Этапы 1–2 не меняют внешнее поведение вообще; этапы 3–6 меняют только `presentation/`; доменная логика поиска и экзобиологии не меняется нигде.
@@ -276,7 +276,7 @@ cargo fmt -- --check && cargo clippy --locked --all-targets --all-features -- -D
   - [x] Создать `docs/architecture.md` с фактическими слоями, потоком поиска, параметрами HTTP-клиента и ограничениями Spansh.
   - [x] Создать `docs/exobiology.md`, описывающий текущую модель оценки, каталог и ограничения.
 - [x] CI: основной workflow без изменений; `spansh-live-smoke.yml` — только `workflow_dispatch`, без привязки к ветке `refactor/spansh-api-architecture`, запускает единственный live-тест.
-- [ ] `cargo build --release` и ручной запуск бинарника.
+- [x] `cargo build --release` и запуск бинарника в псевдотерминале (TTY Diagnostics, 120×40, 80×24, 60×18). Ручная проверка человеком остаётся в чек-листе.
   - [x] Добавить release-сборку и запуск бинарника в псевдотерминале на трёх размерах в TTY Diagnostics; ручная проверка человеком остаётся.
 
 **Приёмка:** в корне есть README; `docs/` не содержит планов и журналов; гейт зелёный; релизная сборка запускается.
@@ -328,10 +328,10 @@ cargo fmt -- --check && cargo clippy --locked --all-targets --all-features -- -D
 
 ### Автоматически
 
-- [ ] Гейт из раздела 4 зелёный на последнем коммите.
+- [x] Гейт из раздела 4 зелёный на последнем коммите (`e6ea404`): Rust CI run 45022761440.
 - [ ] `grep -rn "println!\|from_cli\|planet_types" src` не находит ничего.
 - [ ] В `presentation/` один `TerminalGuard`, один `centered`, нет ASCII-таблиц.
-- [ ] Live-тест один, запускается только вручную.
+- [x] Live-тест один, запускается только вручную.
 - [ ] Все 7 сценариев дают те же числа критериев, что в таблице `PRESETS`, а вызов с флагами CLI даёт те же `SearchCriteria`, что на базовой линии.
 
 ### Вручную (чек-лист для PR этапа 7)
