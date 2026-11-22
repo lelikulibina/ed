@@ -328,11 +328,12 @@ cargo fmt -- --check && cargo clippy --all-targets --all-features -- -D warnings
 
 ### Автоматически
 
-- [x] Гейт из раздела 4 зелёный на последнем коммите (`e6ea404`): Rust CI run 45022761440.
-- [ ] `grep -rn "println!\|from_cli\|planet_types" src` не находит ничего.
-- [ ] В `presentation/` один `TerminalGuard`, один `centered`, нет ASCII-таблиц.
+- [x] Гейт из раздела 4 зелёный на последнем коммите (`6e88687`): [Rust CI run 45023053495](https://github.com/lelikulibina/ed/actions/runs/45023053495).
+- [x] В `src/` отсутствуют `println!` и `from_cli`. Ключ `planet_types` намеренно используется в `domain/exobiology.rs` для чтения ограничений каталога видов; удалять его ради буквального grep нельзя.
+- [x] В `presentation/` единственные определения `TerminalGuard` и `centered`; ASCII-таблиц нет.
 - [x] Live-тест один, запускается только вручную.
-- [ ] Все 7 сценариев дают те же числа критериев, что в таблице `PRESETS`, а вызов с флагами CLI даёт те же `SearchCriteria`, что на базовой линии.
+- [x] Тест `catalog_contains_the_seven_user_defined_profiles_exactly` сверяет все 7 профилей и итоговые `SearchCriteria` с таблицей `PRESETS`.
+- [ ] Сверить итоговые `SearchCriteria` CLI с исторической базовой линией. Текущие табличные тесты подтверждают преобразование CLI и сохранение флагов/значений по сравнению с `ed-dev`, но в доступной базовой реализации ещё нет эквивалентной типизированной модели критериев для прямого сравнения.
 
 ### Вручную (чек-лист для PR этапа 7)
 
