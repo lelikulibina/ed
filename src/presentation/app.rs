@@ -92,6 +92,11 @@ impl App {
     }
 }
 
+fn is_quit_key(key: KeyEvent) -> bool {
+    matches!(key.code, KeyCode::Char('q' | 'Q' | 'й' | 'Й'))
+        && key.modifiers.contains(KeyModifiers::CONTROL)
+}
+
 pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
     match event {
         AppEvent::Resize(area) => {
@@ -145,10 +150,7 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
         }
         AppEvent::Key(key) => {
             if app.help_open {
-                if key.kind == KeyEventKind::Press
-                    && key.code == KeyCode::Char('q')
-                    && key.modifiers.contains(KeyModifiers::CONTROL)
-                {
+                if key.kind == KeyEventKind::Press && is_quit_key(key) {
                     return Some(Command::Quit);
                 }
                 if key.kind == KeyEventKind::Press
@@ -184,7 +186,7 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                 };
             }
 
-            if key.code == KeyCode::Char('q') && key.modifiers.contains(KeyModifiers::CONTROL) {
+            if is_quit_key(key) {
                 return Some(Command::Quit);
             }
 
