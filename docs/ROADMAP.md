@@ -328,7 +328,7 @@ cargo fmt -- --check && cargo clippy --all-targets --all-features -- -D warnings
 
 ### Автоматически
 
-- [x] Гейт из раздела 4 зелёный на последнем коммите (`6e88687`): [Rust CI run 45023053495](https://github.com/lelikulibina/ed/actions/runs/45023053495).
+- [x] Гейт из раздела 4 зелёный на последнем коммите (`310a269`): [Rust CI run 45024010650](https://github.com/lelikulibina/ed/actions/runs/45024010650).
 - [x] В `src/` отсутствуют `println!` и `from_cli`. Ключ `planet_types` намеренно используется в `domain/exobiology.rs` для чтения ограничений каталога видов; удалять его ради буквального grep нельзя.
 - [x] В `presentation/` единственные определения `TerminalGuard` и `centered`; ASCII-таблиц нет.
 - [x] Live-тест один, запускается только вручную.
