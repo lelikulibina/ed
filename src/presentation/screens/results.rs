@@ -304,7 +304,7 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let panes = if wide {
         Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Length(8), Constraint::Min(0)])
+            .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
             .split(root[1])
     } else {
         Layout::default()
