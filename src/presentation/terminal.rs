@@ -1,16 +1,14 @@
 use std::{
     io,
-    sync::atomic::{AtomicBool, Ordering},
     sync::Once,
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 use anyhow::{Context, Result};
 use crossterm::{
     cursor::{Hide, Show},
     execute,
-    terminal::{
-        EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
-    },
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{Terminal, backend::CrosstermBackend};
 
