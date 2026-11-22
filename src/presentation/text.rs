@@ -46,6 +46,9 @@ pub mod ui {
     pub const APP_SEARCH_PAGE_LOADED_PREFIX: &str = "Страница Spansh";
     pub const APP_SEARCH_PAGE_FOUND_SUFFIX: &str = "найдено";
     pub const APP_DEFAULT_CONFIG_ERROR: &str = "Профиль поиска по умолчанию должен быть корректным";
+    pub const EVENT_SEND_ERROR: &str = "Не удалось передать событие интерфейсу";
+    pub const ANIMATION_EVENT_SEND_ERROR: &str = "Не удалось передать событие анимации";
+    pub const TERMINAL_RAW_MODE_ERROR: &str = "Не удалось включить raw mode";
     pub const APP_SEARCH_RETRYING: &str = "Повторный запуск поиска…";
     pub const ERROR_TITLE: &str = " Ошибка поиска ";
     pub const ERROR_HEADING: &str = "Поиск не выполнен";
