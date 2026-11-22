@@ -848,4 +848,34 @@ mod tests {
         assert!(output.contains("Planet A"));
         assert!(!output.contains("нет данных"));
     }
+
+    #[test]
+    fn russian_layout_shortcuts_match_latin_results_actions() {
+        let bodies = vec![body("Near", "1", Some(1.0))];
+        let mut screen = ResultsScreen::default();
+        screen.reset(&bodies);
+
+        screen.handle_key(
+            KeyEvent::new(KeyCode::Char('ы'), crossterm::event::KeyModifiers::NONE),
+            &bodies,
+        );
+        assert_eq!(screen.sort_mode, SortMode::Temperature);
+
+        assert_eq!(
+            screen.handle_key(
+                KeyEvent::new(KeyCode::Char('с'), crossterm::event::KeyModifiers::NONE),
+                &bodies
+            ),
+            Some(ResultsAction::CopySystem("Sol".to_owned()))
+        );
+
+        assert_eq!(
+            screen.handle_key(
+                KeyEvent::new(KeyCode::Char('т'), crossterm::event::KeyModifiers::NONE),
+                &bodies
+            ),
+            Some(ResultsAction::BackToSearch)
+        );
+    }
+
 }
