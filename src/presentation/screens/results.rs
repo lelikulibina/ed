@@ -239,7 +239,7 @@ fn display_number(value: Option<f64>, precision: usize) -> String {
 fn revenue(view: Option<&ExobiologyView>) -> String {
     view.map_or_else(
         || "—".to_owned(),
-        |view| format!("{} CR", format_credits(view.maximum_base_value_cr)),
+        |view| format!("{} CR", format_credits(view.maximum_value_cr)),
     )
 }
 
@@ -602,11 +602,8 @@ fn render_exobiology(
     };
 
     if view.rows.is_empty() {
-        let mut lines = vec![Line::from(view.headline.as_str())];
-        lines.extend(view.summary.iter().map(|line| Line::from(line.as_str())));
-        lines.extend(view.notes.iter().map(|line| Line::from(line.as_str())));
         frame.render_widget(
-            Paragraph::new(lines).wrap(Wrap { trim: true }),
+            Paragraph::new(view.summary.join(" · ")).wrap(Wrap { trim: true }),
             inner,
         );
         return;
@@ -614,16 +611,8 @@ fn render_exobiology(
 
     let sections = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(2),
-            Constraint::Min(2),
-            Constraint::Length(2),
-        ])
+        .constraints([Constraint::Min(2), Constraint::Length(1)])
         .split(inner);
-    frame.render_widget(
-        Paragraph::new(view.headline.as_str()).wrap(Wrap { trim: true }),
-        sections[0],
-    );
 
     let rows = view
         .rows
@@ -652,18 +641,12 @@ fn render_exobiology(
         ui::RESULTS_EXOBIOLOGY_VALUE_HEADER,
         ui::RESULTS_EXOBIOLOGY_STATUS_HEADER,
     ]));
-    frame.render_widget(table, sections[1]);
+    frame.render_widget(table, sections[0]);
 
-    let footer = view
-        .summary
-        .iter()
-        .chain(view.notes.iter())
-        .cloned()
-        .collect::<Vec<_>>()
-        .join(" · ");
+    let footer = view.summary.join(" · ");
     frame.render_widget(
         Paragraph::new(footer).wrap(Wrap { trim: true }),
-        sections[2],
+        sections[1],
     );
 }
 
