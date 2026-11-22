@@ -31,7 +31,7 @@ where
 {
     let mut session = TerminalGuard::enter()?;
     let (sender, mut receiver) = mpsc::channel(32);
-    let mut app = initial.map(App::new).unwrap_or_else(App::new_default);
+    let mut app = initial.clone().map(App::new).unwrap_or_else(App::new_default);
 
     if let Some(config) = initial {
         app.screen = Screen::Running;
@@ -46,7 +46,7 @@ where
 
         if let Ok(event) = receiver.try_recv() {
             let terminal_event = matches!(
-                event,
+                &event,
                 AppEvent::Search(SearchEvent::Finished(_) | SearchEvent::Failed(_))
             );
             let command = app::update(&mut app, event);
@@ -105,18 +105,27 @@ async fn start_search_task<F, Fut>(
     let search = search.clone();
     app.search_task = Some(tokio::spawn(async move {
         let (progress_sender, mut progress_receiver) = mpsc::unbounded_channel();
-        let event_sender = sender.clone();
-        let forwarder = tokio::spawn(async move {
-            while let Some(event) = progress_receiver.recv().await {
-                if event_sender.send(AppEvent::Search(event)).await.is_err() {
-                    break;
+        let mut search_future = Box::pin(search(config, progress_sender.clone()));
+        let result = loop {
+            tokio::select! {
+                result = &mut search_future => break result,
+                event = progress_receiver.recv() => {
+                    if let Some(event) = event
+                        && sender.send(AppEvent::Search(event)).await.is_err()
+                    {
+                        return;
+                    }
                 }
             }
-        });
+        };
 
-        let result = search(config, progress_sender.clone()).await;
+        drop(search_future);
         drop(progress_sender);
-        let _ = forwarder.await;
+        while let Some(event) = progress_receiver.recv().await {
+            if sender.send(AppEvent::Search(event)).await.is_err() {
+                return;
+            }
+        }
 
         let event = match result {
             Ok(results) => SearchEvent::Finished(results),
