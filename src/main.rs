@@ -1,14 +1,11 @@
-mod cli;
-
 use std::io::IsTerminal;
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
 
-use cli::Args;
-
 use ed_planet_search::{
     application::{config::SearchConfig, search::SearchUseCase},
+    cli::Args,
     domain,
     presentation::tui,
     spansh::SpanshClient,
