@@ -215,16 +215,6 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     }
 }
 
-fn render_placeholder(frame: &mut ratatui::Frame<'_>, title: &'static str, message: &str) {
-    use ratatui::widgets::{Block, Borders, Paragraph};
-
-    let area = frame.area();
-    frame.render_widget(
-        Paragraph::new(message).block(Block::default().title(title).borders(Borders::ALL)),
-        area,
-    );
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
