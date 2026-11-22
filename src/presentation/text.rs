@@ -31,6 +31,9 @@ pub mod ui {
     pub const RUNNING_SYSTEM_PENDING: &str = "Поиск центральной системы…";
     pub const RUNNING_PAGE_PENDING: &str = "Ожидание первой страницы Spansh…";
     pub const RUNNING_PREPARING: &str = "Подготовка запроса…";
+    pub const RUNNING_SYSTEM_FOUND_PREFIX: &str = "Центральная система найдена";
+    pub const RUNNING_PAGE_LOADED_PREFIX: &str = "Загружена страница Spansh";
+    pub const RUNNING_FOUND_COUNT: &str = "Подходящих планет найдено";
     pub const RUNNING_CANCEL_HINT: &str = "Esc — отменить поиск";
     pub const ERROR_TITLE: &str = " Ошибка поиска ";
     pub const ERROR_HEADING: &str = "Поиск не выполнен";
