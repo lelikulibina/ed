@@ -13,9 +13,9 @@ pub fn poll_and_send(
 ) -> anyhow::Result<bool> {
     if event::poll(timeout)? {
         if let Some(event) = to_app_event(event::read()?) {
-            sender.try_send(event).map_err(|error| {
-                anyhow::anyhow!("{}: {error}", ui::EVENT_SEND_ERROR)
-            })?;
+            sender
+                .try_send(event)
+                .map_err(|error| anyhow::anyhow!("{}: {error}", ui::EVENT_SEND_ERROR))?;
             return Ok(true);
         }
     } else if animation_enabled {
