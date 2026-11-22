@@ -218,7 +218,7 @@ mod tests {
         ));
         assert!(requests[2].starts_with("POST /api/bodies/search "));
         let request_body = requests[2]
-            .split_once("\\r\\n\\r\\n")
+            .split_once("\r\n\r\n")
             .expect("body search request must contain a JSON body")
             .1;
         let payload: serde_json::Value =
