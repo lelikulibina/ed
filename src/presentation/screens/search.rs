@@ -267,7 +267,10 @@ impl SearchScreen {
             SearchField::GravityMax => self.gravity_max.paste(text),
             SearchField::PressureMin => self.pressure_min.paste(text),
             SearchField::PressureMax => self.pressure_max.paste(text),
-            SearchField::Profile | SearchField::BioSignals | SearchField::Surface | SearchField::Atmosphere => false,
+            SearchField::Profile
+            | SearchField::BioSignals
+            | SearchField::Surface
+            | SearchField::Atmosphere => false,
         };
         if changed {
             self.sync_form_from_inputs();
