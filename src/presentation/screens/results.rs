@@ -587,16 +587,16 @@ fn render_exobiology(
     area: ratatui::layout::Rect,
     view: Option<&ExobiologyView>,
 ) {
+    let block = Block::default()
+        .title(ui::RESULTS_EXOBIOLOGY_TITLE)
+        .borders(Borders::ALL);
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
     let Some(view) = view else {
         frame.render_widget(
-            Paragraph::new(ui::RESULTS_EXOBIOLOGY_EMPTY)
-                .wrap(Wrap { trim: true })
-                .block(
-                    Block::default()
-                        .title(ui::RESULTS_EXOBIOLOGY_TITLE)
-                        .borders(Borders::ALL),
-                ),
-            area,
+            Paragraph::new(ui::RESULTS_EXOBIOLOGY_EMPTY).wrap(Wrap { trim: true }),
+            inner,
         );
         return;
     };
@@ -606,12 +606,8 @@ fn render_exobiology(
         lines.extend(view.summary.iter().map(|line| Line::from(line.as_str())));
         lines.extend(view.notes.iter().map(|line| Line::from(line.as_str())));
         frame.render_widget(
-            Paragraph::new(lines).wrap(Wrap { trim: true }).block(
-                Block::default()
-                    .title(ui::RESULTS_EXOBIOLOGY_TITLE)
-                    .borders(Borders::ALL),
-            ),
-            area,
+            Paragraph::new(lines).wrap(Wrap { trim: true }),
+            inner,
         );
         return;
     }
@@ -623,15 +619,9 @@ fn render_exobiology(
             Constraint::Min(2),
             Constraint::Length(2),
         ])
-        .split(area);
+        .split(inner);
     frame.render_widget(
-        Paragraph::new(view.headline.as_str())
-            .wrap(Wrap { trim: true })
-            .block(
-                Block::default()
-                    .title(ui::RESULTS_EXOBIOLOGY_TITLE)
-                    .borders(Borders::ALL),
-            ),
+        Paragraph::new(view.headline.as_str()).wrap(Wrap { trim: true }),
         sections[0],
     );
 
@@ -661,8 +651,7 @@ fn render_exobiology(
         ui::RESULTS_EXOBIOLOGY_SPECIES_HEADER,
         ui::RESULTS_EXOBIOLOGY_VALUE_HEADER,
         ui::RESULTS_EXOBIOLOGY_STATUS_HEADER,
-    ]))
-    .block(Block::default().borders(Borders::ALL));
+    ]));
     frame.render_widget(table, sections[1]);
 
     let footer = view
@@ -673,9 +662,7 @@ fn render_exobiology(
         .collect::<Vec<_>>()
         .join(" · ");
     frame.render_widget(
-        Paragraph::new(footer)
-            .wrap(Wrap { trim: true })
-            .block(Block::default().borders(Borders::ALL)),
+        Paragraph::new(footer).wrap(Wrap { trim: true }),
         sections[2],
     );
 }
