@@ -12,7 +12,7 @@ use crate::application::config::SearchConfig;
 
 use super::{
     app::{self, App, Command},
-    events::spawn_event_stream,
+    events::poll_and_send,
     terminal::TerminalGuard,
     theme,
 };
@@ -29,7 +29,7 @@ where
     loop {
         let next_config = match take_immediate_config(&mut initial, &mut start_immediately) {
             Some(config) => Some(config),
-            None => run_search_screen_in_session(&mut session, initial.take()).await?,
+            None => run_search_screen_in_session(&mut session, initial.take())?,
         };
         let Some(config) = next_config else {
             break;
@@ -57,41 +57,27 @@ fn take_immediate_config<T>(initial: &mut Option<T>, start_immediately: &mut boo
     }
 }
 
-async fn run_search_screen_in_session(
+fn run_search_screen_in_session(
     session: &mut TerminalGuard,
     initial: Option<SearchConfig>,
 ) -> Result<Option<SearchConfig>> {
     let mut app = initial.map(App::new).unwrap_or_else(App::new_default);
-    let local = tokio::task::LocalSet::new();
+    let (sender, mut receiver) = tokio::sync::mpsc::channel(1);
 
-    local
-        .run_until(async {
-            let (sender, mut receiver) = tokio::sync::mpsc::channel(32);
-            let event_task = spawn_event_stream(sender, false);
+    loop {
+        session
+            .terminal_mut()
+            .draw(|frame| app::render(frame, &app))?;
+        poll_and_send(&sender, std::time::Duration::from_millis(100), false)?;
 
-            loop {
-                session
-                    .terminal_mut()
-                    .draw(|frame| app::render(frame, &app))?;
-                let Some(event) = receiver.recv().await else {
-                    event_task.abort();
-                    return Ok(None);
-                };
-
-                match app::update(&mut app, event) {
-                    Some(Command::StartSearch(config)) => {
-                        event_task.abort();
-                        return Ok(Some(config));
-                    }
-                    Some(Command::Quit) => {
-                        event_task.abort();
-                        return Ok(None);
-                    }
-                    Some(Command::CancelSearch | Command::CopySystem(_)) | None => {}
-                }
+        if let Ok(event) = receiver.try_recv() {
+            match app::update(&mut app, event) {
+                Some(Command::StartSearch(config)) => return Ok(Some(config)),
+                Some(Command::Quit) => return Ok(None),
+                Some(Command::CancelSearch | Command::CopySystem(_)) | None => {}
             }
-        })
-        .await
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -6,33 +6,26 @@ use tokio::{sync::mpsc, task::JoinHandle};
 
 use super::app::AppEvent;
 
-pub fn spawn_event_stream(
-    sender: mpsc::Sender<AppEvent>,
+pub fn poll_and_send(
+    sender: &mpsc::Sender<AppEvent>,
+    timeout: Duration,
     animation_enabled: bool,
-) -> JoinHandle<()> {
-    tokio::task::spawn_local(async move {
-        loop {
-            if sender.is_closed() {
-                break;
-            }
-
-            let event = match event::poll(Duration::from_millis(100)) {
-                Ok(true) => match event::read() {
-                    Ok(event) => to_app_event(event),
-                    Err(_) => break,
-                },
-                Ok(false) if animation_enabled => Some(AppEvent::Tick),
-                Ok(false) => None,
-                Err(_) => break,
-            };
-
-            if let Some(event) = event
-                && sender.send(event).await.is_err()
-            {
-                break;
-            }
+) -> anyhow::Result<bool> {
+    if event::poll(timeout)? {
+        if let Some(event) = to_app_event(event::read()?) {
+            sender
+                .try_send(event)
+                .map_err(|error| anyhow::anyhow!("Не удалось передать событие интерфейсу: {error}"))?;
+            return Ok(true);
         }
-    })
+    } else if animation_enabled {
+        sender
+            .try_send(AppEvent::Tick)
+            .map_err(|error| anyhow::anyhow!("Не удалось передать событие анимации: {error}"))?;
+        return Ok(true);
+    }
+
+    Ok(false)
 }
 
 fn to_app_event(event: Event) -> Option<AppEvent> {
