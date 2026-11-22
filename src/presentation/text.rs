@@ -10,7 +10,8 @@ pub mod ui {
     pub const SEARCH_PROFILE_TITLE: &str = " Сценарий ";
     pub const SEARCH_PARAMETERS_TITLE: &str = " Параметры ";
     pub const SEARCH_SUMMARY_TITLE: &str = " Поиск по критериям ";
-    pub const SEARCH_HINTS: &str = "Enter — искать · Tab / Shift+Tab — поле · F2 — фильтры · ? — помощь · Esc — выход";
+    pub const SEARCH_HINTS: &str =
+        "Enter — искать · Tab / Shift+Tab — поле · F2 — фильтры · ? — помощь · Esc — выход";
     pub const SEARCH_CUSTOM_PROFILE: &str = "Свой поиск";
     pub const SEARCH_SYSTEM_LABEL: &str = "Система";
     pub const SEARCH_COUNT_LABEL: &str = "Количество";
@@ -35,7 +36,8 @@ pub mod ui {
     pub const ERROR_FALLBACK: &str = "Не удалось выполнить поиск. Попробуйте ещё раз.";
     pub const ERROR_HINTS: &str = "r / к — повторить поиск\ne / у / Enter / Esc — изменить параметры\nCtrl+Q / Ctrl+Й — выход";
     pub const RESULTS_EMPTY_TITLE: &str = " Нет результатов ";
-    pub const RESULTS_EMPTY_HINT: &str = "Попробуйте расширить диапазон температуры или снять ограничение по биосигналам.";
+    pub const RESULTS_EMPTY_HINT: &str =
+        "Попробуйте расширить диапазон температуры или снять ограничение по биосигналам.";
     pub const RESULTS_EMPTY_ACTIONS: &str = "e / у — изменить параметры · n / т — новый поиск";
     pub const RESULTS_HINTS: &str = "↑/↓ выбор · s/ы сортировка · S/Ы порядок · c/с копировать систему · e/у параметры · n/т новый поиск · PgUp/PgDn подробности";
     pub const RESULTS_TABLE_TITLE: &str = " Планеты ";
