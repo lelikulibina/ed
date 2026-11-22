@@ -23,20 +23,36 @@ where
 {
     let mut session = TerminalGuard::enter()?;
     let mut initial = initial;
+    let mut start_immediately = initial.is_some();
 
     loop {
-        let Some(config) = run_search_screen_in_session(&mut session, initial.take())? else {
+        let next_config = take_immediate_config(&mut initial, &mut start_immediately)
+            .map(Some)
+            .unwrap_or(run_search_screen_in_session(&mut session, initial.take())?);
+        let Some(config) = next_config else {
             break;
         };
         let previous_config = config.clone();
 
         match run_search_in_session(&mut session, search(config)).await? {
-            SearchUiAction::BackToSetup => initial = Some(previous_config),
+            SearchUiAction::BackToSetup => {
+                initial = Some(previous_config);
+                start_immediately = false;
+            },
             SearchUiAction::Exit => break,
         }
     }
 
     Ok(())
+}
+
+fn take_immediate_config<T>(initial: &mut Option<T>, start_immediately: &mut bool) -> Option<T> {
+    if *start_immediately {
+        *start_immediately = false;
+        initial.take()
+    } else {
+        None
+    }
 }
 
 fn run_search_screen_in_session(
@@ -481,4 +497,31 @@ fn draw_results(
             ),
         root[2],
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cli_config_runs_immediately_once_but_returning_to_setup_does_not() {
+        let mut initial = Some("cli config");
+        let mut start_immediately = true;
+
+        assert_eq!(
+            take_immediate_config(&mut initial, &mut start_immediately),
+            Some("cli config")
+        );
+        assert_eq!(
+            take_immediate_config(&mut initial, &mut start_immediately),
+            None
+        );
+
+        initial = Some("previous search");
+        assert_eq!(
+            take_immediate_config(&mut initial, &mut start_immediately),
+            None
+        );
+        assert_eq!(initial, Some("previous search"));
+    }
 }
