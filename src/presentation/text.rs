@@ -123,61 +123,19 @@ pub struct ExobiologyRow {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExobiologyView {
-    pub headline: String,
     pub rows: Vec<ExobiologyRow>,
     pub summary: Vec<String>,
-    pub notes: Vec<String>,
-    pub maximum_base_value_cr: u64,
+    pub maximum_value_cr: u64,
 }
 
 pub fn exobiology_view(body: &Body) -> Result<Option<ExobiologyView>, EstimateError> {
     let estimate = exobiology::estimate(body)?;
-
-    if estimate.biological_signal_count == Some(0) {
-        return Ok(Some(ExobiologyView {
-            headline: "Биологических сигналов Spansh не обнаружил.".to_owned(),
-            rows: Vec::new(),
-            summary: Vec::new(),
-            notes: Vec::new(),
-            maximum_base_value_cr: 0,
-        }));
-    }
-
     if estimate.genera.is_empty() {
-        if let Some(genera) = estimate
-            .biological_genera
-            .as_ref()
-            .filter(|genera| !genera.is_empty())
-        {
-            return Ok(Some(ExobiologyView {
-                headline: format!(
-                    "Spansh указал биологические группы {}, но подходящие виды в справочнике не найдены.",
-                    genera
-                        .iter()
-                        .map(|genus| russian_group_name(genus))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                ),
-                rows: Vec::new(),
-                summary: Vec::new(),
-                notes: Vec::new(),
-                maximum_base_value_cr: 0,
-            }));
-        }
         return Ok(None);
     }
 
-    let confirmed_genera = estimate
-        .biological_genera
-        .as_ref()
-        .is_some_and(|genera| !genera.is_empty());
-    let headline = if confirmed_genera {
-        "Возможные виды из биологических групп, указанных Spansh:"
-    } else {
-        "Возможные виды по параметрам планеты (биологические группы не уточнены):"
-    }
-    .to_owned();
-
+    let first_logged = estimate.biological_signal_count == Some(0);
+    let multiplier = if first_logged { 5 } else { 1 };
     let rows = estimate
         .genera
         .iter()
@@ -185,50 +143,44 @@ pub fn exobiology_view(body: &Body) -> Result<Option<ExobiologyView>, EstimateEr
             genus.candidates.iter().map(move |candidate| {
                 let status = match candidate.status {
                     CandidateStatus::EligibleByKnownData => {
-                        "По известным условиям подходит".to_owned()
+                        "Подходит по известным данным".to_owned()
                     }
                     CandidateStatus::NeedsVerification => {
-                        format!("Проверить: {}", candidate.unknown_conditions.join(", "))
+                        format!("Нужно проверить: {}", candidate.unknown_conditions.join(", "))
                     }
                 };
                 ExobiologyRow {
                     genus: russian_group_name(&genus.genus).to_owned(),
                     species: candidate.species.clone(),
-                    base_value_cr: candidate.base_value_cr,
+                    base_value_cr: candidate.base_value_cr * multiplier,
                     status,
                 }
             })
         })
         .collect::<Vec<_>>();
 
-    let summary = vec![
+    let maximum_value_cr = estimate.maximum_base_value_cr * multiplier;
+    let summary = vec![if first_logged {
         format!(
-            "Потенциальная базовая выручка: 0–{} CR",
-            format_credits(estimate.maximum_base_value_cr)
-        ),
+            "Максимальная оценка выручки (×5 за отсутствие биосигналов): {} CR",
+            format_credits(maximum_value_cr)
+        )
+    } else if estimate.biological_signal_count.is_some_and(|count| count > 0) {
         format!(
-            "При First Logged ×5: 0–{} CR (условный сценарий)",
-            format_credits(estimate.maximum_first_logged_value_cr)
-        ),
-    ];
-
-    let mut notes = Vec::new();
-    if !estimate.catalog_is_complete {
-        notes.push("справочник видов неполный");
-    }
-    if !estimate.probabilities_calculated {
-        notes.push("вероятности появления видов не рассчитаны");
-    }
-    notes.push("учтены только условия, внесённые в справочник");
-    notes
-        .push("внутри одной биологической группы учитывается один вид, а не сумма всех кандидатов");
+            "Максимальная оценка выручки (без ×5: есть биосигналы): {} CR",
+            format_credits(maximum_value_cr)
+        )
+    } else {
+        format!(
+            "Максимальная оценка выручки (бонус ×5 не подтверждён): {} CR",
+            format_credits(maximum_value_cr)
+        )
+    }];
 
     Ok(Some(ExobiologyView {
-        headline,
         rows,
         summary,
-        notes: vec![format!("Примечание: {}.", notes.join("; "))],
-        maximum_base_value_cr: estimate.maximum_base_value_cr,
+        maximum_value_cr,
     }))
 }
 
@@ -304,9 +256,7 @@ mod tests {
                 .any(|row| row.status.starts_with("Проверить:"))
         );
         assert!(view.maximum_base_value_cr > 0);
-        assert!(view.summary[0].contains("Потенциальная базовая выручка"));
-        assert!(view.summary[1].contains("First Logged ×5"));
-        assert!(view.notes[0].contains("справочник видов неполный"));
+        assert!(view.summary[0].contains("бонус ×5 не подтверждён"));
     }
 
     #[test]
@@ -317,7 +267,6 @@ mod tests {
         body.biological_genera = Some(vec!["Osseus".to_owned(), "Tussock".to_owned()]);
 
         let view = exobiology_view(&body).unwrap().unwrap();
-        assert!(view.headline.contains("указанных Spansh"));
         assert!(
             view.rows
                 .iter()
@@ -327,13 +276,14 @@ mod tests {
     }
 
     #[test]
-    fn zero_biological_signals_produce_an_explanatory_view_without_rows() {
+    fn zero_biological_signals_show_first_logged_values_for_candidates() {
         let mut body = body();
         body.biological_signal_count = Some(0);
 
         let view = exobiology_view(&body).unwrap().unwrap();
-        assert!(view.headline.contains("не обнаружил"));
-        assert!(view.rows.is_empty());
+        assert!(!view.rows.is_empty());
+        assert!(view.summary[0].contains("×5"));
+        assert!(view.maximum_value_cr > 0);
     }
 
     #[test]
