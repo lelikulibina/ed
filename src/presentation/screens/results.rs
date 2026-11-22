@@ -135,9 +135,7 @@ impl ResultsScreen {
             SortMode::Temperature => {
                 compare_optional(left.surface_temperature, right.surface_temperature)
             }
-            SortMode::Pressure => {
-                compare_optional(left.surface_pressure, right.surface_pressure)
-            }
+            SortMode::Pressure => compare_optional(left.surface_pressure, right.surface_pressure),
             SortMode::Gravity => compare_optional(left.gravity, right.gravity),
             SortMode::Name => left.name.to_lowercase().cmp(&right.name.to_lowercase()),
         };
@@ -151,7 +149,11 @@ impl ResultsScreen {
                     compare_optional_desc(left.surface_pressure, right.surface_pressure)
                 }
                 SortMode::Gravity => compare_optional_desc(left.gravity, right.gravity),
-                SortMode::Name => left.name.to_lowercase().cmp(&right.name.to_lowercase()).reverse(),
+                SortMode::Name => left
+                    .name
+                    .to_lowercase()
+                    .cmp(&right.name.to_lowercase())
+                    .reverse(),
             }
         } else {
             ordering
@@ -247,7 +249,11 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
 
     let root = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(8), Constraint::Length(2)])
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(8),
+            Constraint::Length(2),
+        ])
         .split(area);
 
     frame.render_widget(
@@ -293,7 +299,11 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
 }
 
 fn render_empty(frame: &mut ratatui::Frame<'_>, app: &App) {
-    let area = theme::centered(frame.area(), frame.area().width.saturating_sub(4), frame.area().height.saturating_sub(4));
+    let area = theme::centered(
+        frame.area(),
+        frame.area().width.saturating_sub(4),
+        frame.area().height.saturating_sub(4),
+    );
     frame.render_widget(
         Paragraph::new(format!(
             "Подходящие планеты не найдены\n\nСистема: {}\n\nПопробуйте расширить диапазон температуры или снять ограничение по биосигналам.\n\ne — изменить параметры · n — новый поиск",
@@ -387,29 +397,59 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
     };
     let details = vec![
         Line::from(format!("Планета: {}", body.name)),
-        Line::from(format!("Система: {}", body.system_name.as_deref().unwrap_or("—"))),
-        Line::from(format!("Тип поверхности: {}", body.subtype.as_deref().unwrap_or("—"))),
-        Line::from(format!("Атмосфера: {}", body.atmosphere.as_deref().unwrap_or("—"))),
-        Line::from(format!("Температура: {} K", display_number(body.surface_temperature, 2))),
-        Line::from(format!("Давление: {} atm", display_number(body.surface_pressure, 4))),
+        Line::from(format!(
+            "Система: {}",
+            body.system_name.as_deref().unwrap_or("—")
+        )),
+        Line::from(format!(
+            "Тип поверхности: {}",
+            body.subtype.as_deref().unwrap_or("—")
+        )),
+        Line::from(format!(
+            "Атмосфера: {}",
+            body.atmosphere.as_deref().unwrap_or("—")
+        )),
+        Line::from(format!(
+            "Температура: {} K",
+            display_number(body.surface_temperature, 2)
+        )),
+        Line::from(format!(
+            "Давление: {} atm",
+            display_number(body.surface_pressure, 4)
+        )),
         Line::from(format!("Гравитация: {} g", display_number(body.gravity, 3))),
-        Line::from(format!("Расстояние: {} св. л.", display_number(body.distance_ly, 2))),
+        Line::from(format!(
+            "Расстояние: {} св. л.",
+            display_number(body.distance_ly, 2)
+        )),
         Line::from(format!(
             "Биосигналы Spansh: {}",
-            body.biological_signal_count.map_or_else(|| "—".to_owned(), |value| value.to_string())
+            body.biological_signal_count
+                .map_or_else(|| "—".to_owned(), |value| value.to_string())
         )),
         Line::from(format!(
             "Геосигналы Spansh: {}",
-            body.geological_signal_count.map_or_else(|| "—".to_owned(), |value| value.to_string())
+            body.geological_signal_count
+                .map_or_else(|| "—".to_owned(), |value| value.to_string())
         )),
         Line::from(format!(
             "Биологические группы: {}",
             body.biological_genera
                 .as_ref()
                 .filter(|values| !values.is_empty())
-                .map_or_else(|| "—".to_owned(), |values| values.iter().map(|value| crate::presentation::text::russian_group_name(value)).collect::<Vec<_>>().join(", "))
+                .map_or_else(
+                    || "—".to_owned(),
+                    |values| values
+                        .iter()
+                        .map(|value| crate::presentation::text::russian_group_name(value))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
         )),
-        Line::from(format!("Вулканизм: {}", body.volcanism_type.as_deref().unwrap_or("—"))),
+        Line::from(format!(
+            "Вулканизм: {}",
+            body.volcanism_type.as_deref().unwrap_or("—")
+        )),
     ];
 
     let detail_layout = Layout::default()
@@ -420,7 +460,11 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
         Paragraph::new(details)
             .scroll((app.results_screen.detail_scroll(), 0))
             .wrap(Wrap { trim: true })
-            .block(Block::default().title(" Подробности ").borders(Borders::ALL)),
+            .block(
+                Block::default()
+                    .title(" Подробности ")
+                    .borders(Borders::ALL),
+            ),
         detail_layout[0],
     );
 
@@ -437,7 +481,11 @@ fn render_exobiology(
         frame.render_widget(
             Paragraph::new("Экзобиологические кандидаты не найдены.")
                 .wrap(Wrap { trim: true })
-                .block(Block::default().title(" Экзобиология ").borders(Borders::ALL)),
+                .block(
+                    Block::default()
+                        .title(" Экзобиология ")
+                        .borders(Borders::ALL),
+                ),
             area,
         );
         return;
@@ -475,7 +523,11 @@ fn render_exobiology(
         ],
     )
     .header(Row::new(["Группа", "Вид", "За 3 образца", "Статус"]))
-    .block(Block::default().title(" Экзобиология ").borders(Borders::ALL));
+    .block(
+        Block::default()
+            .title(" Экзобиология ")
+            .borders(Borders::ALL),
+    );
     frame.render_widget(table, area);
 }
 
@@ -511,13 +563,20 @@ mod tests {
         let criteria = SearchCriteria::new(
             crate::domain::criteria::Filter::Any,
             Filter::Any,
-            NumericRange { min: 0.0, max: 5000.0 },
+            NumericRange {
+                min: 0.0,
+                max: 5000.0,
+            },
             NumericRange { min: 0.1, max: 1.0 },
-            NumericRange { min: 0.0, max: 10.0 },
+            NumericRange {
+                min: 0.0,
+                max: 10.0,
+            },
             5,
         )
         .unwrap();
-        let mut app = App::new(crate::application::config::SearchConfig::new("Sol", criteria).unwrap());
+        let mut app =
+            App::new(crate::application::config::SearchConfig::new("Sol", criteria).unwrap());
         app.results = bodies;
         app.results_screen.reset(&app.results);
         app.screen = crate::presentation::app::Screen::Results;
@@ -526,10 +585,7 @@ mod tests {
 
     #[test]
     fn selection_is_preserved_when_sort_order_changes() {
-        let bodies = vec![
-            body("Near", "1", Some(1.0)),
-            body("Far", "2", Some(10.0)),
-        ];
+        let bodies = vec![body("Near", "1", Some(1.0)), body("Far", "2", Some(10.0))];
         let mut screen = ResultsScreen::default();
         screen.reset(&bodies);
         let ordered = screen.ordered_bodies(&bodies);
@@ -537,7 +593,10 @@ mod tests {
 
         screen.sort_mode = SortMode::Name;
         let reordered = screen.ordered_bodies(&bodies);
-        assert_eq!(screen.selected_body(&reordered).unwrap().id64.as_deref(), Some("2"));
+        assert_eq!(
+            screen.selected_body(&reordered).unwrap().id64.as_deref(),
+            Some("2")
+        );
     }
 
     #[test]
