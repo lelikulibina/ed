@@ -318,6 +318,42 @@ mod tests {
     }
 
     #[test]
+    fn radius_defaults_to_one_thousand_light_years_and_round_trips() {
+        let form = SearchForm {
+            system: "Sol".to_owned(),
+            ..SearchForm::default()
+        };
+        assert_eq!(form.radius, "1000");
+        let config = form.build().unwrap();
+        assert_eq!(config.criteria.radius_ly, 1_000.0);
+        assert_eq!(SearchForm::from_config(&config).radius, "1000");
+
+        let custom = SearchForm {
+            radius: "5000".to_owned(),
+            ..form
+        }
+        .build()
+        .unwrap();
+        assert_eq!(custom.criteria.radius_ly, 5_000.0);
+    }
+
+    #[test]
+    fn radius_rejects_zero_values_and_values_above_the_limit() {
+        for radius in ["0", "5001", "-1", "abc"] {
+            let form = SearchForm {
+                system: "Sol".to_owned(),
+                radius: radius.to_owned(),
+                ..SearchForm::default()
+            };
+            let errors = form.build().unwrap_err();
+            assert!(
+                errors.iter().any(|error| error.field == FormField::Radius),
+                "radius {radius} should be rejected"
+            );
+        }
+    }
+
+    #[test]
     fn from_config_round_trips_typed_filters_and_ranges() {
         let criteria = SearchCriteria::new(
             Filter::one_of(vec![
