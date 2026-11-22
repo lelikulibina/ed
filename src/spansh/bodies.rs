@@ -61,6 +61,20 @@ impl BodySearch {
         center: &ResolvedSystem,
         criteria: &SearchCriteria,
     ) -> Result<Vec<Body>, BodySearchError> {
+        self.search_with_progress(center, criteria, |_, _| {}).await
+    }
+
+    /// То же поведение поиска, дополнительно сообщающее номер обработанной
+    /// страницы и накопленное число локально подходящих планет.
+    pub async fn search_with_progress<F>(
+        &self,
+        center: &ResolvedSystem,
+        criteria: &SearchCriteria,
+        mut on_page: F,
+    ) -> Result<Vec<Body>, BodySearchError>
+    where
+        F: FnMut(u32, usize),
+    {
         let mut query = BodySearchQuery::new(center.coordinates, self.radius_ly, self.page_size)?;
         let initial = self
             .client
@@ -98,10 +112,13 @@ impl BodySearch {
                 {
                     results.push(body);
                     if results.len() >= criteria.count {
+                        on_page(page_index + 1, results.len());
                         return Ok(results);
                     }
                 }
             }
+
+            on_page(page_index + 1, results.len());
 
             if is_last_page(&page, page_index, self.page_size) {
                 completed = true;
@@ -334,14 +351,18 @@ mod tests {
         )
         .unwrap();
 
+        let mut progress = Vec::new();
         let results = BodySearch::new(client)
             .with_limits(1_000.0, 1, 3)
-            .search(&center, &criteria)
+            .search_with_progress(&center, &criteria, |page, found| {
+                progress.push((page, found));
+            })
             .await
             .unwrap();
 
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].name, "Nearby B 1");
+        assert_eq!(progress, vec![(1, 0), (2, 1)]);
         let requests = server.finish().await;
         assert!(requests[0].starts_with("POST /api/bodies/search "));
         let (_, request_body) = requests[0].split_once("\r\n\r\n").unwrap();
