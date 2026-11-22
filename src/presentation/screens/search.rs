@@ -57,6 +57,7 @@ pub struct SearchScreen {
     pressure_max: TextInput,
     surface_cursor: usize,
     atmosphere_cursor: usize,
+    show_help: bool,
 }
 
 impl Default for SearchScreen {
@@ -126,6 +127,7 @@ impl SearchScreen {
             focus: SearchField::Profile,
             surface_cursor,
             atmosphere_cursor,
+            show_help: false,
         }
     }
 
@@ -153,6 +155,12 @@ impl SearchScreen {
             self.form.apply_preset(&PRESETS[index]);
             self.selected_preset = index;
             self.load_range_inputs();
+            self.surface_cursor = (0..5)
+                .find(|cursor| self.form.surface_types.contains(&surface_at(*cursor)))
+                .unwrap_or_default();
+            self.atmosphere_cursor = (0..17)
+                .find(|cursor| self.form.atmosphere_types.contains(&atmosphere_at(*cursor)))
+                .unwrap_or_default();
         } else if index == PRESETS.len() {
             self.selected_preset = index;
         }
@@ -173,6 +181,10 @@ impl SearchScreen {
 
         match key.code {
             KeyCode::Esc => return SearchScreenAction::Exit,
+            KeyCode::Char('?') => {
+                self.show_help = !self.show_help;
+                return SearchScreenAction::None;
+            }
             KeyCode::F(2) => {
                 self.set_advanced(!self.advanced);
                 return SearchScreenAction::None;
@@ -444,6 +456,27 @@ fn field_for_error(field: FormField) -> SearchField {
 
 pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     let area = frame.area();
+    if !theme::supports_minimum_size(area) {
+        frame.render_widget(
+            Paragraph::new("Увеличьте окно терминала до 80×24")
+                .alignment(Alignment::Center)
+                .block(Block::default().borders(Borders::ALL)),
+            area,
+        );
+        return;
+    }
+
+    if screen.show_help {
+        frame.render_widget(
+            Paragraph::new(
+                "Управление поиском\n\n↑/↓ — выбор сценария или значения\nTab / Shift+Tab — переход между полями\nSpace — переключить флаг или поверхность\nF2 — показать/скрыть дополнительные фильтры\nHome / End — начало / конец строки\nBackspace / Delete — удалить символ\nВставка текста — поддерживается через bracketed paste\nEnter — запустить поиск\nEsc — выйти\n? — закрыть эту справку",
+            )
+            .wrap(Wrap { trim: true })
+            .block(Block::default().title(" Справка ").borders(Borders::ALL)),
+            theme::centered(area, area.width.saturating_sub(4), area.height.saturating_sub(4)),
+        );
+        return;
+    }
     let root = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -474,9 +507,19 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     let profiles = PRESETS
         .iter()
         .enumerate()
-        .map(|(index, preset)| profile_item(preset.name, index == screen.selected_preset))
+        .map(|(index, preset)| {
+            profile_item(
+                format!(
+                    "{} · {} видов · {} млн CR",
+                    preset.name,
+                    preset.expensive_species,
+                    preset.potential_value_cr / 1_000_000
+                ),
+                index == screen.selected_preset,
+            )
+        })
         .chain(std::iter::once(profile_item(
-            "Свой поиск",
+            "Свой поиск".to_owned(),
             screen.selected_preset == PRESETS.len(),
         )))
         .collect::<Vec<_>>();
@@ -631,9 +674,14 @@ fn push_error(fields: &mut Vec<Line<'static>>, screen: &SearchScreen, field: For
     }
 }
 
-fn profile_item(name: &'static str, selected: bool) -> ListItem<'static> {
+fn profile_item(name: String, selected: bool) -> ListItem<'static> {
     let prefix = if selected { "▸ " } else { "  " };
-    ListItem::new(format!("{prefix}{name}"))
+    let style = if selected {
+        theme::Theme::default().accent
+    } else {
+        Style::default()
+    };
+    ListItem::new(format!("{prefix}{name}")).style(style)
 }
 
 #[cfg(test)]
@@ -817,6 +865,25 @@ mod tests {
         assert!(rendered.contains("Sol"));
         assert!(rendered.contains("F2"));
         assert!(rendered.contains("Свой поиск"));
+    }
+
+    #[test]
+    fn undersized_terminal_shows_only_the_resize_message() {
+        let screen = SearchScreen::default();
+        let rendered = rendered(&screen, 60, 18);
+
+        assert!(rendered.contains("Увеличьте окно терминала"));
+        assert!(!rendered.contains("Сценарий"));
+    }
+
+    #[test]
+    fn question_mark_opens_and_closes_the_keyboard_help() {
+        let mut screen = SearchScreen::default();
+        screen.handle_key(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE));
+        assert!(rendered(&screen, 120, 40).contains("Shift+Tab"));
+
+        screen.handle_key(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE));
+        assert!(rendered(&screen, 120, 40).contains("Сценарий"));
     }
 
     #[test]
