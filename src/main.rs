@@ -7,7 +7,7 @@ use ed_planet_search::{
         search::{SearchError, SearchEvent, SearchUseCase},
     },
     cli, domain,
-    presentation::tui,
+    presentation::runtime,
     spansh::{SpanshClient, SpanshError},
 };
 
@@ -22,7 +22,7 @@ async fn main() -> Result<()> {
     };
 
     ensure_interactive_terminal()?;
-    tui::run(initial_config, run_search).await?;
+    runtime::run(initial_config, run_search).await?;
 
     Ok(())
 }
