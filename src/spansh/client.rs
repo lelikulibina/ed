@@ -197,8 +197,7 @@ mod tests {
 
     #[tokio::test]
     async fn returns_server_error_after_retry_budget_is_exhausted() {
-        let unavailable =
-            MockResponse::with_status(StatusCode::SERVICE_UNAVAILABLE, "");
+        let unavailable = MockResponse::with_status(StatusCode::SERVICE_UNAVAILABLE, "");
         let server = MockServer::start(vec![
             unavailable.clone(),
             unavailable.clone(),
@@ -223,11 +222,8 @@ mod tests {
 
     #[tokio::test]
     async fn does_not_retry_non_retryable_client_errors() {
-        let server = MockServer::start(vec![MockResponse::with_status(
-            StatusCode::BAD_REQUEST,
-            "",
-        )])
-        .await;
+        let server =
+            MockServer::start(vec![MockResponse::with_status(StatusCode::BAD_REQUEST, "")]).await;
         let mut client = SpanshClient::new(server.base_url(), 1).unwrap();
         client.retry_delay = Duration::from_millis(1);
         client.request_interval = Duration::from_millis(1);

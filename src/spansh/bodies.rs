@@ -347,15 +347,10 @@ mod tests {
 
     #[tokio::test]
     async fn search_posts_center_and_follows_recall_pages() {
-        let first =
-            include_str!("../../tests/fixtures/spansh/body-search-page-0.json").to_owned();
-        let second =
-            include_str!("../../tests/fixtures/spansh/body-search-page-1.json").to_owned();
-        let server = MockServer::start(vec![
-            MockResponse::ok(first),
-            MockResponse::ok(second),
-        ])
-        .await;
+        let first = include_str!("../../tests/fixtures/spansh/body-search-page-0.json").to_owned();
+        let second = include_str!("../../tests/fixtures/spansh/body-search-page-1.json").to_owned();
+        let server =
+            MockServer::start(vec![MockResponse::ok(first), MockResponse::ok(second)]).await;
 
         let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let center = ResolvedSystem {
@@ -443,13 +438,7 @@ mod tests {
                 "distance":2.0
             }]}"#,
         ];
-        let server = MockServer::start(
-            responses
-                .into_iter()
-                .map(MockResponse::ok)
-                .collect(),
-        )
-        .await;
+        let server = MockServer::start(responses.into_iter().map(MockResponse::ok).collect()).await;
 
         let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let center = ResolvedSystem {

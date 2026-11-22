@@ -64,13 +64,7 @@ mod tests {
                 "distance":12.0
             }]}"#,
         ];
-        let server = MockServer::start(
-            responses
-                .into_iter()
-                .map(MockResponse::ok)
-                .collect(),
-        )
-        .await;
+        let server = MockServer::start(responses.into_iter().map(MockResponse::ok).collect()).await;
         let client = SpanshClient::new(server.base_url(), 1).unwrap();
         let search = SearchUseCase::new(client);
         let center = search.resolve_center("Sol").await.unwrap();
