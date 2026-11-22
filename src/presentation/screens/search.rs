@@ -284,7 +284,7 @@ impl SearchScreen {
         };
         if changed {
             self.sync_form_from_inputs();
-            if self.focus != SearchField::System {
+            if !matches!(self.focus, SearchField::System | SearchField::Radius) {
                 self.mark_custom();
             }
         }
