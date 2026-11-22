@@ -37,6 +37,7 @@ impl<T> Filter<T> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SearchCriteria {
+    pub radius_ly: f64,
     pub surface: Filter<SurfaceType>,
     pub atmosphere: Filter<AtmosphereType>,
     pub temperature: NumericRange,
@@ -60,6 +61,7 @@ impl SearchCriteria {
         }
 
         Ok(Self {
+            radius_ly: 1_000.0,
             surface,
             atmosphere,
             temperature,
@@ -68,6 +70,11 @@ impl SearchCriteria {
             count,
             exclude_with_bio_signals: false,
         })
+    }
+
+    pub fn with_radius(mut self, radius_ly: f64) -> Self {
+        self.radius_ly = radius_ly;
+        self
     }
 
     pub fn with_bio_signal_exclusion(mut self, exclude: bool) -> Self {
