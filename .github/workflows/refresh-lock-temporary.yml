@@ -1,0 +1,30 @@
+name: Refresh Cargo Lockfile (temporary)
+
+on:
+  push:
+    branches: ["ed-ps-new-horizon"]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: ${{ !contains(github.event.head_commit.message, 'Refresh Cargo.lock from resolver') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Resolve and verify dependencies
+        run: cargo check --all-targets
+      - name: Commit resolved lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash origin ed-ps-new-horizon
+          git add Cargo.lock
+          if git diff --cached --quiet; then
+            echo "Cargo.lock is already up to date"
+          else
+            git commit -m "Refresh Cargo.lock from resolver"
+            git push
+          fi
