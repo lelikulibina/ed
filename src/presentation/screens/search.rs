@@ -708,16 +708,21 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
 }
 
 fn parameter_line(label: String, value: String, focused: bool) -> Line<'static> {
-    let line_style = if focused {
-        theme::Theme::default().accent.add_modifier(Modifier::BOLD)
+    let theme = theme::Theme::default();
+    let label_style = if focused {
+        theme.accent.add_modifier(Modifier::BOLD)
     } else {
         Style::default()
     };
+    let value_style = if focused {
+        theme.success.add_modifier(Modifier::BOLD)
+    } else {
+        theme.success
+    };
     Line::from(vec![
-        Span::raw(label),
-        Span::styled(value, theme::Theme::default().success),
+        Span::styled(label, label_style),
+        Span::styled(value, value_style),
     ])
-    .style(line_style)
 }
 
 fn display_input(input: &TextInput, focused: bool) -> String {
