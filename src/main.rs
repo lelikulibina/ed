@@ -20,21 +20,7 @@ async fn main() -> Result<()> {
     };
 
     ensure_interactive_terminal()?;
-    let mut initial_config = initial_config;
-
-    loop {
-        let Some(config) = tui::run_tui(initial_config.take())? else {
-            break;
-        };
-        let previous_config = config.clone();
-
-        match tui::run_search_ui(async move { run_search(config).await }).await? {
-            tui::SearchUiAction::BackToSetup => {
-                initial_config = Some(previous_config);
-            }
-            tui::SearchUiAction::Exit => break,
-        }
-    }
+    tui::run(initial_config, run_search).await?;
 
     Ok(())
 }

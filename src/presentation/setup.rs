@@ -399,8 +399,10 @@ impl App {
     }
 }
 
-pub fn run_setup(initial: Option<SearchConfig>) -> Result<Option<SearchConfig>> {
-    let mut session = TerminalGuard::enter()?;
+pub fn run_setup_in_session(
+    session: &mut TerminalGuard,
+    initial: Option<SearchConfig>,
+) -> Result<Option<SearchConfig>> {
     let mut app = initial.map(App::from_config).unwrap_or_default();
     loop {
         session.terminal_mut().draw(|frame| draw(frame, &app))?;

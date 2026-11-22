@@ -12,24 +12,41 @@ use crate::application::config::SearchConfig;
 
 use super::{terminal::TerminalGuard, theme};
 
-pub fn run_tui(initial: Option<SearchConfig>) -> Result<Option<SearchConfig>> {
-    super::setup::run_setup(initial)
+pub async fn run<F, Fut>(initial: Option<SearchConfig>, search: F) -> Result<()>
+where
+    F: Fn(SearchConfig) -> Fut,
+    Fut: std::future::Future<Output = Result<Vec<crate::domain::body::Body>>> + Send + 'static,
+{
+    let mut session = TerminalGuard::enter()?;
+    let mut initial = initial;
+
+    loop {
+        let Some(config) = super::setup::run_setup_in_session(&mut session, initial.take())? else {
+            break;
+        };
+        let previous_config = config.clone();
+
+        match run_search_in_session(&mut session, search(config)).await? {
+            SearchUiAction::BackToSetup => initial = Some(previous_config),
+            SearchUiAction::Exit => break,
+        }
+    }
+
+    Ok(())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SearchUiAction {
+enum SearchUiAction {
     BackToSetup,
     Exit,
 }
 
-/// Выполняет асинхронный поиск, не блокируя полноэкранный интерфейс.
-pub async fn run_search_ui<F>(future: F) -> Result<SearchUiAction>
+async fn run_search_in_session<F>(session: &mut TerminalGuard, future: F) -> Result<SearchUiAction>
 where
     F: std::future::Future<Output = Result<Vec<crate::domain::body::Body>>> + Send + 'static,
 {
     use std::time::Duration;
 
-    let mut session = TerminalGuard::enter()?;
     let task = tokio::spawn(future);
 
     let outcome = loop {
@@ -58,8 +75,8 @@ where
     };
 
     match outcome {
-        Ok(bodies) => show_results_in_session(&mut session, &bodies),
-        Err(error) => show_error_in_session(&mut session, &error.to_string()),
+        Ok(bodies) => show_results_in_session(session, &bodies),
+        Err(error) => show_error_in_session(session, &error.to_string()),
     }
 }
 
