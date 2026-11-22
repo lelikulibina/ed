@@ -349,11 +349,14 @@ mod tests {
             crate::domain::criteria::NumericRange { min: 0.0, max: 2.0 },
             1,
         )
-        .unwrap();
+        .unwrap()
+        .with_radius(5_000.0);
 
         let mut progress = Vec::new();
-        let results = BodySearch::new(client)
-            .with_limits(1_000.0, 1, 3)
+        let mut body_search = BodySearch::new(client);
+        body_search.page_size = 1;
+        body_search.max_pages = 3;
+        let results = body_search
             .search_with_progress(&center, &criteria, |page, found| {
                 progress.push((page, found));
             })
@@ -370,7 +373,7 @@ mod tests {
         assert_eq!(payload["reference_coords"]["x"], 1.0);
         assert_eq!(payload["reference_coords"]["y"], 2.0);
         assert_eq!(payload["reference_coords"]["z"], 3.0);
-        assert_eq!(payload["filters"]["distance"]["max"], 1_000.0);
+        assert_eq!(payload["filters"]["distance"]["max"], 5_000.0);
         assert_eq!(
             payload["filters"]["subtype"]["value"],
             serde_json::json!(["Rocky body"])
