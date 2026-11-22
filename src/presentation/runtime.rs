@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn base64_encoding_handles_ascii_unicode_and_padding() {
         assert_eq!(base64_encode(b"Sol"), "U29s");
-        assert_eq!(base64_encode("Колония".as_bytes()), "0JrQsNC70YzQvdC+0LLQvtC00L3QuNC5");
+        assert_eq!(base64_encode("Колония".as_bytes()), "0JrQvtC70L7QvdC40Y8=");
         assert_eq!(base64_encode(b"f"), "Zg==");
     }
 
