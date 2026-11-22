@@ -196,13 +196,13 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     _ => None,
                 },
                 Screen::Error => match key.code {
-                    KeyCode::Char('r') => {
+                    KeyCode::Char('r' | 'R') => {
                         app.screen = Screen::Running;
                         app.error_message = None;
                         app.progress_message = Some("Повторный запуск поиска…".to_owned());
                         Some(Command::StartSearch(app.config.clone()))
                     }
-                    KeyCode::Esc | KeyCode::Enter | KeyCode::Char('e') => {
+                    KeyCode::Esc | KeyCode::Enter | KeyCode::Char('e' | 'E') => {
                         app.screen = Screen::Search;
                         app.error_message = None;
                         None
