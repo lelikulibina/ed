@@ -81,7 +81,7 @@ impl SearchForm {
 
         Self {
             system: config.system.clone(),
-            radius: format!("{}", criteria.radius_ly as u32),
+            radius: (criteria.radius_ly as u32).to_string(),
             surface_types,
             atmosphere_types,
             temperature: format_range(criteria.temperature),
