@@ -44,6 +44,11 @@ jobs:
         run: |
           set -euo pipefail
           { sleep 2; printf '\033'; } | TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 60 rows 18; test -t 0 && test -t 1; exec ./target/release/ed_planet_search' tty-artifacts/tty-60x18.log
+      - name: Verify Ctrl+Q restores terminal state at 80x24
+        shell: bash
+        run: |
+          set -euo pipefail
+          { sleep 2; printf '\\021'; } | TERM=xterm-256color timeout 20s script -q -e -c 'stty cols 80 rows 24; before=$(stty -g); ./target/release/ed_planet_search; after=$(stty -g); test "$before" = "$after"' tty-artifacts/tty-ctrl-q-80x24.log
       - name: Verify NO_COLOR at minimum supported 80x24
         shell: bash
         run: |
