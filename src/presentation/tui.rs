@@ -1,17 +1,10 @@
-use std::{
-    collections::HashSet,
-    io::{self, Stdout},
-};
+use std::collections::HashSet;
 
 use anyhow::{Context, Result, anyhow};
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
-    execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
-    Terminal,
-    backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, ListState, Paragraph, Wrap},
@@ -19,64 +12,10 @@ use ratatui::{
 
 use crate::application::config::SearchConfig;
 
-struct TerminalSession {
-    terminal: Terminal<CrosstermBackend<Stdout>>,
-}
-impl TerminalSession {
-    fn enter() -> Result<Self> {
-        enable_raw_mode().context("Не удалось включить raw mode")?;
-        let mut out = io::stdout();
-        if let Err(e) = execute!(out, EnterAlternateScreen) {
-            let _ = disable_raw_mode();
-            return Err(e.into());
-        }
-        match Terminal::new(CrosstermBackend::new(out)) {
-            Ok(mut terminal) => {
-                if let Err(error) = terminal.hide_cursor() {
-                    let _ = execute!(terminal.backend_mut(), LeaveAlternateScreen);
-                    let _ = disable_raw_mode();
-                    return Err(error.into());
-                }
-                Ok(Self { terminal })
-            }
-            Err(e) => {
-                let mut out = io::stdout();
-                let _ = execute!(out, LeaveAlternateScreen);
-                let _ = disable_raw_mode();
-                Err(e.into())
-            }
-        }
-    }
-}
-impl Drop for TerminalSession {
-    fn drop(&mut self) {
-        let _ = self.terminal.show_cursor();
-        let _ = execute!(self.terminal.backend_mut(), LeaveAlternateScreen);
-        let _ = disable_raw_mode();
-    }
-}
+use super::{terminal::TerminalGuard, theme};
 
 pub fn run_tui(initial: Option<SearchConfig>) -> Result<Option<SearchConfig>> {
     super::setup::run_setup(initial)
-}
-
-fn centered(x: u16, y: u16, a: Rect) -> Rect {
-    let v = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage((100 - y) / 2),
-            Constraint::Percentage(y),
-            Constraint::Percentage((100 - y) / 2),
-        ])
-        .split(a);
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage((100 - x) / 2),
-            Constraint::Percentage(x),
-            Constraint::Percentage((100 - x) / 2),
-        ])
-        .split(v[1])[1]
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,7 +31,7 @@ where
 {
     use std::time::Duration;
 
-    let mut session = TerminalSession::enter()?;
+    let mut session = TerminalGuard::enter()?;
     let task = tokio::spawn(future);
 
     let outcome = loop {
@@ -103,7 +42,7 @@ where
             };
         }
 
-        session.terminal.draw(draw_searching)?;
+        session.terminal_mut().draw(draw_searching)?;
         if event::poll(Duration::from_millis(100))?
             && let Event::Key(key) = event::read()?
             && key.kind == KeyEventKind::Press
@@ -126,10 +65,10 @@ where
     }
 }
 
-fn show_error_in_session(session: &mut TerminalSession, message: &str) -> Result<SearchUiAction> {
+fn show_error_in_session(session: &mut TerminalGuard, message: &str) -> Result<SearchUiAction> {
     loop {
-        session.terminal.draw(|frame| {
-            let panel = centered(75, 40, frame.area());
+        session.terminal_mut().draw(|frame| {
+            let panel = theme::centered(frame.area(), frame.area().width * 75 / 100, frame.area().height * 40 / 100);
             frame.render_widget(
                 Paragraph::new(format!(
                     "Поиск не выполнен\n\n{message}\n\nEnter / Esc — вернуться к настройкам   Ctrl+Q — выход"
@@ -156,7 +95,7 @@ fn show_error_in_session(session: &mut TerminalSession, message: &str) -> Result
 
 fn draw_searching(frame: &mut ratatui::Frame<'_>) {
     let area = frame.area();
-    let panel = centered(70, 35, area);
+    let panel = theme::centered(area, area.width * 70 / 100, area.height * 35 / 100);
     frame.render_widget(
         Paragraph::new(
             "Выполняется поиск планет\n\nРазрешение центральной системы и загрузка результатов Spansh.\n\nИнтерфейс остаётся активным. Esc — отменить поиск.",
@@ -174,7 +113,7 @@ fn draw_searching(frame: &mut ratatui::Frame<'_>) {
 }
 
 fn show_results_in_session(
-    session: &mut TerminalSession,
+    session: &mut TerminalGuard,
     bodies: &[crate::domain::body::Body],
 ) -> Result<SearchUiAction> {
     use std::time::Duration;
@@ -188,7 +127,7 @@ fn show_results_in_session(
     let mut marked = HashSet::<String>::new();
 
     loop {
-        session.terminal.draw(|frame| {
+        session.terminal_mut().draw(|frame| {
             draw_results(
                 frame,
                 &sorted_bodies,
