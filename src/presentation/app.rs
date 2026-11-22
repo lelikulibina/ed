@@ -508,4 +508,53 @@ mod tests {
                 .is_some_and(|message| message.contains("не найдена"))
         );
     }
+
+    #[test]
+    fn question_mark_opens_global_help_on_every_screen() {
+        for screen in [Screen::Search, Screen::Running, Screen::Results, Screen::Error] {
+            let mut app = app();
+            app.screen = screen;
+            let command = update(
+                &mut app,
+                AppEvent::Key(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE)),
+            );
+            assert!(command.is_none());
+            assert!(app.help_open, "help should open on {screen:?}");
+            assert_eq!(app.screen, screen);
+        }
+    }
+
+    #[test]
+    fn global_help_closes_without_changing_the_current_screen() {
+        let mut app = app();
+        app.screen = Screen::Running;
+        app.help_open = true;
+
+        let command = update(
+            &mut app,
+            AppEvent::Key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+        );
+
+        assert!(command.is_none());
+        assert!(!app.help_open);
+        assert_eq!(app.screen, Screen::Running);
+    }
+
+    #[test]
+    fn global_help_overlay_renders_running_screen_shortcuts() {
+        let mut app = app();
+        app.screen = Screen::Running;
+        app.help_open = true;
+        let backend = ratatui::backend::TestBackend::new(80, 24);
+        let mut terminal = ratatui::Terminal::new(backend).unwrap();
+
+        terminal.draw(|frame| render(frame, &app)).unwrap();
+
+        let rendered = terminal.backend().buffer().content().iter()
+            .map(|cell| cell.symbol()).collect::<String>();
+        assert!(rendered.contains("ВЫПОЛНЕНИЕ"));
+        assert!(rendered.contains("Esc — отменить поиск"));
+        assert!(rendered.contains("Ctrl+Q — выход"));
+    }
+
 }
