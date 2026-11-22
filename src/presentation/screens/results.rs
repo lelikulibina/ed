@@ -698,7 +698,7 @@ mod tests {
 
         assert!(output.contains("Подходящие планеты не найдены"));
         assert!(output.contains("температуры"));
-        assert!(output.contains("биосигналов"));
+        assert!(output.contains("биосигналам"));
         assert!(output.contains("e — изменить параметры"));
         assert!(output.contains("n — новый поиск"));
     }
