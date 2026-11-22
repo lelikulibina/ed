@@ -746,6 +746,11 @@ mod tests {
         assert!(output.contains("Planet A"));
         assert!(output.contains("Sol"));
         assert!(output.contains("12.5"));
+        assert!(output.contains("Атмосфера"));
+        assert!(output.contains("Температура"));
+        assert!(output.contains("Гравитация"));
+        assert!(output.contains("Биосигналы Spansh"));
+        assert!(output.contains("Вулканизм"));
         assert!(!output.contains("нет данных"));
     }
 
