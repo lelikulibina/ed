@@ -91,11 +91,6 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
             ui::RUNNING_COUNT_SEPARATOR,
             app.config.criteria.count
         )),
-        Line::from(
-            app.progress_message
-                .as_deref()
-                .unwrap_or(ui::RUNNING_PREPARING),
-        ),
     ]);
     frame.render_widget(
         Paragraph::new(content).wrap(Wrap { trim: true }).block(
