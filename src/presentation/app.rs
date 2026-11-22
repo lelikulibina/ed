@@ -451,6 +451,27 @@ mod tests {
     }
 
     #[test]
+    fn error_screen_shows_resize_message_below_minimum_size() {
+        let mut app = app();
+        app.screen = Screen::Error;
+        app.error_message = Some("Сбой сети".to_owned());
+
+        let backend = ratatui::backend::TestBackend::new(60, 18);
+        let mut terminal = ratatui::Terminal::new(backend).unwrap();
+        terminal.draw(|frame| render(frame, &app)).unwrap();
+
+        let rendered = terminal
+            .backend()
+            .buffer()
+            .content()
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect::<String>();
+        assert!(rendered.contains("Увеличьте окно терминала до 80×24"));
+        assert!(!rendered.contains("Сбой сети"));
+    }
+
+    #[test]
     fn failed_search_moves_to_error_screen_with_message() {
         let mut app = app();
         app.screen = Screen::Running;
