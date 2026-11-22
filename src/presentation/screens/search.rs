@@ -873,6 +873,7 @@ mod tests {
     fn cli_configuration_prefills_the_screen_without_changing_criteria() {
         let config = SearchForm {
             system: "Colonia".to_owned(),
+            radius: "1000".to_owned(),
             surface_types: vec![SurfaceType::RockyBody, SurfaceType::HighMetalContentWorld],
             atmosphere_types: vec![AtmosphereType::Water],
             temperature: "395-450".to_owned(),
