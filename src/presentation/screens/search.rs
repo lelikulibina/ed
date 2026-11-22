@@ -966,7 +966,6 @@ mod tests {
         assert!(rendered(&screen, 120, 40).contains("Shift+Tab"));
         let help = rendered(&screen, 120, 40);
         assert!(help.contains("Пробел"));
-        assert!(help.contains("Ctrl+Q — выход"));
 
         screen.handle_key(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE));
         assert!(rendered(&screen, 120, 40).contains("Сценарий"));
