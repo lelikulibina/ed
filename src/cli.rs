@@ -95,7 +95,7 @@ pub(crate) struct Args {
 impl Args {
     /// Преобразует аргументы командной строки в ту же конфигурацию,
     /// которую использует интерактивный интерфейс.
-    pub fn into_search_config(self) -> Result<SearchConfig> {
+    pub(crate) fn into_search_config(self) -> Result<SearchConfig> {
         let (temperature_min, temperature_max) = parse_range_i32(&self.temperature)
             .context("Температура: ожидается диапазон min-max в K")?;
         let (gravity_min, gravity_max) =
@@ -122,6 +122,10 @@ impl Args {
 
         SearchConfig::new(self.system, criteria).map_err(Into::into)
     }
+}
+
+pub fn parse_args() -> Result<SearchConfig> {
+    Args::parse().into_search_config()
 }
 
 pub(crate) fn parse_range_f64(s: &str) -> Result<(f64, f64)> {

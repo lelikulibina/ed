@@ -1,11 +1,9 @@
 use std::io::IsTerminal;
 
 use anyhow::{Result, anyhow};
-use clap::Parser;
-
 use ed_planet_search::{
     application::{config::SearchConfig, search::SearchUseCase},
-    cli::Args,
+    cli,
     domain,
     presentation::tui,
     spansh::SpanshClient,
@@ -19,7 +17,7 @@ async fn main() -> Result<()> {
     let initial_config = if std::env::args_os().len() == 1 {
         None
     } else {
-        Some(Args::parse().into_search_config()?)
+        Some(cli::parse_args()?)
     };
 
     ensure_interactive_terminal()?;
