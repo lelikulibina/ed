@@ -521,16 +521,10 @@ mod tests {
         let mut app = app();
         let ctrl_y = KeyEvent::new(KeyCode::Char('й'), KeyModifiers::CONTROL);
 
-        assert_eq!(
-            update(&mut app, AppEvent::Key(ctrl_y)),
-            Some(Command::Quit)
-        );
+        assert_eq!(update(&mut app, AppEvent::Key(ctrl_y)), Some(Command::Quit));
 
         app.help_open = true;
-        assert_eq!(
-            update(&mut app, AppEvent::Key(ctrl_y)),
-            Some(Command::Quit)
-        );
+        assert_eq!(update(&mut app, AppEvent::Key(ctrl_y)), Some(Command::Quit));
     }
 
     #[test]
