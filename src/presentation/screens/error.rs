@@ -3,7 +3,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Wrap},
 };
 
-use crate::presentation::{app::App, theme};
+use crate::presentation::{app::App, text::ui, theme};
 
 pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let area = frame.area();
@@ -11,17 +11,17 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let message = app
         .error_message
         .as_deref()
-        .unwrap_or("Не удалось выполнить поиск. Попробуйте ещё раз.");
+        .unwrap_or(ui::ERROR_FALLBACK);
 
     frame.render_widget(
         Paragraph::new(format!(
-            "Поиск не выполнен\n\n{message}\n\nr — повторить поиск\ne / Enter / Esc — изменить параметры\nCtrl+Q — выход"
+            "{}\n\n{message}\n\n{}", ui::ERROR_HEADING, ui::ERROR_HINTS
         ))
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: true })
         .block(
             Block::default()
-                .title(" Ошибка поиска ")
+                .title(ui::ERROR_TITLE)
                 .borders(Borders::ALL)
                 .border_style(theme::Theme::default().error),
         ),
