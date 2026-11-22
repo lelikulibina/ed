@@ -46,7 +46,9 @@ impl SearchError {
                 format!("Spansh вернул некорректные данные планеты: {details}")
             }
             Self::Bodies(crate::spansh::BodySearchError::PageLimit(limit)) => {
-                format!("Достигнут предел загрузки страниц ({limit}); результаты могут быть неполными.")
+                format!(
+                    "Достигнут предел загрузки страниц ({limit}); результаты могут быть неполными."
+                )
             }
         }
     }
@@ -111,7 +113,8 @@ impl SearchUseCase {
         center: &ResolvedSystem,
         criteria: &SearchCriteria,
     ) -> Result<Vec<Body>, SearchError> {
-        self.execute_with_progress(center, criteria, |_, _| {}).await
+        self.execute_with_progress(center, criteria, |_, _| {})
+            .await
     }
 
     pub async fn execute_with_progress<F>(
@@ -141,9 +144,8 @@ mod tests {
 
     #[test]
     fn search_errors_have_actionable_russian_messages() {
-        let not_found = SearchError::Resolve(crate::spansh::ResolveError::NotFound(
-            "Sol".to_owned(),
-        ));
+        let not_found =
+            SearchError::Resolve(crate::spansh::ResolveError::NotFound("Sol".to_owned()));
         assert!(not_found.user_message().contains("Sol"));
         assert!(not_found.user_message().contains("не найдена"));
 
@@ -196,7 +198,10 @@ mod tests {
         assert_eq!(results[0].name, "Nearby 1");
         assert_eq!(results[0].system_name.as_deref(), Some("Nearby System"));
 
-        assert!(matches!(events_rx.try_recv(), Ok(SearchEvent::ResolvingSystem)));
+        assert!(matches!(
+            events_rx.try_recv(),
+            Ok(SearchEvent::ResolvingSystem)
+        ));
         assert!(matches!(
             events_rx.try_recv(),
             Ok(SearchEvent::SystemResolved { name }) if name == "Sol"
