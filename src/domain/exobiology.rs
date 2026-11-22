@@ -63,9 +63,6 @@ pub fn estimate(body: &Body) -> Result<ExobiologyEstimate, EstimateError> {
     let mut by_genus: BTreeMap<String, Vec<SpeciesCandidate>> = BTreeMap::new();
 
     for entry in entries {
-        if body.biological_signal_count == Some(0) {
-            break;
-        }
         if let Some(genera) = body
             .biological_genera
             .as_ref()
@@ -511,13 +508,14 @@ mod tests {
     }
 
     #[test]
-    fn zero_biological_signals_suppress_all_species_candidates() {
+    fn zero_biological_signals_keep_condition_based_candidates_for_first_logged() {
         let mut planet = body(Some("Rocky body"), Some("Water"), Some(200.0), Some(0.2));
         planet.biological_signal_count = Some(0);
 
         let estimate = estimate(&planet).unwrap();
-        assert!(estimate.genera.is_empty());
-        assert_eq!(estimate.maximum_base_value_cr, 0);
+        assert!(!estimate.genera.is_empty());
+        assert!(estimate.maximum_base_value_cr > 0);
+        assert_eq!(estimate.biological_signal_count, Some(0));
     }
 
     #[test]
