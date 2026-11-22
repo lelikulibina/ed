@@ -198,6 +198,32 @@ mod tests {
     }
 
     #[test]
+    fn any_filters_match_bodies_with_unknown_or_missing_surface_and_atmosphere() {
+        let base = criteria();
+        let criteria = SearchCriteria::from_cli(
+            "any",
+            "any",
+            base.temperature,
+            base.gravity,
+            base.pressure,
+            base.count,
+        )
+        .unwrap();
+        let known_values = Body::from_json(&serde_json::json!({
+            "name": "Uncatalogued body",
+            "subtype": "Metal-rich body",
+            "atmosphere": "Xenon",
+            "is_landable": true,
+            "is_mapped": false
+        }))
+        .unwrap();
+        let missing_values = Body::from_json(&serde_json::json!({"name": "Unknown body"})).unwrap();
+
+        assert!(criteria.matches(&known_values));
+        assert!(criteria.matches(&missing_values));
+    }
+
+    #[test]
     fn accepts_every_legacy_planet_and_atmosphere_value() {
         for value in [
             "any",
@@ -292,6 +318,8 @@ mod tests {
             biological_genera: None,
             signals_updated_at: None,
         };
+        assert!(criteria.matches(&body));
+        body.subtype = Some("Rocky body".to_owned());
         assert!(criteria.matches(&body));
         body.subtype = Some("Icy body".to_owned());
         assert!(!criteria.matches(&body));
