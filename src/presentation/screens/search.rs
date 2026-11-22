@@ -520,10 +520,12 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         .map(|(index, preset)| {
             profile_item(
                 format!(
-                    "{} · {} видов · {} млн CR",
+                    "{} · {} {} · {} {}",
                     preset.name,
                     preset.expensive_species,
-                    preset.potential_value_cr / 1_000_000
+                    ui::SEARCH_SPECIES_LABEL,
+                    preset.potential_value_cr / 1_000_000,
+                    ui::SEARCH_PROFILE_VALUE_UNIT
                 ),
                 index == screen.selected_preset,
             )
@@ -546,15 +548,18 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
 
     let mut fields = vec![
         Line::from(format!(
-            "Система: {}",
+            "{}: {}",
+            ui::SEARCH_SYSTEM_LABEL,
             display_input(&screen.system_input, screen.focus == SearchField::System)
         )),
         Line::from(format!(
-            "Количество: {}",
+            "{}: {}",
+            ui::SEARCH_COUNT_LABEL,
             display_input(&screen.count_input, screen.focus == SearchField::Count)
         )),
         Line::from(format!(
-            "Без биосигналов: {}",
+            "{}: {}",
+            ui::SEARCH_BIO_LABEL,
             if screen.form.exclude_with_bio_signals {
                 "[x]"
             } else {
@@ -568,7 +573,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     if screen.advanced {
         fields.extend([
             Line::from(format!(
-                "Поверхность         {} · выбор: {}",
+                "{}         {} · {}: {}",
                 screen
                     .form
                     .surface_types
@@ -576,10 +581,11 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
                     .map(|value| value.label_ru())
                     .collect::<Vec<_>>()
                     .join(", "),
+                ui::SEARCH_SURFACE_CHOICE_LABEL,
                 surface_at(screen.surface_cursor).label_ru()
             )),
             Line::from(format!(
-                "Атмосфера           {}",
+                "{}           {}",
                 screen
                     .form
                     .atmosphere_types
@@ -589,7 +595,8 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
                     .join(", ")
             )),
             Line::from(format!(
-                "Температура         {} — {} K",
+                "{}         {} — {} K",
+                ui::SEARCH_TEMPERATURE_LABEL,
                 display_input(
                     &screen.temperature_min,
                     screen.focus == SearchField::TemperatureMin
@@ -600,12 +607,14 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
                 )
             )),
             Line::from(format!(
-                "Гравитация          {} — {} g",
+                "{}          {} — {} g",
+                ui::SEARCH_GRAVITY_LABEL,
                 display_input(&screen.gravity_min, screen.focus == SearchField::GravityMin),
                 display_input(&screen.gravity_max, screen.focus == SearchField::GravityMax)
             )),
             Line::from(format!(
-                "Давление            {} — {} atm",
+                "{}            {} — {} atm",
+                ui::SEARCH_PRESSURE_LABEL,
                 display_input(
                     &screen.pressure_min,
                     screen.focus == SearchField::PressureMin
@@ -626,11 +635,13 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     }
     fields.push(Line::from(""));
     fields.push(Line::from(format!(
-        "Потенциал профиля   {} млн CR",
+        "{}   {} {}",
+        ui::SEARCH_PROFILE_VALUE_LABEL,
         PRESETS
             .get(screen.selected_preset)
             .map(|preset| preset.potential_value_cr / 1_000_000)
-            .unwrap_or_default()
+            .unwrap_or_default(),
+        ui::SEARCH_PROFILE_VALUE_UNIT
     )));
 
     frame.render_widget(
@@ -646,8 +657,11 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     );
 
     let summary = format!(
-        "Ищем: {} · Радиус: 1000 св. лет",
-        screen.form.summary().replace('\n', " · ")
+        "{}: {} · {}: {}",
+        ui::SEARCH_SUMMARY_PREFIX,
+        screen.form.summary().replace('\n', " · "),
+        ui::SEARCH_RADIUS_LABEL,
+        ui::SEARCH_RADIUS_VALUE
     );
     frame.render_widget(
         Paragraph::new(summary).wrap(Wrap { trim: true }).block(
