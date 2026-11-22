@@ -277,6 +277,7 @@ cargo fmt -- --check && cargo clippy --locked --all-targets --all-features -- -D
   - [x] Создать `docs/exobiology.md`, описывающий текущую модель оценки, каталог и ограничения.
 - [x] CI: основной workflow без изменений; `spansh-live-smoke.yml` — только `workflow_dispatch`, без привязки к ветке `refactor/spansh-api-architecture`, запускает единственный live-тест.
 - [ ] `cargo build --release` и ручной запуск бинарника.
+  - [x] Добавить release-сборку и запуск бинарника в псевдотерминале на трёх размерах в TTY Diagnostics; ручная проверка человеком остаётся.
 
 **Приёмка:** в корне есть README; `docs/` не содержит планов и журналов; гейт зелёный; релизная сборка запускается.
 
