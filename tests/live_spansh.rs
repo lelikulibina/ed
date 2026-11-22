@@ -1,7 +1,13 @@
 #![allow(dead_code)]
 
+mod application {
+    #[path = "../src/application/presets.rs"]
+    pub mod presets;
+}
+
 #[path = "../src/domain/mod.rs"]
 mod domain;
+#[allow(unused_imports)]
 #[path = "../src/spansh/mod.rs"]
 mod spansh;
 
