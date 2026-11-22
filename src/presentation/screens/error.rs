@@ -7,6 +7,15 @@ use crate::presentation::{app::App, text::ui, theme};
 
 pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let area = frame.area();
+    if !theme::supports_minimum_size(area) {
+        frame.render_widget(
+            Paragraph::new(ui::MIN_TERMINAL_SIZE)
+                .alignment(Alignment::Center)
+                .block(Block::default().borders(Borders::ALL)),
+            area,
+        );
+        return;
+    }
     let panel = theme::centered(area, area.width * 80 / 100, area.height * 55 / 100);
     let message = app.error_message.as_deref().unwrap_or(ui::ERROR_FALLBACK);
 
