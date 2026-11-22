@@ -393,7 +393,7 @@ mod tests {
         update(&mut app, AppEvent::Search(SearchEvent::ResolvingSystem));
         assert_eq!(
             app.progress_message.as_deref(),
-            Some("Поиск центральной системы…")
+            Some("Поиск центральной системы (Spansh)…")
         );
 
         update(
@@ -403,6 +403,10 @@ mod tests {
             }),
         );
         assert_eq!(app.resolved_system.as_deref(), Some("Sol"));
+        assert_eq!(
+            app.progress_message.as_deref(),
+            Some("Система найдена: Sol")
+        );
 
         update(
             &mut app,
