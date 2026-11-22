@@ -658,16 +658,18 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         screen.form.gravity,
         screen.form.pressure,
         screen.form.count,
-        if screen.form.exclude_with_bio_signals { "да" } else { "нет" }
+        if screen.form.exclude_with_bio_signals {
+            "да"
+        } else {
+            "нет"
+        }
     );
     frame.render_widget(
-        Paragraph::new(summary)
-            .wrap(Wrap { trim: true })
-            .block(
-                Block::default()
-                    .title(" Поиск по критериям ")
-                    .borders(Borders::ALL),
-            ),
+        Paragraph::new(summary).wrap(Wrap { trim: true }).block(
+            Block::default()
+                .title(" Поиск по критериям ")
+                .borders(Borders::ALL),
+        ),
         root[2],
     );
 
@@ -867,7 +869,10 @@ mod tests {
         }
         screen.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
 
-        assert_eq!(screen.form.atmosphere_types, vec![AtmosphereType::SulphurDioxide]);
+        assert_eq!(
+            screen.form.atmosphere_types,
+            vec![AtmosphereType::SulphurDioxide]
+        );
     }
 
     #[test]
