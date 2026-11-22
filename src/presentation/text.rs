@@ -70,6 +70,8 @@ pub mod ui {
     pub const RESULTS_SORT_GRAVITY: &str = "гравитация";
     pub const RESULTS_SORT_NAME: &str = "название";
     pub const RESULTS_SUMMARY_LABEL: &str = "НАЙДЕНО";
+    pub const RESULTS_SUMMARY_SYSTEM_LABEL: &str = "СИСТЕМА";
+    pub const RESULTS_SUMMARY_SORT_LABEL: &str = "СОРТИРОВКА";
     pub const RESULTS_EMPTY_MESSAGE: &str = "Подходящие планеты не найдены";
     pub const RESULTS_EMPTY_SYSTEM_LABEL: &str = "Система";
     pub const RESULTS_DETAIL_PLANET: &str = "Планета";
