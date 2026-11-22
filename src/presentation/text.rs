@@ -168,7 +168,10 @@ pub fn exobiology_view(body: &Body) -> Result<Option<ExobiologyView>, EstimateEr
             "Максимальная оценка выручки (×5 за отсутствие биосигналов): {} CR",
             format_credits(maximum_value_cr)
         )
-    } else if estimate.biological_signal_count.is_some_and(|count| count > 0) {
+    } else if estimate
+        .biological_signal_count
+        .is_some_and(|count| count > 0)
+    {
         format!(
             "Максимальная оценка выручки (без ×5: есть биосигналы): {} CR",
             format_credits(maximum_value_cr)
