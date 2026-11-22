@@ -5,14 +5,26 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
 };
 
-use crate::application::{config::SearchConfig, form::SearchForm, presets::PRESETS};
+use crate::application::{
+    config::SearchConfig,
+    form::{FieldError, SearchForm},
+    presets::PRESETS,
+};
 
 use super::super::theme;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum SearchScreenAction {
+    Start(SearchConfig),
+    Exit,
+    None,
+}
 
 pub struct SearchScreen {
     pub form: SearchForm,
     selected_preset: usize,
     advanced: bool,
+    errors: Vec<FieldError>,
 }
 
 impl Default for SearchScreen {
@@ -26,16 +38,39 @@ impl Default for SearchScreen {
             form,
             selected_preset: 0,
             advanced: false,
+            errors: Vec::new(),
         }
     }
 }
 
 impl SearchScreen {
+    pub fn new(form: SearchForm) -> Self {
+        Self {
+            form,
+            selected_preset: PRESETS.len(),
+            advanced: false,
+            errors: Vec::new(),
+        }
+    }
+
+    pub fn errors(&self) -> &[FieldError] {
+        &self.errors
+    }
+
+    pub fn handle_key(&mut self, _key: KeyEvent) -> SearchScreenAction {
+        SearchScreenAction::None
+    }
+
+    pub fn handle_paste(&mut self, _text: &str) -> bool {
+        false
+    }
+
     pub fn from_config(config: &SearchConfig) -> Self {
         Self {
             form: SearchForm::from_config(config),
             selected_preset: PRESETS.len(),
             advanced: true,
+            errors: Vec::new(),
         }
     }
 
@@ -207,6 +242,7 @@ fn profile_item(name: &'static str, selected: bool) -> ListItem<'static> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crossterm::event::{KeyCode, KeyModifiers};
 
     fn rendered(screen: &SearchScreen, width: u16, height: u16) -> String {
         let backend = ratatui::backend::TestBackend::new(width, height);
@@ -219,6 +255,55 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect::<String>()
+    }
+
+    #[test]
+    fn selecting_a_profile_applies_it_immediately() {
+        let mut screen = SearchScreen::default();
+        let action = screen.handle_key(KeyEvent::new(
+            KeyCode::Down,
+            KeyModifiers::NONE,
+        ));
+
+        assert_eq!(action, SearchScreenAction::None);
+        assert_eq!(screen.selected_preset(), 1);
+        assert_eq!(screen.form.temperature, "180-190");
+    }
+
+    #[test]
+    fn f2_expands_advanced_fields() {
+        let mut screen = SearchScreen::default();
+        screen.handle_key(KeyEvent::new(KeyCode::F(2), KeyModifiers::NONE));
+
+        assert!(screen.advanced());
+    }
+
+    #[test]
+    fn invalid_submission_keeps_input_and_reports_the_field_error() {
+        let mut form = SearchForm::default();
+        form.system = String::new();
+        let mut screen = SearchScreen::new(form);
+        let action = screen.handle_key(KeyEvent::new(
+            KeyCode::Enter,
+            KeyModifiers::NONE,
+        ));
+
+        assert_eq!(action, SearchScreenAction::None);
+        assert_eq!(screen.form.system, "");
+        assert!(screen.errors().iter().any(|error| error.field == crate::application::form::FormField::System));
+    }
+
+    #[test]
+    fn typing_and_pasting_into_the_system_field_updates_the_form() {
+        let mut screen = SearchScreen::default();
+        screen.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::Char('X'), KeyModifiers::NONE));
+        assert_eq!(screen.form.system, "SolX");
+
+        assert!(screen.handle_paste(" Prime"));
+        assert_eq!(screen.form.system, "SolX Prime");
+        assert_eq!(screen.selected_preset(), PRESETS.len());
     }
 
     #[test]
