@@ -11,6 +11,11 @@ use ratatui::{
 use crate::application::config::SearchConfig;
 
 use super::{
+    app::{self, App, AppEvent, Command},
+    events::spawn_event_stream,
+};
+
+use super::{
     screens::search::{self, SearchScreen, SearchScreenAction},
     terminal::TerminalGuard,
     theme,
@@ -28,7 +33,7 @@ where
     loop {
         let next_config = match take_immediate_config(&mut initial, &mut start_immediately) {
             Some(config) => Some(config),
-            None => run_search_screen_in_session(&mut session, initial.take())?,
+            None => run_search_screen_in_session(&mut session, initial.take()).await?,
         };
         let Some(config) = next_config else {
             break;
@@ -56,31 +61,33 @@ fn take_immediate_config<T>(initial: &mut Option<T>, start_immediately: &mut boo
     }
 }
 
-fn run_search_screen_in_session(
+async fn run_search_screen_in_session(
     session: &mut TerminalGuard,
     initial: Option<SearchConfig>,
 ) -> Result<Option<SearchConfig>> {
-    let mut screen = initial
-        .as_ref()
-        .map(SearchScreen::from_config)
-        .unwrap_or_default();
+    let mut app = initial.map(App::new).unwrap_or_else(App::new_default);
+    let (sender, mut receiver) = tokio::sync::mpsc::channel(32);
+    let event_task = spawn_event_stream(sender, false);
 
     loop {
-        session
-            .terminal_mut()
-            .draw(|frame| search::render(frame, &screen))?;
+        session.terminal_mut().draw(|frame| app::render(frame, &app))?;
+        let Some(event) = receiver.recv().await else {
+            drop(event_task);
+            return Ok(None);
+        };
 
-        match event::read()? {
-            Event::Key(key) => match screen.handle_key(key) {
-                SearchScreenAction::Start(config) => return Ok(Some(config)),
-                SearchScreenAction::Exit => return Ok(None),
-                SearchScreenAction::None => {}
-            },
-            Event::Paste(text) => {
-                screen.handle_paste(&text);
+        match app::update(&mut app, event) {
+            Some(Command::StartSearch(config)) => {
+                drop(receiver);
+                drop(event_task);
+                return Ok(Some(config));
             }
-            Event::Resize(_, _) => {}
-            _ => {}
+            Some(Command::Quit) => {
+                drop(receiver);
+                drop(event_task);
+                return Ok(None);
+            }
+            Some(Command::CancelSearch | Command::CopySystem(_)) | None => {}
         }
     }
 }

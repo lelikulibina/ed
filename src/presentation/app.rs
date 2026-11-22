@@ -6,6 +6,8 @@ use crate::{
     domain::body::Body,
 };
 
+use super::screens::search::{SearchScreen, SearchScreenAction};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
     Search,
@@ -40,10 +42,25 @@ pub struct App {
     pub current_page: u32,
     pub found_count: usize,
     pub selected_index: usize,
+    pub search_screen: SearchScreen,
 }
 
 impl App {
     pub fn new(config: SearchConfig) -> Self {
+        let search_screen = SearchScreen::from_config(&config);
+        Self::with_search_screen(config, search_screen)
+    }
+
+    pub fn new_default() -> Self {
+        let search_screen = SearchScreen::default();
+        let config = search_screen
+            .form
+            .build()
+            .expect("Профиль поиска по умолчанию должен быть корректным");
+        Self::with_search_screen(config, search_screen)
+    }
+
+    fn with_search_screen(config: SearchConfig, search_screen: SearchScreen) -> Self {
         Self {
             screen: Screen::Search,
             config,
@@ -54,6 +71,7 @@ impl App {
             current_page: 0,
             found_count: 0,
             selected_index: 0,
+            search_screen,
         }
     }
 }
@@ -64,7 +82,13 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
             app.terminal_area = area;
             None
         }
-        AppEvent::Paste(_) | AppEvent::Tick => None,
+        AppEvent::Paste(text) => {
+            if app.screen == Screen::Search {
+                app.search_screen.handle_paste(&text);
+            }
+            None
+        }
+        AppEvent::Tick => None,
         AppEvent::Search(event) => {
             match event {
                 SearchEvent::ResolvingSystem => {
@@ -103,14 +127,15 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
             }
 
             match app.screen {
-                Screen::Search => match key.code {
-                    KeyCode::Enter => {
+                Screen::Search => match app.search_screen.handle_key(key) {
+                    SearchScreenAction::Start(config) => {
+                        app.config = config.clone();
                         app.screen = Screen::Running;
                         app.progress_message = Some("Подготовка поиска…".to_owned());
-                        Some(Command::StartSearch(app.config.clone()))
+                        Some(Command::StartSearch(config))
                     }
-                    KeyCode::Esc => Some(Command::Quit),
-                    _ => None,
+                    SearchScreenAction::Exit => Some(Command::Quit),
+                    SearchScreenAction::None => None,
                 },
                 Screen::Running => match key.code {
                     KeyCode::Esc => {
@@ -162,6 +187,11 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
 }
 
 pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
+    if app.screen == Screen::Search {
+        super::screens::search::render(frame, &app.search_screen);
+        return;
+    }
+
     use ratatui::widgets::{Block, Borders, Paragraph};
 
     let (title, message) = match app.screen {
