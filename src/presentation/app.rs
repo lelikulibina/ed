@@ -467,8 +467,8 @@ mod tests {
             .map(|cell| cell.symbol())
             .collect::<String>();
         assert!(error.contains("Система не найдена"));
-        assert!(error.contains("R — повторить поиск"));
-        assert!(error.contains("E / Enter / Esc"));
+        assert!(error.contains("r — повторить поиск"));
+        assert!(error.contains("e / Enter / Esc"));
     }
 
     #[test]
