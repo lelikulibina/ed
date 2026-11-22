@@ -15,7 +15,7 @@ pub mod ui {
     pub const SEARCH_CUSTOM_PROFILE: &str = "Свой поиск";
     pub const SEARCH_SYSTEM_LABEL: &str = "Система";
     pub const SEARCH_COUNT_LABEL: &str = "Количество";
-    pub const SEARCH_BIO_LABEL: &str = "Без биосигналов";
+    pub const SEARCH_BIO_LABEL: &str = "Перевопроходец";
     pub const SEARCH_SURFACE_LABEL: &str = "Поверхность";
     pub const SEARCH_ATMOSPHERE_LABEL: &str = "Атмосфера";
     pub const SEARCH_TEMPERATURE_LABEL: &str = "Температура";
