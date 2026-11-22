@@ -489,9 +489,11 @@ fn render_exobiology(
         lines.extend(view.summary.iter().map(|line| Line::from(line.as_str())));
         lines.extend(view.notes.iter().map(|line| Line::from(line.as_str())));
         frame.render_widget(
-            Paragraph::new(lines)
-                .wrap(Wrap { trim: true })
-                .block(Block::default().title(" Экзобиология ").borders(Borders::ALL)),
+            Paragraph::new(lines).wrap(Wrap { trim: true }).block(
+                Block::default()
+                    .title(" Экзобиология ")
+                    .borders(Borders::ALL),
+            ),
             area,
         );
         return;
@@ -508,7 +510,11 @@ fn render_exobiology(
     frame.render_widget(
         Paragraph::new(view.headline.as_str())
             .wrap(Wrap { trim: true })
-            .block(Block::default().title(" Экзобиология ").borders(Borders::ALL)),
+            .block(
+                Block::default()
+                    .title(" Экзобиология ")
+                    .borders(Borders::ALL),
+            ),
         sections[0],
     );
 
