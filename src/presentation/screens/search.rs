@@ -1,4 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout},
@@ -6,10 +6,13 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
 };
 
-use crate::application::{
+use crate::{
+    application::{
     config::SearchConfig,
     form::{FieldError, FormField, SearchForm},
     presets::PRESETS,
+    },
+    domain::catalog::{AtmosphereType, SurfaceType},
 };
 
 use super::super::{theme, widgets::text_input::TextInput};
@@ -21,11 +24,38 @@ pub enum SearchScreenAction {
     None,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SearchField {
+    Profile,
+    System,
+    Count,
+    BioSignals,
+    Surface,
+    Atmosphere,
+    TemperatureMin,
+    TemperatureMax,
+    GravityMin,
+    GravityMax,
+    PressureMin,
+    PressureMax,
+}
+
 pub struct SearchScreen {
     pub form: SearchForm,
     selected_preset: usize,
     advanced: bool,
     errors: Vec<FieldError>,
+    focus: SearchField,
+    system_input: TextInput,
+    count_input: TextInput,
+    temperature_min: TextInput,
+    temperature_max: TextInput,
+    gravity_min: TextInput,
+    gravity_max: TextInput,
+    pressure_min: TextInput,
+    pressure_max: TextInput,
+    surface_cursor: usize,
+    atmosphere_cursor: usize,
 }
 
 impl Default for SearchScreen {
@@ -35,12 +65,9 @@ impl Default for SearchScreen {
             ..SearchForm::default()
         };
         form.apply_preset(&PRESETS[0]);
-        Self {
-            form,
-            selected_preset: 0,
-            advanced: false,
-            errors: Vec::new(),
-        }
+        let mut screen = Self::new(form);
+        screen.selected_preset = 0;
+        screen
     }
 }
 
