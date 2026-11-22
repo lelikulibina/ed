@@ -213,11 +213,22 @@ mod tests {
             "name": "Uncatalogued body",
             "subtype": "Metal-rich body",
             "atmosphere": "Xenon",
+            "surface_temperature": 250.0,
+            "surface_pressure": 1.0,
+            "gravity": 1.0,
             "is_landable": true,
             "is_mapped": false
         }))
         .unwrap();
-        let missing_values = Body::from_json(&serde_json::json!({"name": "Unknown body"})).unwrap();
+        let missing_values = Body::from_json(&serde_json::json!({
+            "name": "Unknown body",
+            "surface_temperature": 250.0,
+            "surface_pressure": 1.0,
+            "gravity": 1.0,
+            "is_landable": true,
+            "is_mapped": false
+        }))
+        .unwrap();
 
         assert!(criteria.matches(&known_values));
         assert!(criteria.matches(&missing_values));
