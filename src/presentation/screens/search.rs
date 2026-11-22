@@ -16,7 +16,7 @@ use crate::{
     domain::catalog::{AtmosphereType, SurfaceType},
 };
 
-use super::super::{theme, widgets::text_input::TextInput};
+use super::super::{text::ui, theme, widgets::text_input::TextInput};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SearchScreenAction {
@@ -470,7 +470,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     let area = frame.area();
     if !theme::supports_minimum_size(area) {
         frame.render_widget(
-            Paragraph::new("Увеличьте окно терминала до 80×24")
+            Paragraph::new(ui::MIN_TERMINAL_SIZE)
                 .alignment(Alignment::Center)
                 .block(Block::default().borders(Borders::ALL)),
             area,
@@ -480,11 +480,9 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
 
     if screen.show_help {
         frame.render_widget(
-            Paragraph::new(
-                "Управление поиском\n\n↑/↓ — выбор сценария или значения\nTab / Shift+Tab — переход между полями\nSpace — переключить флаг или поверхность\nF2 — показать/скрыть дополнительные фильтры\nHome / End — начало / конец строки\nBackspace / Delete — удалить символ\nВставка текста — поддерживается через bracketed paste\nEnter — запустить поиск\nEsc — выйти\n? — закрыть эту справку",
-            )
+            Paragraph::new(ui::HELP_SEARCH)
             .wrap(Wrap { trim: true })
-            .block(Block::default().title(" Справка ").borders(Borders::ALL)),
+            .block(Block::default().title(ui::HELP_TITLE).borders(Borders::ALL)),
             theme::centered(area, area.width.saturating_sub(4), area.height.saturating_sub(4)),
         );
         return;
@@ -500,7 +498,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         .split(area);
 
     frame.render_widget(
-        Paragraph::new("ED Planet Search")
+        Paragraph::new(ui::APP_TITLE)
             .alignment(Alignment::Center)
             .style(
                 Style::default()
@@ -531,7 +529,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
             )
         })
         .chain(std::iter::once(profile_item(
-            "Свой поиск".to_owned(),
+            ui::SEARCH_CUSTOM_PROFILE.to_owned(),
             screen.selected_preset == PRESETS.len(),
         )))
         .collect::<Vec<_>>();
@@ -539,7 +537,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     frame.render_widget(
         List::new(profiles).block(
             Block::default()
-                .title(" Сценарий ")
+                .title(ui::SEARCH_PROFILE_TITLE)
                 .borders(Borders::ALL)
                 .border_style(theme::Theme::default().muted),
         ),
@@ -624,7 +622,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         push_error(&mut fields, screen, FormField::Gravity);
         push_error(&mut fields, screen, FormField::Pressure);
     } else {
-        fields.push(Line::from("▸ Дополнительно (F2)"));
+        fields.push(Line::from(format!("▸ {}", ui::SEARCH_ADVANCED_LABEL)));
     }
     fields.push(Line::from(""));
     fields.push(Line::from(format!(
@@ -639,7 +637,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         Paragraph::new(Text::from(fields))
             .block(
                 Block::default()
-                    .title(" Параметры ")
+                    .title(ui::SEARCH_PARAMETERS_TITLE)
                     .borders(Borders::ALL)
                     .border_style(theme::Theme::default().muted),
             )
@@ -654,7 +652,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     frame.render_widget(
         Paragraph::new(summary).wrap(Wrap { trim: true }).block(
             Block::default()
-                .title(" Поиск по критериям ")
+                .title(ui::SEARCH_SUMMARY_TITLE)
                 .borders(Borders::ALL),
         ),
         root[2],
@@ -662,7 +660,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
 
     frame.render_widget(
         Paragraph::new(
-            "Enter — искать · Tab — поле · F2 — дополнительно · ? — помощь · Esc — выход",
+            ui::SEARCH_HINTS,
         )
         .alignment(Alignment::Center)
         .style(Style::default().fg(Color::Gray)),
