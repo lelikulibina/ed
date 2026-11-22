@@ -36,6 +36,7 @@ pub mod ui {
     pub const RUNNING_PAGE_PENDING: &str = "Ожидание первой страницы Spansh…";
     pub const RUNNING_PREPARING: &str = "Подготовка запроса…";
     pub const RUNNING_SYSTEM_FOUND_PREFIX: &str = "Центральная система найдена";
+    pub const SYSTEM_REPLACED_WARNING: &str = "ВНИМАНИЕ: точка отправления заменена";
     pub const RUNNING_PAGE_LOADED_PREFIX: &str = "Загружена страница Spansh";
     pub const RUNNING_FOUND_COUNT: &str = "Подходящих планет найдено";
     pub const RUNNING_COUNT_SEPARATOR: &str = "из";
