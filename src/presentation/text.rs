@@ -35,6 +35,11 @@ pub mod ui {
     pub const RUNNING_PAGE_LOADED_PREFIX: &str = "Загружена страница Spansh";
     pub const RUNNING_FOUND_COUNT: &str = "Подходящих планет найдено";
     pub const RUNNING_CANCEL_HINT: &str = "Esc — отменить поиск";
+    pub const APP_SEARCH_PREPARING: &str = "Подготовка поиска…";
+    pub const APP_SEARCH_RESOLVING_SYSTEM: &str = "Поиск центральной системы (Spansh)…";
+    pub const APP_SEARCH_SYSTEM_FOUND_PREFIX: &str = "Система найдена";
+    pub const APP_SEARCH_PAGE_LOADED_PREFIX: &str = "Страница Spansh";
+    pub const APP_SEARCH_RETRYING: &str = "Повторный запуск поиска…";
     pub const ERROR_TITLE: &str = " Ошибка поиска ";
     pub const ERROR_HEADING: &str = "Поиск не выполнен";
     pub const ERROR_FALLBACK: &str = "Не удалось выполнить поиск. Попробуйте ещё раз.";
