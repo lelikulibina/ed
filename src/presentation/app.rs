@@ -310,6 +310,38 @@ mod tests {
     }
 
     #[test]
+    fn empty_search_results_still_open_the_results_screen() {
+        let mut app = app();
+        app.screen = Screen::Running;
+
+        update(
+            &mut app,
+            AppEvent::Search(SearchEvent::Finished(Vec::new())),
+        );
+
+        assert_eq!(app.screen, Screen::Results);
+        assert!(app.results.is_empty());
+    }
+
+    #[test]
+    fn error_screen_can_return_to_search_and_keep_the_configuration() {
+        let mut app = app();
+        app.screen = Screen::Error;
+        app.error_message = Some("Система не найдена".to_owned());
+        let expected = app.config.clone();
+
+        let command = update(
+            &mut app,
+            AppEvent::Key(KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE)),
+        );
+
+        assert!(command.is_none());
+        assert_eq!(app.screen, Screen::Search);
+        assert_eq!(app.config, expected);
+        assert!(app.error_message.is_none());
+    }
+
+    #[test]
     fn error_screen_can_retry_the_previous_configuration() {
         let mut app = app();
         app.screen = Screen::Error;
