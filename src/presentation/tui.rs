@@ -21,7 +21,6 @@ use super::{
     app::{self, App, AppEvent, Command, Screen},
     events::poll_and_send,
     terminal::TerminalGuard,
-    theme,
 };
 
 pub async fn run<F, Fut>(initial: Option<SearchConfig>, search: F) -> Result<()>
