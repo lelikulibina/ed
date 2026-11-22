@@ -482,7 +482,7 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         .constraints([
             Constraint::Length(3),
             Constraint::Min(10),
-            Constraint::Length(4),
+            Constraint::Length(5),
             Constraint::Length(2),
         ])
         .split(area);
@@ -558,14 +558,15 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     if screen.advanced {
         fields.extend([
             Line::from(format!(
-                "Поверхность         {}",
+                "Поверхность         {} · выбор: {}",
                 screen
                     .form
                     .surface_types
                     .iter()
                     .map(|value| value.label_ru())
                     .collect::<Vec<_>>()
-                    .join(", ")
+                    .join(", "),
+                surface_at(screen.surface_cursor).label_ru()
             )),
             Line::from(format!(
                 "Атмосфера           {}",
@@ -634,9 +635,33 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
         columns[1],
     );
 
-    let summary = screen.form.summary().replace('\n', " · ");
+    let surfaces = screen
+        .form
+        .surface_types
+        .iter()
+        .map(|value| value.label_ru())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let atmospheres = screen
+        .form
+        .atmosphere_types
+        .iter()
+        .map(|value| value.label_ru())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let summary = format!(
+        "Ищем: {} · {} · {}\n{} K · {} g · {} atm\nКоличество: {} · Без био: {} · Радиус: 1000 св. лет",
+        screen.form.system,
+        surfaces,
+        atmospheres,
+        screen.form.temperature,
+        screen.form.gravity,
+        screen.form.pressure,
+        screen.form.count,
+        if screen.form.exclude_with_bio_signals { "да" } else { "нет" }
+    );
     frame.render_widget(
-        Paragraph::new(format!("Ищем: {summary} · радиус 1000 св. лет"))
+        Paragraph::new(summary)
             .wrap(Wrap { trim: true })
             .block(
                 Block::default()
