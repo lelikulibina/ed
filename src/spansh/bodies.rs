@@ -10,7 +10,6 @@ use super::{
     system::ResolvedSystem,
 };
 
-const DEFAULT_RADIUS_LY: f64 = 1_000.0;
 const PAGE_SIZE: u16 = 100;
 const MAX_PAGES: u32 = 1_000;
 const PROVIDER_RESULT_LIMIT: usize = 10_000;
@@ -31,7 +30,7 @@ pub enum BodySearchError {
 
 pub struct BodySearch {
     client: SpanshClient,
-    radius_ly: f64,
+    radius_override_ly: Option<f64>,
     page_size: u16,
     max_pages: u32,
 }
@@ -40,7 +39,7 @@ impl BodySearch {
     pub fn new(client: SpanshClient) -> Self {
         Self {
             client,
-            radius_ly: DEFAULT_RADIUS_LY,
+            radius_override_ly: None,
             page_size: PAGE_SIZE,
             max_pages: MAX_PAGES,
         }
@@ -48,7 +47,7 @@ impl BodySearch {
 
     #[cfg(test)]
     pub fn with_limits(mut self, radius_ly: f64, page_size: u16, max_pages: u32) -> Self {
-        self.radius_ly = radius_ly;
+        self.radius_override_ly = Some(radius_ly);
         self.page_size = page_size;
         self.max_pages = max_pages;
         self
@@ -75,7 +74,8 @@ impl BodySearch {
     where
         F: FnMut(u32, usize),
     {
-        let mut query = BodySearchQuery::new(center.coordinates, self.radius_ly, self.page_size)?;
+        let radius_ly = self.radius_override_ly.unwrap_or(criteria.radius_ly);
+        let mut query = BodySearchQuery::new(center.coordinates, radius_ly, self.page_size)?;
         let initial = self
             .client
             .post_json(
@@ -107,7 +107,7 @@ impl BodySearch {
                 if !is_center_system(&body, center)
                     && body
                         .distance_ly
-                        .is_some_and(|distance| (0.0..=self.radius_ly).contains(&distance))
+                        .is_some_and(|distance| (0.0..=radius_ly).contains(&distance))
                     && criteria.matches(&body)
                 {
                     results.push(body);
