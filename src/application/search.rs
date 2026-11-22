@@ -11,6 +11,15 @@ pub enum SearchError {
     Bodies(#[from] BodySearchError),
 }
 
+#[derive(Debug)]
+pub enum SearchEvent {
+    ResolvingSystem,
+    SystemResolved { name: String },
+    PageLoaded { page: u32, found: usize },
+    Finished(Vec<Body>),
+    Failed(SearchError),
+}
+
 pub struct SearchUseCase {
     client: SpanshClient,
 }
