@@ -432,7 +432,7 @@ mod tests {
             .collect::<String>();
         assert!(running.contains("Центральная система найдена"));
         assert!(running.contains("Загружена страница Spansh: 2"));
-        assert!(running.contains("3 из 5"));
+        assert!(running.contains("Подходящих планет найдено: 3 из 5"));
 
         app.screen = Screen::Error;
         app.error_message = Some("Система не найдена".to_owned());
