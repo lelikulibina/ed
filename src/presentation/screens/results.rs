@@ -422,6 +422,22 @@ fn render_details(frame: &mut ratatui::Frame<'_>, area: ratatui::layout::Rect, a
             display_number(body.distance_ly, 2)
         )),
         Line::from(format!(
+            "Посадка: {}",
+            body.is_landable.map_or("—", |value| if value { "Да" } else { "Нет" })
+        )),
+        Line::from(format!(
+            "Картографирование: {}",
+            body.is_mapped.map_or("—", |value| if value { "Да" } else { "Нет" })
+        )),
+        Line::from(format!(
+            "Обновление данных Spansh: {}",
+            body.last_updated_at.as_deref().unwrap_or("—")
+        )),
+        Line::from(format!(
+            "Обновление сигналов: {}",
+            body.signals_updated_at.as_deref().unwrap_or("—")
+        )),
+        Line::from(format!(
             "Биосигналы Spansh: {}",
             body.biological_signal_count
                 .map_or_else(|| "—".to_owned(), |value| value.to_string())
