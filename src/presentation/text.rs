@@ -134,7 +134,9 @@ pub fn exobiology_view(body: &Body) -> Result<Option<ExobiologyView>, EstimateEr
         return Ok(None);
     }
 
-    let first_logged = !estimate.biological_signal_count.is_some_and(|count| count > 0);
+    let first_logged = !estimate
+        .biological_signal_count
+        .is_some_and(|count| count > 0);
     let multiplier = if first_logged { 5 } else { 1 };
     let rows = estimate
         .genera
@@ -169,10 +171,7 @@ pub fn exobiology_view(body: &Body) -> Result<Option<ExobiologyView>, EstimateEr
             format_credits(maximum_value_cr)
         )
     } else {
-        format!(
-            "Ожидаемая выручка: {} CR",
-            format_credits(maximum_value_cr)
-        )
+        format!("Ожидаемая выручка: {} CR", format_credits(maximum_value_cr))
     }];
 
     Ok(Some(ExobiologyView {
@@ -280,7 +279,10 @@ mod tests {
 
         let view = exobiology_view(&body).unwrap().unwrap();
         let base = exobiology::estimate(&body).unwrap().maximum_base_value_cr;
-        assert_eq!(view.summary[0], format!("Ожидаемая выручка: {} CR", format_credits(base)));
+        assert_eq!(
+            view.summary[0],
+            format!("Ожидаемая выручка: {} CR", format_credits(base))
+        );
         assert_eq!(view.maximum_value_cr, base);
     }
 
