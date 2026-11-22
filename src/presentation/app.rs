@@ -6,6 +6,8 @@ use crate::{
     domain::body::Body,
 };
 
+use super::text::ui;
+
 use super::screens::{
     results::{ResultsAction, ResultsScreen},
     search::{SearchScreen, SearchScreenAction},
@@ -104,16 +106,16 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     app.resolved_system = None;
                     app.current_page = 0;
                     app.found_count = 0;
-                    app.progress_message = Some("Поиск центральной системы…".to_owned());
+                    app.progress_message = Some(ui::APP_SEARCH_RESOLVING_SYSTEM.to_owned());
                 }
                 SearchEvent::SystemResolved { name } => {
                     app.resolved_system = Some(name.clone());
-                    app.progress_message = Some(format!("Система найдена: {name}"));
+                    app.progress_message = Some(format!("{}: {name}", ui::APP_SEARCH_SYSTEM_FOUND_PREFIX));
                 }
                 SearchEvent::PageLoaded { page, found } => {
                     app.current_page = page;
                     app.found_count = found;
-                    app.progress_message = Some(format!("Страница {page} · найдено {found}"));
+                    app.progress_message = Some(format!("{}: {page} · найдено {found}", ui::APP_SEARCH_PAGE_LOADED_PREFIX));
                 }
                 SearchEvent::Finished(results) => {
                     app.results_screen.reset(&results);
@@ -165,7 +167,7 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     SearchScreenAction::Start(config) => {
                         app.config = config.clone();
                         app.screen = Screen::Running;
-                        app.progress_message = Some("Подготовка поиска…".to_owned());
+                        app.progress_message = Some(ui::APP_SEARCH_PREPARING.to_owned());
                         Some(Command::StartSearch(config))
                     }
                     SearchScreenAction::Exit => Some(Command::Quit),
@@ -191,7 +193,7 @@ pub fn update(app: &mut App, event: AppEvent) -> Option<Command> {
                     KeyCode::Char('r' | 'R') => {
                         app.screen = Screen::Running;
                         app.error_message = None;
-                        app.progress_message = Some("Повторный запуск поиска…".to_owned());
+                        app.progress_message = Some(ui::APP_SEARCH_RETRYING.to_owned());
                         Some(Command::StartSearch(app.config.clone()))
                     }
                     KeyCode::Esc | KeyCode::Enter | KeyCode::Char('e' | 'E') => {
@@ -414,6 +416,10 @@ mod tests {
         );
         assert_eq!(app.current_page, 3);
         assert_eq!(app.found_count, 2);
+        assert_eq!(
+            app.progress_message.as_deref(),
+            Some("Страница Spansh: 3 · найдено 2")
+        );
     }
 
     #[test]
