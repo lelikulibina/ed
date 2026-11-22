@@ -25,9 +25,9 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
       - name: Build application
-        run: cargo build --locked
+        run: cargo build
       - name: Save test inventory
-        run: cargo test --locked -- --list 2>&1 | tee tty-test-inventory.txt
+        run: cargo test -- --list 2>&1 | tee tty-test-inventory.txt
       - name: Capture TTY at 120x40
         shell: bash
         run: |
