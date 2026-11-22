@@ -154,6 +154,81 @@ mod tests {
         assert!(page_limit.user_message().contains("неполными"));
     }
 
+    /// Диагностический тест: если полный запрос не дал точного совпадения,
+    /// первый результат укороченного запроса становится центром поиска,
+    /// даже когда его имя относится к другой системе.
+    #[tokio::test]
+    async fn fallback_candidate_can_shift_center_and_distance_reference() {
+        let responses = [
+            r#"{"results":[{"name":"Flyua Phoea WB-K b2","id64":"22"}]}"#,
+            r#"{"results":[{"name":"Flyua Phoea WB-K b2","id64":"22","x":100.0,"y":200.0,"z":300.0}]}"#,
+            r#"{"has_more":false,"results":[{
+                "name":"Flyua Phoea WB-K b3 1",
+                "id64":"33001",
+                "system":{"id64":"33","name":"Flyua Phoea WB-K b3"},
+                "subtype":"Rocky body",
+                "is_landable":true,
+                "is_mapped":false,
+                "surface_temperature":250,
+                "surface_pressure":1.0,
+                "gravity":1.0,
+                "atmosphere":"Nitrogen",
+                "distance":12.0
+            }]}"#,
+        ];
+        let server = MockServer::start(responses.into_iter().map(MockResponse::ok).collect()).await;
+        let client = SpanshClient::new(server.base_url(), 1).unwrap();
+        let search = SearchUseCase::new(client);
+        let criteria = SearchCriteria::new(
+            Filter::one_of(vec![SurfaceType::RockyBody]),
+            Filter::one_of(vec![AtmosphereType::Nitrogen]),
+            NumericRange {
+                min: 200.0,
+                max: 300.0,
+            },
+            NumericRange { min: 0.5, max: 1.5 },
+            NumericRange { min: 0.0, max: 2.0 },
+            1,
+        )
+        .unwrap();
+
+        let (events_tx, mut events_rx) = tokio::sync::mpsc::unbounded_channel();
+        let results = search
+            .search_with_events("Flyua Phoea WB-K b1", &criteria, events_tx)
+            .await
+            .unwrap();
+
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].distance_ly, Some(12.0));
+        assert!(matches!(
+            events_rx.try_recv(),
+            Ok(SearchEvent::ResolvingSystem)
+        ));
+        assert!(matches!(
+            events_rx.try_recv(),
+            Ok(SearchEvent::SystemResolved { name }) if name == "Flyua Phoea WB-K b2"
+        ));
+
+        let requests = server.finish().await;
+        assert!(requests[0].starts_with(
+            "GET /api/systems/field_values/system_names?q=Flyua%20Phoea%20WB-K%20b1 "
+        ));
+        assert!(requests[1].starts_with(
+            "GET /api/systems/field_values/system_names?q=Flyua%20Phoea%20WB-K "
+        ));
+        assert!(requests[2].starts_with("POST /api/bodies/search "));
+        let request_body = requests[2]
+            .split_once("\\r\\n\\r\\n")
+            .expect("body search request must contain a JSON body")
+            .1;
+        let payload: serde_json::Value =
+            serde_json::from_str(request_body).expect("body search payload must be valid JSON");
+        assert_eq!(
+            payload["reference_coords"],
+            serde_json::json!({"x": 100.0, "y": 200.0, "z": 300.0})
+        );
+    }
+
     #[tokio::test]
     async fn resolves_center_searches_bodies_and_returns_filtered_results() {
         let responses = [
