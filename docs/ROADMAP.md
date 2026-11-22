@@ -205,10 +205,10 @@ cargo fmt -- --check && cargo clippy --locked --all-targets --all-features -- -D
 
 - [x] `presentation/terminal.rs`: единственный `TerminalGuard` (raw mode, alternate screen, курсор) плюс panic hook, который восстанавливает терминал до печати паники. Обе старые копии удалить.
 - [x] `presentation/theme.rs`: палитра из пяти ролей (акцент, успех, предупреждение, ошибка, приглушённый), готовые стили, `centered()`, проверка минимального размера 80×24.
-- [ ] `presentation/app.rs`: `enum Screen { Search, Running, Results, Error }`, `enum AppEvent { Key, Paste, Tick, Resize, Search(SearchEvent) }` и чистая функция `update(&mut App, AppEvent) -> Option<Command>`, где `Command` — «запустить поиск», «отменить», «скопировать», «выйти». Ввод-вывод внутри `update` запрещён.
-- [ ] `presentation/events.rs`: поток, читающий crossterm и отправляющий события в `tokio::sync::mpsc`; тик 100 мс только для анимации индикатора.
-- [ ] `main.rs`: единый вызов `tui::run(initial_config)`; пара `run_tui` / `run_search_ui` и внешний цикл исчезают. Разбор CLI остаётся тем же.
-- [ ] `render(frame, &App)` — только чтение состояния. Тесты экранов через `ratatui::backend::TestBackend`: проверяется, что в буфере есть ожидаемые строки.
+- [x] `presentation/app.rs`: `enum Screen { Search, Running, Results, Error }`, `enum AppEvent { Key, Paste, Tick, Resize, Search(SearchEvent) }` и чистая функция `update(&mut App, AppEvent) -> Option<Command>`, где `Command` — «запустить поиск», «отменить», «скопировать», «выйти». Ввод-вывод внутри `update` запрещён.
+- [x] `presentation/events.rs`: поток, читающий crossterm и отправляющий события в `tokio::sync::mpsc`; тик 100 мс только для анимации индикатора.
+- [x] `main.rs`: единый вызов `tui::run(initial_config)`; пара `run_tui` / `run_search_ui` и внешний цикл исчезают. Разбор CLI остаётся тем же.
+- [x] `render(frame, &App)` — только чтение состояния. Тесты экранов через `ratatui::backend::TestBackend`: проверяется, что в буфере есть ожидаемые строки.
 
 **Приёмка:** в `presentation/` ровно один `TerminalGuard` и один `centered`; `update` покрыт тестами переходов между экранами; гейт зелёный. Старые `tui.rs` и `setup.rs` ещё живы и удаляются на этапах 4 и 6 по мере переноса экранов.
 
