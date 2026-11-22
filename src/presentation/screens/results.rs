@@ -272,7 +272,7 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
 
     frame.render_widget(
         Paragraph::new(format!(
-            "{}: {}  ·  СИСТЕМА: {}  ·  СОРТИРОВКА: {},
+            "{}: {}  ·  СИСТЕМА: {}  ·  СОРТИРОВКА: {}",
             ui::RESULTS_SUMMARY_LABEL,
             app.results.len(),
             app.config.system,
