@@ -7,6 +7,7 @@ use std::{
 use anyhow::{Context, Result};
 use crossterm::{
     cursor::{Hide, Show},
+    event::{DisableBracketedPaste, EnableBracketedPaste},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -26,7 +27,7 @@ impl TerminalGuard {
         TERMINAL_ACTIVE.store(true, Ordering::SeqCst);
 
         let mut stdout = io::stdout();
-        if let Err(error) = execute!(stdout, EnterAlternateScreen, Hide) {
+        if let Err(error) = execute!(stdout, EnterAlternateScreen, EnableBracketedPaste, Hide) {
             TERMINAL_ACTIVE.store(false, Ordering::SeqCst);
             restore_terminal();
             return Err(error.into());
@@ -77,6 +78,6 @@ impl Drop for TerminalGuard {
 
 fn restore_terminal() {
     let mut stdout = io::stdout();
-    let _ = execute!(stdout, Show, LeaveAlternateScreen);
+    let _ = execute!(stdout, Show, DisableBracketedPaste, LeaveAlternateScreen);
     let _ = disable_raw_mode();
 }
