@@ -9,7 +9,7 @@ use crate::{
     application::{
         config::SearchConfig,
         form::SearchForm,
-        presets::{PRESETS, SearchPreset},
+        presets::PRESETS,
     },
 };
 
@@ -100,18 +100,9 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     let profiles = PRESETS
         .iter()
         .enumerate()
-        .map(|(index, preset)| profile_item(preset, index == screen.selected_preset))
+        .map(|(index, preset)| profile_item(preset.name, index == screen.selected_preset))
         .chain(std::iter::once(profile_item(
-            &SearchPreset {
-                number: 0,
-                name: "Свой поиск",
-                surface_types: &[],
-                atmosphere: crate::domain::catalog::AtmosphereType::Any,
-                temperature: crate::domain::criteria::NumericRange { min: 0.0, max: 0.0 },
-                pressure: crate::domain::criteria::NumericRange { min: 0.0, max: 0.0 },
-                expensive_species: 0,
-                potential_value_cr: 0,
-            },
+            "Свой поиск",
             screen.selected_preset == PRESETS.len(),
         )))
         .collect::<Vec<_>>();
@@ -192,9 +183,9 @@ pub fn render(frame: &mut Frame<'_>, screen: &SearchScreen) {
     );
 }
 
-fn profile_item(preset: &SearchPreset, selected: bool) -> ListItem<'static> {
+fn profile_item(name: &'static str, selected: bool) -> ListItem<'static> {
     let prefix = if selected { "▸ " } else { "  " };
-    ListItem::new(format!("{prefix}{}", preset.name))
+    ListItem::new(format!("{prefix}{name}"))
 }
 
 #[cfg(test)]
