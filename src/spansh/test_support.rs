@@ -47,7 +47,7 @@ impl MockServer {
 
                 let reason = response.status.canonical_reason().unwrap_or("Unknown");
                 let raw_response = format!(
-                    "HTTP/1.1 {} {}\\r\\ncontent-type: application/json\\r\\ncontent-length: {}\\r\\nconnection: close\\r\\n\\r\\n{}",
+                    "HTTP/1.1 {} {}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
                     response.status.as_u16(),
                     reason,
                     response.body.len(),
@@ -93,7 +93,7 @@ async fn read_request(socket: &mut TcpStream) -> String {
 
         if let Some(header_end) = bytes
             .windows(4)
-            .position(|window| window == b"\\r\\n\\r\\n")
+            .position(|window| window == b"\r\n\r\n")
         {
             let headers = String::from_utf8_lossy(&bytes[..header_end]);
             let content_length = headers
