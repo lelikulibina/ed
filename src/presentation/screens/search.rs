@@ -309,7 +309,7 @@ impl SearchScreen {
         };
         if changed {
             self.sync_form_from_inputs();
-            if self.focus != SearchField::System {
+            if !matches!(self.focus, SearchField::System | SearchField::Radius) {
                 self.mark_custom();
             }
         }
@@ -837,6 +837,19 @@ mod tests {
         assert!(screen.handle_paste(" Prime"));
         assert_eq!(screen.form.system, "SolX Prime");
         assert_eq!(screen.selected_preset(), 0);
+    }
+
+    #[test]
+    fn editing_radius_does_not_change_the_selected_profile() {
+        let mut screen = SearchScreen::default();
+        screen.select_preset(2);
+        screen.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
+        screen.handle_key(KeyEvent::new(KeyCode::Char('0'), KeyModifiers::NONE));
+
+        assert_eq!(screen.form.radius, "10000");
+        assert_eq!(screen.selected_preset(), 2);
     }
 
     #[test]
