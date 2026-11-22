@@ -494,6 +494,7 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect::<String>();
+        assert!(running.contains("✓"));
         assert!(running.contains("Центральная система найдена"));
         assert!(running.contains("Загружена страница Spansh: 2"));
         assert!(running.contains("Подходящих планет найдено: 3 из 5"));
@@ -508,6 +509,7 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect::<String>();
+        assert!(error.contains("✗"));
         assert!(error.contains("Система не найдена"));
         assert!(error.contains("r / к — повторить поиск"));
         assert!(error.contains("e / у / Enter / Esc"));
