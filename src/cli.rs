@@ -345,7 +345,10 @@ mod tests {
             assert_eq!(config.criteria.surface, case.surface, "{}", case.name);
             assert_eq!(config.criteria.atmosphere, case.atmosphere, "{}", case.name);
             assert_eq!(
-                (config.criteria.temperature.min, config.criteria.temperature.max),
+                (
+                    config.criteria.temperature.min,
+                    config.criteria.temperature.max
+                ),
                 case.temperature,
                 "{}",
                 case.name
@@ -364,8 +367,7 @@ mod tests {
             );
             assert_eq!(config.criteria.count, case.count, "{}", case.name);
             assert_eq!(
-                config.criteria.exclude_with_bio_signals,
-                case.exclude_with_bio_signals,
+                config.criteria.exclude_with_bio_signals, case.exclude_with_bio_signals,
                 "{}",
                 case.name
             );
