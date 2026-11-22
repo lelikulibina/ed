@@ -33,7 +33,11 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         Paragraph::new("ED Planet Search")
             .alignment(Alignment::Center)
             .style(theme::Theme::default().accent)
-            .block(Block::default().title(" Поиск планет ").borders(Borders::ALL)),
+            .block(
+                Block::default()
+                    .title(" Поиск планет ")
+                    .borders(Borders::ALL),
+            ),
         sections[0],
     );
 
@@ -72,14 +76,12 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         ),
     ];
     frame.render_widget(
-        Paragraph::new(content)
-            .wrap(Wrap { trim: true })
-            .block(
-                Block::default()
-                    .title(" Выполнение ")
-                    .borders(Borders::ALL)
-                    .border_style(Style::default().fg(ratatui::style::Color::DarkGray)),
-            ),
+        Paragraph::new(content).wrap(Wrap { trim: true }).block(
+            Block::default()
+                .title(" Выполнение ")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(ratatui::style::Color::DarkGray)),
+        ),
         sections[1],
     );
     frame.render_widget(
