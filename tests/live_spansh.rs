@@ -1,20 +1,9 @@
 #![allow(dead_code)]
 
-#[path = "../src/application/presets.rs"]
-pub mod application_presets;
-
-mod application {
-    pub use crate::application_presets as presets;
-}
-
-#[path = "../src/domain/mod.rs"]
-mod domain;
-#[allow(unused_imports)]
-#[path = "../src/spansh/mod.rs"]
-mod spansh;
-
-use domain::criteria::{NumericRange, SearchCriteria};
-use spansh::{BodySearch, SpanshClient, SystemResolver};
+use ed_planet_search::{
+    domain::criteria::{NumericRange, SearchCriteria},
+    spansh::{BodySearch, SpanshClient, SystemResolver},
+};
 
 /// Ручной smoke-тест публичного контракта поиска Spansh.
 /// Запуск: cargo test --test live_spansh -- --ignored --nocapture
