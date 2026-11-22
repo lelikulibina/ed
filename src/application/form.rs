@@ -13,6 +13,7 @@ use crate::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FormField {
     System,
+    Radius,
     Surface,
     Atmosphere,
     Temperature,
@@ -40,6 +41,7 @@ impl FieldError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SearchForm {
     pub system: String,
+    pub radius: String,
     pub surface_types: Vec<SurfaceType>,
     pub atmosphere_types: Vec<AtmosphereType>,
     pub temperature: String,
@@ -53,6 +55,7 @@ impl Default for SearchForm {
     fn default() -> Self {
         Self {
             system: String::new(),
+            radius: "1000".to_owned(),
             surface_types: vec![SurfaceType::Any],
             atmosphere_types: vec![AtmosphereType::Any],
             temperature: "0-5000".to_owned(),
@@ -78,6 +81,7 @@ impl SearchForm {
 
         Self {
             system: config.system.clone(),
+            radius: format!("{}", criteria.radius_ly as u32),
             surface_types,
             atmosphere_types,
             temperature: format_range(criteria.temperature),
@@ -126,6 +130,17 @@ impl SearchForm {
                 "Укажите центральную систему",
             ));
         }
+
+        let radius = match self.radius.trim().parse::<u32>() {
+            Ok(radius) if (1..=5_000).contains(&radius) => f64::from(radius),
+            _ => {
+                errors.push(FieldError::new(
+                    FormField::Radius,
+                    "Радиус должен быть целым числом от 1 до 5000 св. лет",
+                ));
+                1_000.0
+            }
+        };
 
         let count = match self.count.trim().parse::<usize>() {
             Ok(0) => {
@@ -209,6 +224,7 @@ impl SearchForm {
         let criteria =
             SearchCriteria::new(surface, atmosphere, temperature, gravity, pressure, count)
                 .map_err(|error| vec![criteria_error(error)])?
+                .with_radius(radius)
                 .with_bio_signal_exclusion(self.exclude_with_bio_signals);
 
         SearchConfig::new(system, criteria).map_err(|error| vec![config_error(error)])
