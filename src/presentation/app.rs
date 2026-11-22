@@ -485,6 +485,7 @@ mod tests {
         app.resolved_system = Some("Sol".to_owned());
         app.current_page = 2;
         app.found_count = 3;
+        app.progress_message = Some("Страница Spansh: 2 · найдено 3".to_owned());
 
         let backend = ratatui::backend::TestBackend::new(80, 24);
         let mut terminal = ratatui::Terminal::new(backend).unwrap();
@@ -500,6 +501,7 @@ mod tests {
         assert!(running.contains("Центральная система найдена"));
         assert!(running.contains("Загружена страница Spansh: 2"));
         assert!(running.contains("Подходящих планет найдено: 3 из 5"));
+        assert!(!running.contains("Страница Spansh: 2 · найдено 3"));
 
         app.screen = Screen::Error;
         app.error_message = Some("Система не найдена".to_owned());
