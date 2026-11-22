@@ -51,7 +51,10 @@ impl TextInput {
     }
 
     pub fn paste(&mut self, text: &str) -> bool {
-        let pasted = text.chars().filter(|character| !character.is_control()).collect::<Vec<_>>();
+        let pasted = text
+            .chars()
+            .filter(|character| !character.is_control())
+            .collect::<Vec<_>>();
         if pasted.is_empty() {
             return false;
         }
