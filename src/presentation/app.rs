@@ -214,7 +214,11 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         Screen::Search => super::screens::search::render(frame, &app.search_screen),
         Screen::Running => super::screens::running::render(frame, app),
         Screen::Error => super::screens::error::render(frame, app),
-        Screen::Results => render_placeholder(frame, "РЕЗУЛЬТАТЫ", "Экран результатов будет подключён на этапе 6."),
+        Screen::Results => render_placeholder(
+            frame,
+            "РЕЗУЛЬТАТЫ",
+            "Экран результатов будет подключён на этапе 6.",
+        ),
     }
 }
 
