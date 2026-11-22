@@ -27,6 +27,16 @@
 | 7. Полировка | Не начат | Ожидает этапа 6. |
 | 8. Документация, CI, релиз | Не начат | Ожидает этапа 7. |
 
+## Приёмка этапа 1
+
+| Категория | Результат |
+|---|---|
+| Перенесено | `live_spansh_body_search_contract` из `src/spansh/bodies.rs` в `tests/live_spansh.rs`; HTTP-мок и захват запросов в `src/spansh/test_support.rs`. |
+| Удалено | Три разовых live-диагностики; дубли CLI/retry/resolver/detail-parser тестов; проверки приватных helper-ов ради проверки реализации; тест константы радиуса (заменён проверкой фактического POST payload). |
+| Оставлено | Пагинация/recall/POST-fallback/просроченный GUID/лимит страниц; разбор ответа; правила retry; точное совпадение и fallback резолвера; проверки каталога и доменных критериев; нулевое количество и ошибки пустой системы. |
+
+**Гейт:** `Rust CI` run `44986971575` — `cargo fmt`, Clippy, `cargo test --locked --all-targets` зелёные (75 passed / 1 ignored). Production `cargo build --locked` и TTY-проверки 120×40, 80×24, 60×18 — `TTY Interface Diagnostics` run `44986971507` зелёный.
+
 ## Журнал
 
 ### Этап 1 — задача 4: достижимость ветки mapped
