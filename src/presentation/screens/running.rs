@@ -54,7 +54,11 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
     let pages = if app.current_page > 0 {
         Line::from(vec![
             Span::styled("✓ ", theme::Theme::default().success),
-            Span::raw(format!("{}: {}", ui::RUNNING_PAGE_LOADED_PREFIX, app.current_page)),
+            Span::raw(format!(
+                "{}: {}",
+                ui::RUNNING_PAGE_LOADED_PREFIX,
+                app.current_page
+            )),
         ])
     } else {
         Line::from(vec![
@@ -67,7 +71,9 @@ pub fn render(frame: &mut ratatui::Frame<'_>, app: &App) {
         pages,
         Line::from(format!(
             "{}: {} из {}",
-            ui::RUNNING_FOUND_COUNT, app.found_count, app.config.criteria.count
+            ui::RUNNING_FOUND_COUNT,
+            app.found_count,
+            app.config.criteria.count
         )),
         Line::from(
             app.progress_message
