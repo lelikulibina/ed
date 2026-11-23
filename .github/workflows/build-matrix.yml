@@ -1,0 +1,84 @@
+name: Cross-platform Build
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "src/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/build-matrix.yml"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cross-platform-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: ed-linux-x86_64
+            binary: target/x86_64-unknown-linux-gnu/release/ed_planet_search
+          - name: Windows x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: ed-windows-x86_64
+            binary: target/x86_64-pc-windows-msvc/release/ed_planet_search.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add compilation target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Check formatting
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo fmt -- --check
+
+      - name: Run Clippy
+        run: cargo clippy --locked=false --all-targets --all-features --target ${{ matrix.target }} -- -D warnings
+
+      - name: Run tests
+        run: cargo test --all-targets --target ${{ matrix.target }}
+
+      - name: Build release executable
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Smoke test executable (Linux)
+        if: runner.os == 'Linux'
+        run: ./${{ matrix.binary }} --help
+
+      - name: Smoke test executable (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\\${{ matrix.binary }} --help
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.binary }}
+          if-no-files-found: error
+          retention-days: 14
